@@ -1,0 +1,40 @@
+Foma
+====
+
+version 0.9.12alpha
+2009/10/25
+
+Email: wampeter@users.sourceforge.net
+WWW: http://foma.sourceforge.net
+
+
+What is foma?
+-------------
+
+Foma is a multi-purpose finite-state toolkit designed for applications ranging from natural language processing and research in automata theory.  It should be upwardly compatible with Xerox xfst and lexc, with the exception of binary file reading and writing.
+
+
+Distribution
+------------
+
+Foma is licensed under the GNU General Public License (GPL), version 2.  You should have received a copy of the licence with the source code.
+
+Compatibility
+-------------
+
+Foma is developed and tested on a Linux system.
+
+It has also been compiled on win32, Mac OSX and Sun Solaris systems.  The source code should be reasonably portable.  It relies on the GNU readline library.  Foma also needs GNU bison (developed using 2.3) and flex (>2.5.31).  The last two are only necessary if you are making changes to the parser (.y) or lexer (.l) files.
+
+
+Compiling/installing foma
+-------------------------
+
+Makefiles are included for Linux, win32, and Mac OSX.  They assume you have header files and the necessary libraries mentioned above.  Some pre-built binaries are available on http://foma.sourceforge.net.  Before endeavoring a compile, these are recommended as building for e.g. win32 may be both frustrating and time-consuming.
+
+Bugs
+----
+
+Many. The current release is 0.9.12alpha, and bug reports will be gratefully received at 
+wampeter@users.sourceforge.net.
+
