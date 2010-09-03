@@ -1,0 +1,97 @@
+0.9.13alpha
+
+- Adds the command "substitute defined", and the corresponding fsm_substitute_label() in the API.
+- Improved prolog file reading and writing
+- Adds a function to convert a multicharacter machine to a letter machine (where each transition is exactly one unicode symbol long).  It is called fsm_letter_machine() in the API, and _lm() in the built-in functions.
+- Print random-lower/random-upper/random-words now provide "more" random distribution
+- Thread-safety changes in apply.c API
+- Bug fixes in order of stack operations, printing, reverse operation (.r), function definitions (spotted by DG), lower-side priority union (.p.), ...
+- New API calls fsm_construct_* and fsm_get_* for constructing and reading automata/transducers
+
+0.9.12alpha (20091025)
+
+- OSX version "view" command launches native Graphviz (get it from http://www.pixelglow.com/graphviz/)
+- export cmatrix writes AT&T format weighted transducer
+- More API functions
+- Added support for reading/writing FSM files in AT&T format
+- Added "apply down/up < infile (> outfile)"
+- Separated the API functions into libfoma.h. Separate library builds.
+- Apply functions in API are now iterators
+- Minor bugfixes in regex parsing / lexc file parsing
+- Added the built-in _eq()-operator
+- Added extraction of attested symbol pairs and extraction of sigma as an FSM through "label net" and "sigma net"
+- Minor bugfix in fsm_cross_product()
+- Bugfix in "print dot"
+
+0.9.11alpha (20090722)
+
+- Symbol handling efficiency modifications in fsm_minimize() and fsm_determinize()
+- Added the function fsm_epsilon_remove() (not used outside the API, however)
+- Minor bugfixes in fsm_rewrite()
+- A bug that was reintroduced in fsm_compose() in 0.9.10alpha is fixed
+- fsm_lower() fsm_upper() fsm_kleene_star() fsm_concatenate() have been rewritten
+- Added the functionality "ambiguous upper","extract ambiguous","extract unambiguous" and the corresponding built-in regex functions: _ambdom(), _ambpart(), _unambpart().  The first function extracts the input words that have multiple paths through a transducer.  The other two split up a given transducer into an ambiguous or unambiguous one.
+
+0.9.10alpha (20090717)
+- Added support for loading and saving networks in a binary file format and the commands "save stack" "load stack" "save defined" "load defined" and the regular expression construct 'regex @"filename"' which loads the network in "filename" (uses libz)
+- foma is no longer compiled with libgc as default
+- Some major memory management changes in fsm_minimize() and fsm_determinize().  Efficiency/memory tweaks in fsm_determinize().
+- Minor bugfixes in fsm_compose()
+
+0.9.9alpha (20090621)
+- Added support for saving networks in prolog file format (write prolog > filename or wpl > filename).
+- Bugfixes in "read prolog"/"rpl"
+- Minor bugfix in "test unambiguous"/_isunambiguous()
+
+0.9.8alpha (20090604)
+- Added option to load confusion matrices (load cmatrix filename) that specify costs for minimum edit distance matching and attaches to a network.  The command "print cmatrix" prints the matrix associated with the network on top of the stack.  These are used whenever "apply med" is called.  If no matrix is specified, the default distance is Levenshtein. 
+- Added the global variables med-cutoff and med-limit to control the med search
+- Minor bugfixes in fsm_compose()
+- Changes in dot file output (print dot, print dot > filename) and "view net"
+- Added tests for transducer ambiguity (test unambiguous/tunam), and the equivalent built-in function _isunambiguous() which returns a boolean automaton.
+
+0.9.7alpha (20090519)
+- Fixed bug in print shortest-string "alias: pss"
+- Added tests for transducer functionality (test functional/tfu) and transducer identity (test identity/tid).
+- Added support for built-in functions.  They use the same notation as user-defined ones, except all begin with _.  Functions that are network property tests such as _isfunctional() and _isidentity() return boolean automata (the empty set for FALSE and the empty string for TRUE).
+
+0.9.6alpha (20090506)
+- Fixed bugs in apply up
+- Fixed bugs in left and right quotient (\\\ and ///)
+- Changed fsm_minus(), i.e. A - B, so that it subtracts paths instead of being A & ~B.  This means transducer paths can be subtracted.
+- Added algorithms for finding the minimum edit distance between a word and a fsm. "apply med" is the same as "apply down" except it finds the cheapest approximate matches. Still experimental.
+
+0.9.5alpha (20090325)
+- Fixed bug in lexcread that affected lexicons with very long words
+- Fixed bug in context restrict with 0 as both contexts, e.g. a => 0 _ 0
+
+0.9.4alpha (20090116)
+- Tweaked memory and efficiency in minimization and determinization algorithms.  For large automata, minimization uses much less temporary memory.
+- Added 'flag-is-epsilon' variable behavior and composition algorithm now obeys it
+
+--
+
+0.9.3alpha (20090113)
+- Recursive script-files now work
+- Changed lexc format reading so Lexicon is accepted as well as LEXICON as a keyword
+- Minor bugfix for comment behavior in script files
+- Minor bugfix in "define" format
+
+--
+
+0.9.2alpha (20090111)
+- Determinization now uses much less temporary memory without sacrificing efficiency.  
+  The memory use caused severe problems for compiling very large lexicons or determinizing
+  large automata with limited memory.
+
+- Added a "-r" command line option for starting foma without readline (mainly for Win32 version)
+
+- Fixed a serious bug in the ternary `[A,B,C] substitution operator and added the interface command 
+  "substitute symbol B for A"
+
+- Added a slight optimization in directed replacements
+
+--
+
+0.9.1alpha (20081231)
+- First public release

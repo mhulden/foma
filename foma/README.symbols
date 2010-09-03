@@ -1,0 +1,26 @@
+Foma accepts multiple variants of some operators for compatibility reasons.  All symbols in the ASCII range except [1-9A-Za-z'=] are reserved and need to be escaped with % or " " (naturally non-escaped ? is the wildcard symbol and 0 the epsilon symbol).
+
+In addition the following Unicode symbols are reserved and need to be escaped as well, unless used as their operator meaning:
+
+  Octal bytes  Character name              Hex code point  ASCII equivalent
+
+¬ 302 254      NOT SIGN                    U+00AC          ~
+× 303 227      MULTIPLICATION SIGN         U+00D7          .x. :
+Σ 316 243      GREEK CAPITAL LETTER SIGMA  U+03A3          ?
+ε 316 265      GREEK SMALL LETTER EPSILON  U+03B5          [] 0
+→ 342 206 222  RIGHTWARDS ARROW            U+2192          
+↔ 342 206 224  LEFT RIGHT ARROW            U+2194          
+∀ 342 210 200  FOR ALL                     U+2200          
+∃ 342 210 203  THERE EXISTS                U+2203          
+∅ 342 210 205  EMPTY SET                   U+2205          \?
+∈ 342 210 210  ELEMENT OF                  U+2208          
+∘ 342 210 230  RING OPERATOR               U+2218          .o.
+∥ 342 210 245  PARALLEL TO                 U+2225          <>
+∧ 342 210 247  LOGICAL AND                 U+2227          &
+∨ 342 210 250  LOGICAL OR                  U+2228          |
+∩ 342 210 251  INTERSECTION                U+2229          &
+∪ 342 210 252  UNION                       U+222A          |
+≤ 342 211 244  LESS-THAN OR EQUAL TO       U+2264
+≥ 342 211 245  GREATER-THAN OR EQUAL TO    U+2265
+≺ 342 211 272  PRECEDES                    U+227A          <
+≻ 342 211 273  SUCCEEDS                    U+227B          >

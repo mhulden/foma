@@ -1,0 +1,19 @@
+Since version 0.9.8alpha, foma allows attaching a confusion matrix specification to a network.  The command "read cmatrix <filename>" read a confusion matrix and attaches is to the top network on the stack.  Subsequent "apply med" commands will use this matrix in determining the minimum cost approximate match to a word.  If no confusion matrix is specified, Levenshtein distance is used (insert = substitute = delete = 1). 
+
+The command "print cmatrix" also prints out the confusion matrix attached to the top network in tabular format.
+
+The format of the confusion matrix should be clear from the following example confusion matrix file:
+
+--CUT HERE--
+Insert 1
+Substitute 2
+Delete 1
+Cost 1
+a:b c:d
+Cost 3
+:x x: x:y
+--CUT HERE--
+
+The above snippet specifies a matrix where the default insertion cost is 1 unit, the default substitution cost is 2 units, and the default deletion cost is 1 unit.  Also, substituting an "a" with a "b" costs 1 unit, as does substituting a "c" for a "d".  Inserting an "x" costs 3 units, as does deleting an "x" and substituting an "x" for a "y".
+
+All costs must be positive integer values.  A cost specification that involves symbols not found in the alphabet of the top network are not included in the matrix, but are warned about.
