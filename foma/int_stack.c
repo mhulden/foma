@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -78,70 +78,6 @@ int int_stack_size () {
   return (top + 1);
 }
 
-/*
-int int_stack_cmp (const void *a, const void *b) {
-  return ( *(int*)b - *(int*)a );
-}
-
-void int_stack_sort() {
-  if (top)
-    qsort(a, top+1, sizeof(int), int_stack_cmp);
-}
-*/
-
-/* 
-  printf("Before: ");
-  for (j=top; j >=0; j--)
-    printf("[%i]",a[j]);
-  
-  printf("After: ");
-  for (j=top; j >=0; j--)
-    printf("[%i]",a[j]);
-  printf("\n");
-*/
-
-/* Insertion sort. Best for small arrays (<20) */
-/*
-void int_stack_sort() {
-  
-  register int j, p;
-  register int tmp;
-    
-  if (top > 0) {
-    for(p=1; p<(top+1); p++) {
-      tmp = a[p];
-      for(j = p; j > 0 && a[j-1] < tmp; j--)
-	a[j] = a[j-1];
-      a[j] = tmp;
-    }
-  }
-}
-*/
-/* Shellsort implementation. Probably too much overhead for small arrays */
-
-void int_stack_sort() {
-
-  int i, j, k, h, v;
-  int cols[16] = {1391376, 463792, 198768, 86961, 33936, 13776, 4592, 1968, 861, 336, 112, 48, 21, 7, 3, 1};
-  /* printf("Size: [%i]", top+1); */
-  if (top<1) {
-    return;
-  }
-
-  for (k=0; k<16; k++) {
-    h=cols[k];
-    for (i=h; i<(top+1); i++) {
-      v=a[i]; j=i;
-      while (j >= h && a[j-h] < v) {
-	a[j]=a[j-h];
-	j=j-h;
-      }
-      a[j]=v;
-    }
-  }
-}
-
-
 void int_stack_push(int c) {
   if (int_stack_isfull()) {
     fprintf(stderr, "Stack full!\n");
@@ -155,11 +91,6 @@ int int_stack_pop() {
   return a[top--];
 }
 
-int int_stack_status() {
-  return top;
-}
-
 int int_stack_isfull() {
   return (top == (MAX_STACK - 1));
 }
-

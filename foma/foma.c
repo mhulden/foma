@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -22,15 +22,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <readline/readline.h>
-#ifdef USE_GC
-#include <gc/gc.h>
-#endif /* USE_GC */
 #include "foma.h"
-
-#define MAJOR_VERSION 0
-#define MINOR_VERSION 9
-#define BUILD_VERSION 13
-#define STATUS_VERSION "alpha"
 
 /* Front-end behavior variables */
 int pipe_mode = 0;
@@ -47,7 +39,7 @@ char *usagestring = "Usage: foma [-e \"command\"] [-f run-once-script] [-l start
 
 static char** my_completion(const char*, int ,int);
 char *my_generator(const char* , int);
-char *cmd [] = {"ambiguous upper","apply down","apply med","apply up","apropos","clear stack","compact sigma","complete net","compose net","concatenate net","crossproduct net","define","determinize net","echo","eliminate flags","eliminate flag","export cmatrix","extract ambiguous","extract unambiguous","help license","help warranty","ignore net","intersect net","invert net","label net","letter machine","load defined","lower-side net","minimize net","name net","negate net","one-plus net","pop stack","print defined","print dot","print lower-words","print cmatrix","print name","print net","print random-lower","print random-upper","print random-words","print sigma","print size","print shortest-string","print shortest-string-length","print upper-words","prune net","push defined","quit","read att","read cmatrix","read prolog","read lexc","read regex","reverse net","rotate stack","save defined","save stack","set","show variables","show variable","shuffle net","sigma","sigma net","source","sort net","substitute defined","substitute symbol","system","test unambiguous","test star-free","test equivalent","test functional","test identity","test lower-universal","test upper-universal","test non-null","test null","turn stack","twosided flag-diacritics","undefine","union net","upper-side net","view net","write att","write prolog","zero-plus net",NULL};
+char *cmd [] = {"ambiguous upper","apply down","apply med","apply up","apropos","clear stack","compact sigma","complete net","compose net","concatenate net","crossproduct net","define","determinize net","echo","eliminate flags","eliminate flag","export cmatrix","extract ambiguous","extract unambiguous","help license","help warranty","ignore net","intersect net","invert net","label net","letter machine","load defined","lower-side net","minimize net","name net","negate net","one-plus net","pop stack","print defined","print dot","print lower-words","print cmatrix","print name","print net","print random-lower","print random-upper","print random-words","print sigma","print size","print shortest-string","print shortest-string-length","print upper-words","prune net","push defined","quit","read att","read cmatrix","read prolog","read lexc","read regex","read spaced-text","read text","reverse net","rotate stack","save defined","save stack","set","show variables","show variable","shuffle net","sigma","sigma net","source","sort net","substitute defined","substitute symbol","system","test unambiguous","test star-free","test equivalent","test functional","test identity","test lower-universal","test upper-universal","test non-null","test null","turn stack","twosided flag-diacritics","undefine","union net","upper-side net","view net","write att","write prolog","zero-plus net",NULL};
 
 char *abbrvcmd [] = {"ambiguous","down","up","med","size","loadd","lower-words","upper-words","net","random-lower","random-upper","random-words","regex","rpl","au revoir","bye","exit","saved","ss","stack","tunam","tid","tfu","tlu","tuu","tnu","tnn","tsf","equ","pss","psz","ratt","tfd","hyvästi","watt","wpl","examb","exunamb",NULL};
 
@@ -60,7 +52,7 @@ extern int add_history (const char *);
 extern int my_yyparse(char *my_string);
 void print_help();
 void xprintf(char *string) { return ; printf("%s",string); }
-char disclaimer[] = "Foma, version 0.9.13devalpha\nCopyright © 2008-2010 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
+char disclaimer[] = "Foma, version 0.9.13alpha\nCopyright © 2008-2010 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
 
 /* A static variable for holding the line. */
 
@@ -102,23 +94,12 @@ char *rl_gets(char *prompt) {
     return (line_read);
 }
 
-#ifdef USE_GC
-void foma_gc_warning() {
-
-}
-#endif /* USE_GC */
-
 int main(int argc, char *argv[]) {
     int opt;
 
     char *scriptfile, prompt[50];
     extern void my_interfaceparse(char *my_string);
     /*  YY_BUFFER_STATE flex_command; */
-#ifdef USE_GC
-    GC_INIT();
-    GC_free_space_divisor = 2;
-    GC_set_warn_proc(foma_gc_warning);
-#endif /* USE_GC */
     stack_init();
     while ((opt = getopt(argc, argv, "e:f:hl:pqrsv")) != -1) {
         switch(opt) {
@@ -255,29 +236,3 @@ char *my_generator(const char *text, int state) {
     /* If no names matched, then return NULL. */
     return ((char *)NULL);
 }
-
-#ifdef WIN32
-
-#define ap_tolower(c) (tolower(((unsigned char)(c))))
-#define ap_toupper(c) (toupper(((unsigned char)(c))))
-
-char *strcasestr(char *h, char *n) { 
-    /* h="haystack", n="needle" */
-    char *a = h, *e = n;
-
-    if( !h || !*h || !n || !*n ) { 
-        return NULL; 
-    }
-    while(*a && *e) {
-        if( ap_toupper(*a) != ap_toupper(*e) ) {
-            h++; 
-            a=h; 
-            e=n;
-        } else {
-            a++; 
-            e++;
-        }
-    }
-    return *e ? NULL : h;
-}
-#endif /* WIN32 */

@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -148,7 +148,7 @@ void lexc_add_sigma_hash(char *symbol, int number) {
     hnew->symbol = xxstrdup(symbol);
     hnew->sigma_number = number;
     h->next = hnew;
-    hnew->next = NULL;    
+    hnew->next = NULL;
 }
 
 void lexc_init() {
@@ -157,7 +157,7 @@ void lexc_init() {
     mc = NULL;
     lexstates = NULL;
     clexicon = NULL;
-    ctarget = NULL;    
+    ctarget = NULL;
     statelist = NULL;
     lexc_statecount = 0;
     net_has_unknown = 0;
@@ -170,10 +170,8 @@ void lexc_init() {
     for (i=0; i< SIGMA_HASH_TABLESIZE; i++) {
         (hashtable+i)->symbol = NULL;
         (hashtable+i)->sigma_number = -1;
-        (hashtable+i)->next = NULL;       
+        (hashtable+i)->next = NULL;
     }
-    // lexc_add_mc(xxstrdup("@JACKASS@"));
-    //lexc_add_mc(xxstrdup("%0"));
 }
 
 void lexc_clear_current_word() {
@@ -503,7 +501,7 @@ void lexc_string_to_tokens(char *string, int *intarr) {
                     break;
                 }
             }
-        } 
+        }
 
         if (multi) {
             *(intarr+pos) = mcs->sigma_number;
@@ -863,6 +861,7 @@ struct fsm *lexc_to_fsm() {
     fflush(stdout);
     lexc_merge_states();
     net = fsm_create("");
+    xxfree(net->sigma);
     net->sigma = lexsigma;
     lexc_number_states();
     if (hasfinal == 0) {
@@ -935,6 +934,7 @@ void lexc_cleanup() {
     xxfree(hashtable);
     for (mcs = mc ; mcs != NULL ; mcs = mcsn) {
         mcsn = mcs->next;
+	xxfree(mcs->symbol);
         xxfree(mcs);
     }
     for (l = lexstates ; l != NULL ; l = ln) {

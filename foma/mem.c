@@ -24,7 +24,6 @@ int g_med_limit  = 3;
 int g_med_cutoff = 15;
 char *g_att_epsilon = "@0@";
 
-
 char *xxstrndup(const char *s, size_t n) {
     char *r = NULL;
     const char *p = s;
@@ -45,83 +44,24 @@ int next_power_of_two(int v) {
     return (1 << i);
 }
 
-inline void *xxmalloc_atomic(size_t size) {
-#ifdef USE_GC
-    return GC_malloc_atomic(size);
-#endif /* USE_GC */
-
-#ifndef USE_GC
-    return(malloc(size));
-#endif /* USE_GC */
-}
-
 inline void *xxmalloc(size_t size) {
-#ifdef USE_GC
-    return GC_malloc(size);
-#endif /* USE_GC */
-
-#ifndef USE_GC
     return(malloc(size));
-#endif /* USE_GC */
 }
 
 inline void xxfree(void *ptr) {
-#ifdef USE_GC
-    GC_free(ptr);
-#endif /* USE_GC */
-
-#ifndef USE_GC
     free(ptr);
-#endif /* USE_GC */    
 }
 
 void *xxrealloc(void *ptr, size_t size) {
-#ifdef USE_GC
-    size_t old_size = GC_size(ptr);
-    void *result; 
-    if (size <= 10000)
-        return(GC_realloc(ptr, size));
-    if (size <= old_size)
-        return(ptr);
-    result = GC_malloc_ignore_off_page(size);
-    if (result == 0)
-        return(0);
-    memcpy(result,ptr,old_size);
-    GC_free(ptr);
-    return(result);
-    
-#endif /* USE_GC */
-
-#ifndef USE_GC
     return(realloc(ptr, size));
-#endif /* USE_GC */    
 }
 
 inline void *xxcalloc(size_t nmemb, size_t size) {
-#ifdef USE_GC
-    return GC_malloc(size*nmemb);
-#endif /* USE_GC */
-
-#ifndef USE_GC
     return(calloc(nmemb,size));
-#endif /* USE_GC */
 }
 
 inline char *xxstrdup(const char *s) {
     char *string;
-#ifndef USE_GC
     return(strdup(s));
-#endif /* USE_GC */
-    string = xxmalloc((strlen(s)+1)*sizeof(char));
-    strcpy(string, s);
-    return(string);
-}
-
-void garbage_cleanup(void) {
-#ifdef USE_GC    
-    GC_dont_gc = 0; 
-    GC_gcollect();
-    GC_dont_gc = 0;
-#endif /* USE_GC */
 }
 

@@ -340,6 +340,116 @@ void io_free() {
         io_buf = NULL;
     }
 }
+char *spacedtext_get_next_line(char **text) {
+    char *t, *ret;
+    ret = *text;
+    if (**text == '\0')
+	return NULL;
+    for (t = *text; *t != '\0' && *t != '\n'; t++) {	
+    }
+    if (*t == '\0')
+	*text = t;
+    else 
+	*text = t+1;
+    *t = '\0';
+    return(ret);
+}
+
+char *spacedtext_get_next_token(char **text) {
+    char *t, *ret;
+    if (**text == '\0' || **text == '\n')
+	return NULL;
+    for ( ; **text == ' ' ; (*text)++) {
+    }
+    ret = *text;
+    for (t = *text; *t != '\0' && *t != '\n' && *t != ' '; t++) {
+    }
+    if (*t == '\0' || *t == '\n')
+	*text = t;
+    else
+	*text = t+1;
+    *t = '\0';
+    return(ret);
+}
+
+struct fsm *fsm_read_spaced_text_file(char *filename) {
+    struct fsm_trie_handle *th;
+    char *text, *textorig, *insym, *outsym, *t1, *t2, *l1, *l2;
+
+    text = textorig = file_to_mem(filename);
+    
+    if (text == NULL)
+	return NULL;
+    th = fsm_trie_init();
+    for (;;) {
+	for ( ; *text != '\0' && *text == '\n'; text++) { }
+	t1 = spacedtext_get_next_line(&text);
+	if (t1 == NULL)
+	    break;
+	if (strlen(t1) == 0)
+	    continue;
+	t2 = spacedtext_get_next_line(&text);
+	if (t2 == NULL || strlen(t2) == 0) {
+	    for (l1 = t1; (insym = spacedtext_get_next_token(&l1)) != NULL; ) {
+		if (strcmp(insym, "0") == 0)
+		    fsm_trie_symbol(th,  "@_EPSILON_SYMBOL_@", "@_EPSILON_SYMBOL_@");
+		else if (strcmp(insym, "%0") == 0)
+		    fsm_trie_symbol(th,  "0", "0");
+		else
+		    fsm_trie_symbol(th,  insym, insym);
+	    }
+	    fsm_trie_end_word(th);
+	} else {
+	    for (l1 = t1, l2 = t2; ; ) {
+		insym = spacedtext_get_next_token(&l1);
+		outsym = spacedtext_get_next_token(&l2);
+		if (insym == NULL && outsym == NULL)
+		    break;
+		if (insym == NULL || strcmp(insym, "0") == 0)
+		    insym = "@_EPSILON_SYMBOL_@";
+		if (strcmp(insym, "%0") == 0)
+		    insym = "0";
+		if (outsym == NULL || strcmp(outsym, "0") == 0)
+		    outsym = "@_EPSILON_SYMBOL_@";
+		if (strcmp(outsym, "%0") == 0)
+		    outsym = "0";
+		fsm_trie_symbol(th, insym, outsym);
+	    }
+	    fsm_trie_end_word(th);
+	}
+    }
+    xxfree(textorig);
+    return(fsm_trie_done(th));
+}
+
+struct fsm *fsm_read_text_file(char *filename) {
+    struct fsm_trie_handle *th;
+    char *text, *textp1, *textp2;
+    int i, lastword;
+
+    text = file_to_mem(filename);
+    if (text == NULL) {
+	return NULL;
+    }
+    textp1 = text;
+    th = fsm_trie_init();
+
+    for (lastword = 0 ; lastword == 0 ; textp1 = textp2+1) {
+	for (textp2 = textp1 ; *textp2 != '\n' && *textp2 != '\0'; textp2++) {
+	}
+	if (*textp2 == '\0') {
+	    lastword = 1;
+	    if (textp2 == textp1)
+		break;
+	}
+	*textp2 = '\0';
+	if (strlen(textp1) > 0)
+	    fsm_trie_add_word(th, textp1);
+    }
+    xxfree(text);
+    return(fsm_trie_done(th));
+}
+
 
 struct fsm *fsm_read_binary_file(char *filename) {
     char *net_name;
@@ -489,7 +599,7 @@ struct fsm *io_net_read(char **net_name) {
     io_gets(buf);
     sscanf(buf, "%i %i %i %i %i %lld %i %i %i %i %i %i %s", &net->arity, &net->arccount, &net->statecount, &net->linecount, &net->finalcount, &net->pathcount, &net->is_deterministic, &net->is_pruned, &net->is_minimized, &net->is_epsilon_free, &net->is_loop_free, &net->is_completed, buf);
     strcpy(net->name, buf);
-    *net_name = strdup(buf);
+    *net_name = xxstrdup(buf);
     io_gets(buf);
 
     /* Sigma */
@@ -765,7 +875,7 @@ char *file_to_mem(char *name) {
     fseek(infile, 0L, SEEK_END);
     numbytes = ftell(infile);
     fseek(infile, 0L, SEEK_SET);
-    buffer = (char*)xxmalloc_atomic((numbytes+1) * sizeof(char));
+    buffer = (char*)xxmalloc((numbytes+1) * sizeof(char));
     if(buffer == NULL) {
         printf("Error reading file '%s'\n",name);
         return NULL;

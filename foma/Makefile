@@ -6,26 +6,27 @@ includedir = $(prefix)/include
 
 VERSION = 0.9.13
 CC = gcc
-AR = ar
 RANLIB = ranlib
 YACC = bison -d -t -v
 LEX = flex -8
 LEXCLEX = flex -8 --prefix=lexc
 LEXIFACE = flex -8 --prefix=interface
 LEXCMATRIX = flex -8 --prefix=cmatrix
-RM  = /bin/rm -f
-ARFLAGS = rcs
+RM = /bin/rm -f
 LDFLAGS = -ledit -lz -ltermcap
-#CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fpic -arch i386 -arch x86_64 -arch ppc -mmacosx-version-min=10.4
-CFLAGS = -g -D_GNU_SOURCE -std=c99 -fvisibility=hidden
+FLOOKUPLDFLAGS = libfoma.a -lz
+CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden
 FOMAOBJS = foma.o stack.o iface.o lex.interface.o
+FLOOKUPOBJS = flookup.o
+LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.tab.o
 
-LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o invert.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.tab.o
-
-all: foma libfoma
+all: libfoma foma flookup
 
 foma: $(FOMAOBJS) $(LIBOBJS)
 	$(CC) $(CFLAGS) $(FOMAOBJS) $(LIBOBJS) $(LDFLAGS) -o $@
+
+flookup: $(FLOOKUPOBJS) $(LIBOBJS)
+	$(CC) $(CFLAGS) $(FLOOKUPOBJS) $(FLOOKUPLDFLAGS) -o $@
 
 STATICLIB = libfoma.a
 
@@ -35,11 +36,15 @@ ifeq ($(UNAME), Darwin)
 SHAREDLIB = libfoma.dylib
 SHAREDLIBV = libfoma.dylib.$(VERSION)
 SHAREDLIBM = libfoma.dylib.0
+AR = libtool
+ARFLAGS = -static -o
 DFLAG = -dylib_install_name
 else 
 SHAREDLIB = libfoma.so
 SHAREDLIBV = libfoma.so.$(VERSION)
 SHAREDLIBM = libfoma.so.0
+AR = ar
+ARFLAGS = cru
 DFLAG = -soname
 endif
 
@@ -86,4 +91,4 @@ regex.tab.c regex.tab.h: regex.y
 	$(YACC) $<
 
 clean:
-	$(RM) foma $(FOMAOBJS) $(LIBOBJS) regex.tab.h regex.tab.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a
+	$(RM) foma flookup $(FOMAOBJS) $(LIBOBJS) $(FLOOKUPOBJS) regex.tab.h regex.tab.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a

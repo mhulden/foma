@@ -26,6 +26,7 @@ struct definedf *get_defines_f() {
 
 /* Removes a defined function from the list */
 /* Returns 0 on success, 1 if the definition did not exist */
+
 int remove_defined (char *string) {
   struct defined *defined, *defined_prev;
   int exists = 0;
@@ -34,10 +35,10 @@ int remove_defined (char *string) {
   if (string == NULL) {
       for (defined = defines; defined != NULL; ) {
           fsm_destroy(defined->net);
-          //printf("Undefining %s\n", defined->name);
           defined_prev = defined;
           defined = defined->next;
-          xxfree(defined_prev);      
+	  xxfree(defined_prev->name);
+          xxfree(defined_prev);
           defines = NULL;
       }
       return(0);
@@ -58,7 +59,8 @@ int remove_defined (char *string) {
   } else {
       defines = defined->next;
   }
-  xxfree(defined->net->states);
+  fsm_destroy(defined->net);
+  xxfree(defined->name);
   xxfree(defined);
   return(0);
 }
@@ -125,7 +127,10 @@ int add_defined (struct fsm *net, char *string) {
       defined->next = NULL;
     }
   }
-  defined->name = xxmalloc(sizeof(char)*strlen(string));
+  if (redefine) {
+      fsm_destroy(defined->net);
+      xxfree(defined->name);
+  }
   defined->name = xxstrdup(string);
   defined->net = net;
   return(redefine);

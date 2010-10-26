@@ -412,12 +412,13 @@ char *apply_net(struct apply_handle *h) {
             /* Stick a 0 to endpos to avoid getting old accumulated gunk strings printed */
             *(h->outstring+h->opos) = '\0';
 	    if (((h->mode) & RANDOM) == RANDOM) {
-	      if (!(rand() % 6)) {
+		/* To end or not to end */
+		if (!(rand() % 2)) {
 		    apply_stack_clear(h);
 		    h->iterator = 0;
 		    h->iterate_old = 0;
                     return(h->outstring);
-	      }
+		}
             } else {
                 //printf("printing [%s]\n",outstring);
                 return(h->outstring);
@@ -655,7 +656,8 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
 /* 	    printf("Name: [%s]\n",flag_get_name(sig->symbol)); */
 /* 	    printf("Value: [%s]\n",flag_get_value(sig->symbol)); */
 	}
-	*(h->sigs+(sig->number)) = xxstrdup(sig->symbol);
+	//	*(h->sigs+(sig->number)) = xxstrdup(sig->symbol);
+	*(h->sigs+(sig->number)) = sig->symbol;
     }
 
     if (h->has_flags) {
