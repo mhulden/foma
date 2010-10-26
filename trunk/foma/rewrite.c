@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -199,7 +199,6 @@ struct fsm *rewr_iglow_inside(struct fsm *net) {
     lowsym = fsm_minimize(fsm_union(fsm_symbol("@Z@"),fsm_union(fsm_symbol("@<@"),fsm_union(fsm_concat(fsm_symbol("@>@"),NoSpecial),fsm_concat(fsm_symbol("@>@"),fsm_symbol("@Z@"))))));
     
     return(fsm_ignore(net,lowsym,OP_IGNORE_ALL));
-
 }
 
 struct fsm *rewrite_nospecial() {
@@ -268,8 +267,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
                 rules->cross_product = fsm_minimize(fsm_concat(fsm_symbol("@[@"),fsm_concat(rules->cross_product,fsm_symbol("@]@"))));
             }
 
-
-            UnionCP = fsm_minimize(fsm_union(fsm_copy(rules->cross_product),fsm_copy(UnionCP)));
+            UnionCP = fsm_minimize(fsm_union(fsm_copy(rules->cross_product),UnionCP));
         }
 
         /* Transform every context to ignore Upper/Lower */
@@ -294,7 +292,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
             }
         }
         if (c == 0) {
-            ruleset->rewrite_contexts = xxmalloc(sizeof(struct fsmcontexts));
+            ruleset->rewrite_contexts = xxcalloc(1,sizeof(struct fsmcontexts));
             ruleset->rewrite_contexts->cpleft = fsm_empty_string();
             ruleset->rewrite_contexts->cpright = fsm_empty_string();        
             ruleset->rewrite_contexts->next = NULL;        
@@ -307,14 +305,15 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     UnionCPI = fsm_minimize(fsm_concat(fsm_symbol("@[@"),fsm_minimize(fsm_concat(fsm_copy(UnionCP),fsm_symbol("@]@")))));
 
     Insert = fsm_minimize(fsm_ignore(fsm_kleene_star(fsm_copy(NoSpecial)), UnionCPI, OP_IGNORE_ALL));
-    Insert = fsm_minimize(fsm_concat(fsm_symbol(".#."),fsm_minimize(fsm_concat(fsm_copy(Insert),fsm_symbol(".#.")))));
+    Insert = fsm_minimize(fsm_concat(fsm_symbol(".#."),fsm_minimize(fsm_concat(Insert,fsm_symbol(".#.")))));
     
     /* Context = [ => Lower(L) _ C1|...|Cn ] Upper(R) */
     //printf("RuleCP\n"); fflush(stdout);
     for (ruleset = all_rules; ruleset != NULL; ruleset = ruleset->next) {        
         RuleCP = fsm_empty_set();
         for (rules = ruleset->rewrite_rules; rules != NULL; rules = rules->next) {
-            RuleCP = fsm_minimize(fsm_union(fsm_copy(RuleCP),fsm_copy(rules->cross_product)));
+            RuleCP = fsm_minimize(fsm_union(RuleCP,fsm_copy(rules->cross_product)));
+	    fsm_destroy(rules->cross_product);
         }
         ruleset->cpunion = RuleCP; /* Store every rule's individual cross-product */
     }
@@ -326,7 +325,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     for (ruleset = all_rules; ruleset != NULL; ruleset = ruleset->next) {        
         /* For every context pair, add its rule union to list of restricts */        
         for (contexts = ruleset->rewrite_contexts; contexts != NULL; contexts = contexts->next) {
-            newcontext = xxmalloc(sizeof(struct fsmcontexts));
+            newcontext = xxcalloc(1,sizeof(struct fsmcontexts));
             /* left = L */
             newcontext->left = fsm_copy(contexts->cpleft);
             /* right = Center ] R */
@@ -334,6 +333,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
             newcontext->next = allcontexts;
             allcontexts = newcontext;
         }
+	fsm_destroy(ruleset->cpunion);
         ruleset->cpunion = RuleCP;
     }
     //printf("Doing context\n");
@@ -351,14 +351,14 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
         } else {
             //printf("Doing dottedcontext\n");
 
-            newcontext = xxmalloc(sizeof(struct fsmcontexts));            
+            newcontext = xxcalloc(1,sizeof(struct fsmcontexts));            
             newcontext->left = fsm_symbol("@[@");
             newcontext->right = fsm_empty_string();
             newcontext->next = allcontexts;
             allcontexts = newcontext;
             Context = rewr_context_restrict(fsm_symbol("@[@"),allcontexts);
 
-            newcontext = xxmalloc(sizeof(struct fsmcontexts));
+            newcontext = xxcalloc(1,sizeof(struct fsmcontexts));
             newcontext->left = fsm_minimize(fsm_union(fsm_copy(Id),fsm_concat(fsm_term_negation(fsm_symbol("@]@")),fsm_symbol("@]@"))));
             newcontext->right = fsm_empty_string();
             newcontext->next = NULL;
@@ -366,6 +366,9 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
             ContextD = fsm_minimize(fsm_context_restrict(fsm_minimize(fsm_concat(fsm_symbol("@[@"),fsm_symbol("@[@"))), newcontext));
             sigma_remove(".#.",ContextD->sigma);
             Context = fsm_intersect(Context,ContextD);
+	    fsm_destroy(newcontext->left);
+	    fsm_destroy(newcontext->right);
+	    xxfree(newcontext);
         }
     }
 
@@ -447,14 +450,19 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
                     thisCoerce = fsm_intersect(thisCoerce, CoerceSM);
                 }
                 if (Coerce != NULL) {
-                    Coerce = fsm_intersect(fsm_copy(Coerce), thisCoerce);
+                    Coerce = fsm_intersect(Coerce, thisCoerce);
                 } else {
                     Coerce = thisCoerce;
-                }
-
-            }
+                }           
+		fsm_destroy(CoerceCenter);
+	    }
         }
     }
+    fsm_destroy(NoSpecial);
+    fsm_destroy(Id);
+    fsm_destroy(Outside);
+    fsm_destroy(EndOutside);
+    fsm_destroy(Insert);
 
     //printf("Have result\n"); fflush(stdout); 
     //Result = fsm_intersect(Insert,fsm_intersect(Context,Coerce));
@@ -467,10 +475,12 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     Result = fsm_substitute_symbol(Result, "@]@", "@_EPSILON_SYMBOL_@");
     sigma_remove("@>@", Result->sigma);
     sigma_remove("@Z@", Result->sigma);
-    //    sigma_sort(Result);
+    // sigma_sort(Result);
     Result = fsm_minimize(Result);
     fsm_compact(Result);
     sigma_sort(Result);
+    fsm_clear_contexts(allcontexts);
+    fsm_destroy(UnionCP);
     return(Result);
 }
 
@@ -505,22 +515,23 @@ struct fsm *rewr_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
     UnionP = fsm_empty_set();
 
     for (pairs = LR; pairs != NULL ; pairs = pairs->next) {
-        UnionP = fsm_minimize(fsm_union(fsm_minimize(fsm_concat(fsm_copy(pairs->left),fsm_concat(fsm_copy(Var),fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var),fsm_copy(pairs->right)))))), fsm_copy(UnionP)));
+        UnionP = fsm_minimize(fsm_union(fsm_minimize(fsm_concat(fsm_copy(pairs->left),fsm_concat(fsm_copy(Var),fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var),fsm_copy(pairs->right)))))), UnionP));
     }
     
     UnionL = fsm_minimize(fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var), fsm_concat(fsm_copy(X), fsm_concat(fsm_copy(Var),fsm_copy(Notvar))))));
 
-
     Result = fsm_intersect(UnionL,fsm_complement(fsm_concat(fsm_minus(fsm_copy(Notvar),fsm_concat(fsm_universal(),fsm_symbol("@>@"))),fsm_minimize(fsm_concat(fsm_copy(UnionP),fsm_copy(Notvar))))));
-
 
     if (sigma_find("@VARX@", Result->sigma) != -1) {
         Result = fsm_complement(fsm_substitute_symbol(Result, "@VARX@","@_EPSILON_SYMBOL_@"));
     } else {    
         Result = fsm_complement(Result);
     }
+    fsm_destroy(UnionP);
+    fsm_destroy(Var);
+    fsm_destroy(Notvar);
+    fsm_destroy(X);
     return(Result);
-
 }
 
 struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
@@ -549,13 +560,12 @@ struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
     for (pairs = LR; pairs != NULL; pairs = pairs->next) {
         if (pairs->left == NULL) {
             pairs->left = fsm_empty_string();
-        } else {            
+        } else {
             sigma_add("@VARX@",pairs->left->sigma);
             sigma_sort(pairs->left);
         }
         if (pairs->right == NULL) {
             pairs->right = fsm_empty_string();
-            
         } else {
             sigma_add("@VARX@",pairs->right->sigma);
             sigma_sort(pairs->right);
@@ -565,26 +575,41 @@ struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
     UnionP = fsm_empty_set();
     
     for (pairs = LR; pairs != NULL ; pairs = pairs->next) {
-        UnionP = fsm_minimize(fsm_union(fsm_minimize(fsm_concat(fsm_copy(pairs->left),fsm_concat(fsm_copy(Var),fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var),fsm_copy(pairs->right)))))), fsm_copy(UnionP)));
+        UnionP = fsm_minimize(fsm_union(fsm_minimize(fsm_concat(fsm_copy(pairs->left),fsm_concat(fsm_copy(Var),fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var),fsm_copy(pairs->right)))))), UnionP));
     }
     
     UnionL = fsm_minimize(fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var), fsm_concat(fsm_copy(X), fsm_concat(fsm_copy(Var),fsm_copy(Notvar))))));
 
-    Result = fsm_intersect(UnionL,fsm_complement(fsm_concat(fsm_copy(Notvar),fsm_minimize(fsm_concat(fsm_copy(UnionP),fsm_copy(Notvar))))));
-
+    Result = fsm_intersect(UnionL, fsm_complement(fsm_concat(fsm_copy(Notvar),fsm_minimize(fsm_concat(fsm_copy(UnionP),fsm_copy(Notvar))))));
     if (sigma_find("@VARX@", Result->sigma) != -1) {
         Result = fsm_complement(fsm_substitute_symbol(Result, "@VARX@","@_EPSILON_SYMBOL_@"));
     } else {
-        Result = fsm_complement(Result);
+	Result = fsm_complement(Result);
     }
 
-    Word = fsm_minimize(fsm_concat(fsm_symbol(".#."),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol(".#."))),fsm_symbol(".#."))));
-
     if (sigma_find(".#.", Result->sigma) != -1) {
+	Word = fsm_minimize(fsm_concat(fsm_symbol(".#."),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol(".#."))),fsm_symbol(".#."))));
         Result = fsm_intersect(Word, Result);
         Result = fsm_substitute_symbol(Result, ".#.", "@_EPSILON_SYMBOL_@");
     }
+    fsm_destroy(UnionP);
+    fsm_destroy(Var);
+    fsm_destroy(Notvar);
+    fsm_destroy(X);
+    fsm_clear_contexts(pairs);
     return(Result);
+}
+
+void fsm_clear_contexts(struct fsmcontexts *contexts) {
+    struct fsmcontexts *c, *cp;
+    for (c = contexts; c != NULL; c = cp) {
+	fsm_destroy(c->left);
+	fsm_destroy(c->right);
+	fsm_destroy(c->cpleft);
+	fsm_destroy(c->cpright);
+	cp = c->next;
+	xxfree(c);
+    }
 }
 
 /** Takes two languages and produces the cross-product on one tape with marker symbols */
@@ -645,6 +670,8 @@ struct fsm *rewrite_cp(struct fsm *U, struct fsm *L) {
 
     Result = fsm_minimize(fsm_intersect(fsm_intersect(One,Two),Three));
     Result = fsm_intersect(Result, fsm_complement(fsm_concat(fsm_universal(),fsm_symbol("@<@"))));
+    fsm_destroy(U);
+    fsm_destroy(L);    
     return(Result);
 }
 

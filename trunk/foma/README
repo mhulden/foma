@@ -1,8 +1,8 @@
 Foma
 ====
 
-version 0.9.12alpha
-2009/10/25
+version 0.9.13alpha
+2010/10/25
 
 Email: wampeter@users.sourceforge.net
 WWW: http://foma.sourceforge.net
@@ -19,6 +19,7 @@ Distribution
 
 Foma is licensed under the GNU General Public License (GPL), version 2.  You should have received a copy of the licence with the source code.
 
+
 Compatibility
 -------------
 
@@ -30,11 +31,13 @@ It has also been compiled on win32, Mac OSX and Sun Solaris systems.  The source
 Compiling/installing foma
 -------------------------
 
-Makefiles are included for Linux, win32, and Mac OSX.  They assume you have header files and the necessary libraries mentioned above.  Some pre-built binaries are available on http://foma.sourceforge.net.  Before endeavoring a compile, these are recommended as building for e.g. win32 may be both frustrating and time-consuming.
+A generic Makefile that has been used to compile the Linux, win32, and Mac OSX versions is included.  It assumes you have the header files and the necessary libraries mentioned above.  Some pre-built binaries are available on http://foma.sourceforge.net.  Before endeavoring a compile, these are recommended as building for e.g. win32 may be both frustrating and time-consuming.
+
+To compile foma (and flookup) as well as the foma static and dynamic library, "make; make install" should work on most UNIX systems.  The default installation target /usr/local can be changed in the Makefile.
+
 
 Bugs
 ----
 
-Many. The current release is 0.9.12alpha, and bug reports will be gratefully received at 
+Many. The current release is 0.9.13alpha, and bug reports will be gratefully received at 
 wampeter@users.sourceforge.net.
-

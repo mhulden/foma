@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -71,21 +71,6 @@ char *escape_string(char *string, char chr) {
     } else {
         return(string);
     }
-}
-
-/* Remove newlines from string */
-char *chop(char *string) {
-    int i,j;
-    char *newstr;
-    newstr = xxmalloc(sizeof(char)*(strlen(string)+1));
-    for (i=0,j=0; *(string+i) != '\0'; i++) {
-        *(newstr+j) = *(string+i);
-        if (*(string+i) != '\n') {
-            j++;
-        }
-    }
-    *(newstr+j) = '\0';
-    return(newstr);
 }
 
 /* Substitute first \n for \0 */

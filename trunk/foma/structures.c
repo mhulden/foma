@@ -22,6 +22,12 @@
 
 static struct defined_quantifiers *quantifiers;
 
+char *fsm_get_library_version_string() {
+    static char s[20];
+    sprintf(s,"%i.%i.%i%s",MAJOR_VERSION,MINOR_VERSION,BUILD_VERSION,STATUS_VERSION);
+    return(s);
+}
+
 struct state_array *map_firstlines(struct fsm *net) {
     struct fsm_state *fsm;
     struct state_array *sa;
@@ -51,8 +57,10 @@ struct fsm *fsm_sigma_net(struct fsm *net) {
     struct sigma *sig;
     int pathcount;
 
-    if (sigma_size(net->sigma) == 0)
+    if (sigma_size(net->sigma) == 0) {
+	fsm_destroy(net);
         return(fsm_empty_set());
+    }
     
     sig = net->sigma;
     fsm_state_init(sigma_max(net->sigma));
@@ -121,13 +129,11 @@ struct fsm *fsm_sigma_pairs_net(struct fsm *net) {
 
 int fsm_sigma_destroy(struct sigma *sigma) {
     struct sigma *sigma_prev;
-    
     for (sigma_prev = NULL; sigma != NULL ; ) {
         sigma_prev = sigma;
         sigma = sigma->next;
         if (sigma_prev->symbol != NULL)
-            xxfree(sigma_prev->symbol);
-        
+            xxfree(sigma_prev->symbol);        
         xxfree(sigma_prev);
     }
     return 1;
@@ -190,6 +196,7 @@ struct fsm *fsm_identity() {
   struct fsm *net;
   struct sigma *sigma;
   net = fsm_create("");
+  xxfree(net->sigma);
   net->states = xxmalloc(sizeof(struct fsm_state)*3);
   add_fsm_arc(net->states, 0, 0, 2, 2, 1, 0, 1);
   add_fsm_arc(net->states, 1, 1, -1, -1, -1, 1, 0);
@@ -259,15 +266,20 @@ int fsm_isfunctional(struct fsm *net) {
 }
 
 int fsm_isunambiguous(struct fsm *net) {
-    struct fsm *loweruniqnet;
+    struct fsm *loweruniqnet, *testnet;
+    int ret;
     loweruniqnet = fsm_lowerdet(fsm_copy(net));
-    return(fsm_isidentity(fsm_minimize(fsm_compose(fsm_invert(fsm_copy(loweruniqnet)),fsm_copy(loweruniqnet)))));
+    testnet = fsm_minimize(fsm_compose(fsm_invert(fsm_copy(loweruniqnet)),fsm_copy(loweruniqnet)));
+    ret = fsm_isidentity(testnet);
+    fsm_destroy(loweruniqnet);
+    fsm_destroy(testnet);
+    return(ret);
 }
 
 struct fsm *fsm_extract_ambiguous_domain(struct fsm *net) {
     // define AmbiguousDom(T) [_loweruniq(T) .o. _notid(_loweruniq(T).i .o. _loweruniq(T))].u;
     struct fsm *loweruniqnet, *result;
-    loweruniqnet = fsm_lowerdet(fsm_copy(net));
+    loweruniqnet = fsm_lowerdet(net);
     result = fsm_topsort(fsm_minimize(fsm_upper(fsm_compose(fsm_copy(loweruniqnet),fsm_extract_nonidentity(fsm_compose(fsm_invert(fsm_copy(loweruniqnet)), fsm_copy(loweruniqnet)))))));
     fsm_destroy(loweruniqnet);
     sigma_cleanup(result,1);
@@ -280,8 +292,8 @@ struct fsm *fsm_extract_ambiguous(struct fsm *net) {
     struct fsm *result;
     result = fsm_topsort(fsm_minimize(fsm_compose(fsm_extract_ambiguous_domain(fsm_copy(net)), net)));
     return(result);
-
 }
+
 struct fsm *fsm_extract_unambiguous(struct fsm *net) {
     struct fsm *result;
     result = fsm_topsort(fsm_minimize(fsm_compose(fsm_complement(fsm_extract_ambiguous_domain(fsm_copy(net))), net)));
@@ -396,7 +408,6 @@ int fsm_isidentity(struct fsm *net) {
             if (currd->length == 0 && newlength > currd->length) {
                 *(newstring+j) = in;
             }
-
         }
 
         /* Check target conditions a) c) */
@@ -422,11 +433,16 @@ int fsm_isidentity(struct fsm *net) {
             goto nopop;
         }
     }
+    xxfree(state_array);
+    xxfree(discrepancy);
     return 1;
  fail:
+    xxfree(state_array);
+    xxfree(discrepancy);
     ptr_stack_clear();
     return 0;
 }
+
 struct fsm *fsm_markallfinal(struct fsm *net) {
     struct fsm_state *fsm;
     int i;
@@ -653,6 +669,8 @@ struct fsm *fsm_extract_nonidentity(struct fsm *net) {
     net2 = fsm_upper(fsm_compose(net,fsm_contains(fsm_symbol("@KILL@"))));
     sigma_remove("@KILL@",net2->sigma);
     sigma_sort(net2);
+    xxfree(state_array);
+    xxfree(discrepancy);
     return(net2);
 }
 

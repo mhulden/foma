@@ -61,7 +61,7 @@ struct apply_handle {
     int sigmatch_size;
     int iterator ;
     char *outstring;
-    char *instring ;
+    char *instring;
     char **sigs;
     char *oldflagvalue;
 
@@ -142,12 +142,9 @@ int int_stack_isempty();
 int int_stack_isfull();
 void int_stack_clear();
 int int_stack_find (int entry);
-int int_stack_cmp (const void *a, const void *b);
-void int_stack_sort();
 void int_stack_push(int c);
 int int_stack_pop();
 int int_stack_status();
-int int_stack_peek();
 int int_stack_size();
 
 /* Internal ptr stack */
@@ -194,15 +191,12 @@ int flag_get_type(char *string);
 
 /* Misc */
 char *trim(char *string);
-char *chop(char *string);
 void strip_newline(char *s);
 char *streqrep(char *s, char *oldstring, char *newstring);
 char *xxstrndup(const char *s, size_t n);
 char *xxstrdup(const char *s);
 void *xxmalloc(size_t size);
 void *xxcalloc(size_t nmemb, size_t size);
-void *xxmalloc_atomic(size_t size);
 void *xxrealloc(void *ptr, size_t size);
 void xxfree(void *ptr);
-void garbage_cleanup(void);
 int next_power_of_two(int v);

@@ -47,8 +47,6 @@ int sort_cmp(const void *a, const void *b) {
 
 inline int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out, int target, int final_state, int start_state);
 
-int add_arc(struct fsm *net, int state_no, int in, int out, int target, int final_state, int start_state);
-
 struct fsm *fsm_kleene_closure(struct fsm *net, int optionality);
 
 struct fsm *fsm_kleene_star(struct fsm *net) {
@@ -153,36 +151,24 @@ struct fsm *fsm_letter_machine(struct fsm *net) {
 }
 
 struct fsm *fsm_explode(char *symbol) {
+    struct fsm *net;
+    struct fsm_construct_handle *h;
+    char *tempstring;
+    int length, i, j, skip;
 
-  struct fsm *net;
-  int length, i, sym, skip, j;
-  net = fsm_create("");
-
-  length = strlen(symbol)-2;
-  net->states = xxmalloc(sizeof(struct fsm_state)*(length+2));
-  skip = utf8skip(symbol+1)+1;
-  sym = sigma_add(xxstrndup(((symbol+1)),skip), net->sigma);
-  add_fsm_arc(net->states, 0, 0, sym, sym, 1, 0, 1);
-
-  for (i=skip, j=1; i < length; i+=skip,j++) {
-    skip = utf8skip(symbol+i+1)+1;
-    if ((sym = sigma_find(xxstrndup((symbol+i+1),skip),net->sigma)) == -1)
-      sym = sigma_add(xxstrndup(((symbol+i+1)),skip),net->sigma);
-    add_fsm_arc(net->states, j, j,sym,sym,j+1,0,0);
-  }
-
-  add_fsm_arc(net->states, j, j, -1, -1, -1, 1, 0);
-  add_fsm_arc(net->states, j+1, -1, -1, -1, -1,-1,-1);
-
-  net->arccount = length;
-  net->statecount = length+1;
-  net->linecount = length+2;
-  net->finalcount = 1;
-  net->pathcount = 1;
-  net->arity = 1;
-  sigma_sort(net);
-  fsm_update_flags(net, YES, YES, YES, YES, YES, NO);
-  return(net);
+    h = fsm_construct_init("");
+    fsm_construct_set_initial(h,0);
+    
+    length = strlen(symbol)-2;
+    for (i=1, j=1; i <= length; i += skip, j++) {
+	skip = utf8skip(symbol+i)+1;
+	tempstring = xxstrndup(((symbol+i)),skip);
+	fsm_construct_add_arc(h,j-1,j,tempstring,tempstring);
+	xxfree(tempstring);
+    }
+    fsm_construct_set_final(h, j-1);
+    net = fsm_construct_done(h);
+    return(net);
 }
 
 struct fsm *fsm_symbol(char *symbol) {
@@ -205,7 +191,6 @@ struct fsm *fsm_symbol(char *symbol) {
     net->is_minimized = NO;
     net->is_epsilon_free = NO;
   } else {
-    net->states = xxmalloc(sizeof(struct fsm_state)*3);
     if ((strcmp(symbol,"@_IDENTITY_SYMBOL_@") == 0)) {
       symbol_no = sigma_add_special(IDENTITY,net->sigma);
     } else {
@@ -312,8 +297,8 @@ void tri_avl_init(int a, int b, int sizea, int sizeb) {
  tri_avl_tablesize = primes[i];
  
  tri_avl = xxmalloc(sizeof(struct tri_avl)*tri_avl_tablesize);
- tri_avl_a = xxmalloc_atomic(sizeof(_Bool)*sizea);
- tri_avl_b = xxmalloc_atomic(sizeof(_Bool)*sizeb);
+ tri_avl_a = xxmalloc(sizeof(_Bool)*sizea);
+ tri_avl_b = xxmalloc(sizeof(_Bool)*sizeb);
  for (i = 0; i < sizea; i++) {
      *(tri_avl_a+i) = 0;
  } 
@@ -532,9 +517,12 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
     net1 = fsm_minimize(net1);
     net2 = fsm_minimize(net2);
 
-    if (fsm_isempty(net1) || fsm_isempty(net2))
-      return(fsm_empty_set()); 
-    
+    if (fsm_isempty(net1) || fsm_isempty(net2)) {
+	fsm_destroy(net1);
+	fsm_destroy(net2);
+	return(fsm_empty_set());
+    }
+
     fsm_merge_sigma(net1, net2);
     
     fsm_update_flags(net1, YES, NO, UNK, YES, UNK, UNK);
@@ -606,6 +594,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
         fsm_state_end_state();
     }
     new_net = fsm_create("");
+    xxfree(new_net->sigma);
     new_net->sigma = net1->sigma;
     net1->sigma = NULL;
     fsm_destroy(net2);
@@ -672,8 +661,11 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     net1 = fsm_minimize(net1);
     net2 = fsm_minimize(net2);
 
-    if (fsm_isempty(net1) || fsm_isempty(net2)) 
-      return(fsm_empty_set());
+    if (fsm_isempty(net1) || fsm_isempty(net2)) {
+	fsm_destroy(net1);
+	fsm_destroy(net2);
+	return(fsm_empty_set());
+    }
     
     /* If flag-is-epsilon is on, we need to add the flag symbols    */
     /* in both networks to each other's sigma so that UNKNOWN       */
@@ -939,7 +931,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     }
     
     xxfree(net1->states);
-    xxfree(net2->states);
+    fsm_destroy(net2);
     fsm_state_close(net1);
     xxfree(point_a);
     xxfree(point_b);
@@ -978,29 +970,27 @@ struct mergesigma *add_to_mergesigma(struct mergesigma *msigma, struct sigma *si
   return(msigma);
 }
 
-struct sigma *copy_mergesigma(struct sigma *sigma, struct mergesigma *mergesigma) {
-  struct sigma *new_sigma = NULL;
-  int number = 0;
-
-  sigma = NULL;
-  while(mergesigma != NULL) {
-    if (sigma == NULL) {
-      sigma = xxmalloc(sizeof(struct sigma));
-      new_sigma = sigma;
-    } else {
-      sigma->next = xxmalloc(sizeof(struct sigma));
-      sigma = sigma->next;
+struct sigma *copy_mergesigma(struct mergesigma *mergesigma) {
+    struct sigma *sigma, *new_sigma;
+    
+    sigma = new_sigma = NULL;
+    while(mergesigma != NULL) {
+	if (sigma == NULL) {
+	    sigma = xxmalloc(sizeof(struct sigma));
+	    new_sigma = sigma;
+	} else {
+	    sigma->next = xxmalloc(sizeof(struct sigma));
+	    sigma = sigma->next;
+	}
+	sigma->next = NULL;
+	sigma->number = mergesigma->number;
+	
+	sigma->symbol = NULL;
+	if (mergesigma->symbol != NULL)
+	    sigma->symbol = xxstrdup(mergesigma->symbol);
+	mergesigma = mergesigma->next;
     }
-    sigma->next = NULL;
-    sigma->number = mergesigma->number;
-
-    sigma->symbol = NULL;
-    if (mergesigma->symbol != NULL)
-      sigma->symbol = xxstrdup(mergesigma->symbol);
-    mergesigma = mergesigma->next;
-    number++;
-  }
-  return(new_sigma);
+    return(new_sigma);
 }
 
 void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
@@ -1127,8 +1117,8 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
 
   /* Copy mergesigma to net1, net2 */
   
-  new_sigma_1 = copy_mergesigma(new_sigma_1, start_mergesigma);
-  new_sigma_2 = copy_mergesigma(new_sigma_2, start_mergesigma);
+  new_sigma_1 = copy_mergesigma(start_mergesigma);
+  new_sigma_2 = copy_mergesigma(start_mergesigma);
   
   fsm_sigma_destroy(net1->sigma);
   fsm_sigma_destroy(net2->sigma);
@@ -1533,9 +1523,9 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 
   fsm_count(net);
   statecount = net->statecount;
-  starts = xxmalloc_atomic(sizeof(short)*(statecount+1)); /* +1 for sink state */
-  finals = xxmalloc_atomic(sizeof(short)*(statecount+1));
-  sinks = xxmalloc_atomic(sizeof(short)*(statecount+1));
+  starts = xxmalloc(sizeof(short)*(statecount+1)); /* +1 for sink state */
+  finals = xxmalloc(sizeof(short)*(statecount+1));
+  sinks = xxmalloc(sizeof(short)*(statecount+1));
 
   /* Init starts, finals, sinks arrays */
 
@@ -1615,7 +1605,7 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 
   sigsize += 2;
 
-  state_table = xxmalloc_atomic(sizeof(int)*sigsize*statecount);
+  state_table = xxmalloc(sizeof(int)*sigsize*statecount);
 
   /* Init state table */
   /* i = state #, j = sigma # */
@@ -1671,11 +1661,11 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 }
 
 struct fsm *fsm_complete(struct fsm *net) {
-  return(fsm_completes(net, COMPLETE)); 
+  return(fsm_completes(net, COMPLETE));
 }
 
 struct fsm *fsm_complement(struct fsm *net) {
-  return(fsm_completes(net, COMPLEMENT)); 
+  return(fsm_completes(net, COMPLEMENT));
 }
 
 struct fsm *fsm_kleene_closure(struct fsm *net, int operation) {
@@ -1985,7 +1975,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
   }
   xxfree(point_a);
   xxfree(point_b);
-  xxfree(net2->states);
+  fsm_destroy(net2);
   bi_avl_free();
   return(fsm_coaccessible(net1));
 }
@@ -2228,36 +2218,54 @@ struct fsm *fsm_any() {
 
 struct fsm *fsm_contains_one(struct fsm *net) {
   /* $A - $[[?+ A ?* & A ?*] | [A ?+ & A]] */
-    return(fsm_minus(fsm_contains(fsm_copy(net)),fsm_contains(fsm_union(fsm_intersect(fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_concat(fsm_copy(net),fsm_universal())) , fsm_concat(fsm_copy(net),fsm_universal())),fsm_intersect(fsm_concat(fsm_copy(net),fsm_kleene_plus(fsm_identity())) , fsm_copy(net)))))) ;
-
+    struct fsm *ret;
+    ret = fsm_minus(fsm_contains(fsm_copy(net)),fsm_contains(fsm_union(fsm_intersect(fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_concat(fsm_copy(net),fsm_universal())) , fsm_concat(fsm_copy(net),fsm_universal())),fsm_intersect(fsm_concat(fsm_copy(net),fsm_kleene_plus(fsm_identity())) , fsm_copy(net))))) ;
+    fsm_destroy(net);
+    return(ret);
 }
 
 struct fsm *fsm_contains_opt_one(struct fsm *net) {
   /* $.A | ~$A */
-  return(fsm_union(fsm_contains_one(fsm_copy(net)),fsm_complement(fsm_contains(fsm_copy(net)))));
+    struct fsm *ret;
+    ret = fsm_union(fsm_contains_one(fsm_copy(net)),fsm_complement(fsm_contains(fsm_copy(net))));
+    fsm_destroy(net);
+    return(ret);
 }
 
 struct fsm *fsm_simple_replace(struct fsm *net1, struct fsm *net2) {
   /* [~[?* [A-0] ?*] [A.x.B]]* ~[?* [A-0] ?*] */
   
-  struct fsm *UPlus;
-  UPlus = fsm_minimize(fsm_kleene_plus(fsm_identity()));
-  return(fsm_concat(fsm_minimize(fsm_kleene_star(fsm_minimize(fsm_concat(fsm_complement(fsm_minimize(fsm_concat(fsm_concat(fsm_universal(),fsm_minimize(fsm_intersect(fsm_copy(net1),fsm_copy(UPlus)))),fsm_universal()))),fsm_minimize(fsm_cross_product(fsm_copy(net1),fsm_copy(net2))))))),fsm_minimize(fsm_complement(fsm_minimize(fsm_concat(fsm_concat(fsm_universal(), fsm_intersect(fsm_copy(net1),fsm_copy(UPlus))),fsm_universal()))))));
+    struct fsm *UPlus, *ret;
+    UPlus = fsm_minimize(fsm_kleene_plus(fsm_identity()));
+    ret = fsm_concat(fsm_minimize(fsm_kleene_star(fsm_minimize(fsm_concat(fsm_complement(fsm_minimize(fsm_concat(fsm_concat(fsm_universal(),fsm_minimize(fsm_intersect(fsm_copy(net1),fsm_copy(UPlus)))),fsm_universal()))),fsm_minimize(fsm_cross_product(fsm_copy(net1),fsm_copy(net2))))))),fsm_minimize(fsm_complement(fsm_minimize(fsm_concat(fsm_concat(fsm_universal(), fsm_intersect(fsm_copy(net1),fsm_copy(UPlus))),fsm_universal())))));
+    fsm_destroy(net1);
+    fsm_destroy(net2);
+    fsm_destroy(UPlus);
+    return(ret);
 }
 
 struct fsm *fsm_priority_union_upper(struct fsm *net1, struct fsm *net2) {
     /* A .P. B = A | [~[A.u] .o. B] */
-    return(fsm_union(fsm_copy(net1),fsm_compose(fsm_complement(fsm_upper(fsm_copy(net1))),fsm_copy(net2))));
+    struct fsm *ret;
+    ret = fsm_union(fsm_copy(net1),fsm_compose(fsm_complement(fsm_upper(fsm_copy(net1))),net2));
+    fsm_destroy(net1);
+    return(ret);
 }
 
 struct fsm *fsm_priority_union_lower(struct fsm *net1, struct fsm *net2) {
     /* A .p. B = A | B .o. ~[A.l] */
-    return(fsm_union(fsm_copy(net1),fsm_compose(fsm_copy(net2),fsm_complement(fsm_lower(fsm_copy(net1))))));
+    struct fsm *ret;
+    ret = fsm_union(fsm_copy(net1),fsm_compose(net2,fsm_complement(fsm_lower(fsm_copy(net1)))));
+    fsm_destroy(net1);
+    return(ret);
 }
 
 struct fsm *fsm_lenient_compose(struct fsm *net1, struct fsm *net2) {
     /* A .O. B = [A .o. B] .P. B */
-    return(fsm_priority_union_upper(fsm_compose(fsm_copy(net1),fsm_copy(net2)),fsm_copy(net1)));
+    struct fsm *ret;
+    ret = fsm_priority_union_upper(fsm_compose(fsm_copy(net1),net2),fsm_copy(net1));
+    fsm_destroy(net1);
+    return(ret);
 }
 
 struct fsm *fsm_term_negation(struct fsm *net1) {
@@ -2268,7 +2276,7 @@ struct fsm *fsm_quotient_interleave(struct fsm *net1, struct fsm *net2) {
     /* A/\/B = The set of strings you can interleave in B and get a string from A */
     /* [B/[x \x* x] & A/x .o. [[[\x]:0]* (x:0 \x* x:0)]*].l */
     struct fsm *Result;
-    Result = fsm_lower(fsm_compose(fsm_intersect(fsm_ignore(fsm_copy(net2),fsm_concat(fsm_symbol("@>@"),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol("@>@"))),fsm_symbol("@>@"))),OP_IGNORE_ALL),fsm_ignore(fsm_copy(net1),fsm_symbol("@>@"),OP_IGNORE_ALL)),fsm_kleene_star(fsm_concat(fsm_kleene_star(fsm_cross_product(fsm_term_negation(fsm_symbol("@>@")),fsm_empty_string())),fsm_optionality(fsm_concat(fsm_cross_product(fsm_symbol("@>@"),fsm_empty_string()),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol("@>@"))),fsm_cross_product(fsm_symbol("@>@"),fsm_empty_string()))))))));
+    Result = fsm_lower(fsm_compose(fsm_intersect(fsm_ignore(net2,fsm_concat(fsm_symbol("@>@"),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol("@>@"))),fsm_symbol("@>@"))),OP_IGNORE_ALL),fsm_ignore(net1,fsm_symbol("@>@"),OP_IGNORE_ALL)),fsm_kleene_star(fsm_concat(fsm_kleene_star(fsm_cross_product(fsm_term_negation(fsm_symbol("@>@")),fsm_empty_string())),fsm_optionality(fsm_concat(fsm_cross_product(fsm_symbol("@>@"),fsm_empty_string()),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol("@>@"))),fsm_cross_product(fsm_symbol("@>@"),fsm_empty_string()))))))));
 
     Result->sigma = sigma_remove("@>@",Result->sigma);
     /* Could clean up sigma */
@@ -2279,7 +2287,7 @@ struct fsm *fsm_quotient_left(struct fsm *net1, struct fsm *net2) {
     /* A\\\B = [B .o. A:0 ?*].l; */
     /* A\\\B = the set of suffixes you can add to A to get a string in B */
     struct fsm *Result;
-    Result = fsm_lower(fsm_compose(fsm_copy(net2),fsm_concat(fsm_cross_product(fsm_copy(net1),fsm_empty_string()),fsm_universal())));
+    Result = fsm_lower(fsm_compose(net2,fsm_concat(fsm_cross_product(net1,fsm_empty_string()),fsm_universal())));
     return(Result);
 }
 
@@ -2288,7 +2296,7 @@ struct fsm *fsm_quotient_right(struct fsm *net1, struct fsm *net2) {
     
     /* A///B = [A .o. ?* B:0].l; */
     /* A///B = the set of prefixes you can add to B to get strings in A */
-    Result = fsm_lower(fsm_compose(fsm_copy(net1), fsm_concat(fsm_universal(),fsm_cross_product(fsm_copy(net2),fsm_empty_string()))));
+    Result = fsm_lower(fsm_compose(net1, fsm_concat(fsm_universal(),fsm_cross_product(net2,fsm_empty_string()))));
     return(Result);
 }
 
@@ -2301,9 +2309,10 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
   net1 = fsm_minimize(net1);
   net2 = fsm_minimize(net2);
 
-  if (fsm_isempty(net2))
+  if (fsm_isempty(net2)) {
+      fsm_destroy(net2);
       return(net1);
-
+  }
   fsm_merge_sigma(net1, net2);
 
   fsm_count(net1);
@@ -2326,11 +2335,11 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
   new_fsm = xxmalloc(sizeof(struct fsm_state)*(malloc_size+1));
 
   /* Mark if a state has been handled with ignore */
-  handled_states1 = xxmalloc_atomic(sizeof(short)*states1);
-  handled_states2 = xxmalloc_atomic(sizeof(short)*states2);
+  handled_states1 = xxmalloc(sizeof(short)*states1);
+  handled_states2 = xxmalloc(sizeof(short)*states2);
 
   /* Mark which ignores return to which state */
-  return_state = xxmalloc_atomic(sizeof(int)*states1);
+  return_state = xxmalloc(sizeof(int)*states1);
   splice_size = states2;
   start_splice = states1;
   for (k=0; k<states1; k++)
@@ -2386,7 +2395,7 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
   xxfree(handled_states2);
   xxfree(return_state);
   xxfree(net1->states);
-  xxfree(net2->states);
+  fsm_destroy(net2);
   net1->states = new_fsm;
   fsm_update_flags(net1, NO, NO, NO, NO, NO, NO);
   fsm_count(net1);
@@ -2409,8 +2418,8 @@ void fsm_compact(struct fsm *net) {
     fsm = net->states;
     numsymbols = sigma_max(net->sigma);
     
-    potential = xxmalloc_atomic(sizeof(_Bool)*(numsymbols+1));
-    checktable = xxmalloc_atomic(sizeof(struct checktable)*(numsymbols+1));
+    potential = xxmalloc(sizeof(_Bool)*(numsymbols+1));
+    checktable = xxmalloc(sizeof(struct checktable)*(numsymbols+1));
 
     for (i=0; i <= numsymbols; i++) {
         *(potential+i) =  1;
@@ -2679,4 +2688,17 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
     sigma_sort(Result);
     fsm_destroy(oldnet);
     return(Result);
+}
+
+struct fsm *fsm_invert(struct fsm *net) {
+  struct fsm_state *fsm;
+  int i, temp;
+
+  fsm = net->states;
+  for (i = 0; (fsm+i)->state_no != -1; i++) {
+    temp = (fsm+i)->in;
+    (fsm+i)->in = (fsm+i)->out;
+    (fsm+i)->out = temp;
+  }  
+  return (net);
 }

@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -111,6 +111,7 @@ struct fsm *fsm_minimize(struct fsm *net) {
     }
     return(net);
 }
+
 static struct fsm *fsm_minimize_brz(struct fsm *net) {
     return(fsm_determinize(fsm_reverse(fsm_determinize(fsm_reverse(net)))));
 }
@@ -124,8 +125,11 @@ static struct fsm *fsm_minimize_hop(struct fsm *net) {
     unsigned int tail;
 
     fsm_count(net);
-    if (net->finalcount == 0) 
-        return(fsm_empty_set());
+    if (net->finalcount == 0)  {
+	fsm_destroy(net);
+	return(fsm_empty_set());
+    }
+
     num_states = net->statecount;
     
     P = NULL;
@@ -612,8 +616,8 @@ static void sigma_to_pairs(struct fsm *net) {
 
   maxsigma++;
 
-  single_sigma_array = xxmalloc_atomic(2*maxsigma*maxsigma*sizeof(int));
-  double_sigma_array = xxmalloc_atomic(maxsigma*maxsigma*sizeof(int));
+  single_sigma_array = xxmalloc(2*maxsigma*maxsigma*sizeof(int));
+  double_sigma_array = xxmalloc(maxsigma*maxsigma*sizeof(int));
   
   for (i=0; i < maxsigma; i++) {
     for (j=0; j< maxsigma; j++) {

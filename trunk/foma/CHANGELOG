@@ -1,11 +1,14 @@
-0.9.13alpha
+0.9.13alpha (20101025)
 
+- Various memory-management improvements throughout
+- Adds the commands "read text" and "read spaced-text" for building automata/transducers from word lists.  The functionality can be embedded in regexes with @txt"filename" and @stxt"filename".  From the API, the functions fsm_read_text_file() and fsm_read_spaced_text_file(), reads files and builds trie FSMs from the lists 
+- Adds the external utility flookup, which reads words from stdin and applies them to a transducer given in a file, and prints output to stdout
 - Adds the command "substitute defined", and the corresponding fsm_substitute_label() in the API.
 - Improved prolog file reading and writing
-- Adds a function to convert a multicharacter machine to a letter machine (where each transition is exactly one unicode symbol long).  It is called fsm_letter_machine() in the API, and _lm() in the built-in functions.
-- Print random-lower/random-upper/random-words now provide "more" random distribution
+- Adds a function to convert a multicharacter machine to a letter machine (where each transition is exactly one unicode symbol long).  It is called fsm_letter_machine() in the API, and _lm() in the built-in functions
+- Print random-lower/random-upper/random-words now provide a "more" random distribution. Duplicated are not printed, but prefixed by a count
 - Thread-safety changes in apply.c API
-- Bug fixes in order of stack operations, printing, reverse operation (.r), function definitions (spotted by DG), lower-side priority union (.p.), ...
+- Bug fixes in order of stack operations, printing, reverse operation (.r), function definitions, lower-side priority union (.p.)
 - New API calls fsm_construct_* and fsm_get_* for constructing and reading automata/transducers
 
 0.9.12alpha (20091025)

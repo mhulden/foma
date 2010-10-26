@@ -24,6 +24,12 @@ extern "C" {
 
 #define FEXPORT __attribute__((visibility("default")))
 
+/* Library version */
+#define MAJOR_VERSION 0
+#define MINOR_VERSION 9
+#define BUILD_VERSION 13
+#define STATUS_VERSION "alpha"
+
 /* Special symbols on arcs */
 #define EPSILON 0
 #define UNKNOWN 1
@@ -136,6 +142,8 @@ struct rewrite_set {
     int rule_direction;    /* || \\ // \/ */
 };
 
+FEXPORT void fsm_clear_contexts(struct fsmcontexts *contexts);
+
 /** Linked list of sigma */
 /** number < IDENTITY is reserved for special symbols */
 struct sigma {
@@ -149,6 +157,8 @@ struct sigma {
 /********************/
 /* Basic operations */
 /********************/
+
+FEXPORT char *fsm_get_library_version_string();
 
 FEXPORT struct fsm *fsm_determinize(struct fsm *net);
 FEXPORT struct fsm *fsm_epsilon_remove(struct fsm *net);
@@ -215,7 +225,6 @@ FEXPORT struct fsm *fsm_extract_unambiguous(struct fsm *net);
 FEXPORT struct fsm *fsm_sigma_net(struct fsm *net);
 FEXPORT struct fsm *fsm_sigma_pairs_net(struct fsm *net);
 FEXPORT struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *right);
-
 FEXPORT struct fsm *fsm_letter_machine(struct fsm *net);
 
 /* Remove those symbols from sigma that have the same distribution as IDENTITY */
@@ -265,6 +274,8 @@ FEXPORT int net_print_att(struct fsm *net, FILE *outfile);
 FEXPORT struct fsm *fsm_read_prolog (char *filename);
 FEXPORT char *file_to_mem (char *name);
 FEXPORT struct fsm *fsm_read_binary_file(char *filename);
+FEXPORT struct fsm *fsm_read_text_file(char *filename);
+FEXPORT struct fsm *fsm_read_spaced_text_file(char *filename);
 FEXPORT int load_defined(char *filename);
 FEXPORT int save_defined();
 FEXPORT int save_stack_att();
@@ -279,7 +290,7 @@ FEXPORT struct apply_handle *apply_init(struct fsm *net);
 
 FEXPORT char *apply_down(struct apply_handle *h, char *word);
 FEXPORT char *apply_up(struct apply_handle *h, char *word);
-FEXPORT int apply_med(struct fsm *net, char *word);
+FEXPORT int   apply_med(struct fsm *net, char *word);
 FEXPORT char *apply_upper_words(struct apply_handle *h);
 FEXPORT char *apply_lower_words(struct apply_handle *h);
 FEXPORT char *apply_words(struct apply_handle *h);
@@ -316,6 +327,57 @@ FEXPORT int fsm_construct_check_symbol(struct fsm_construct_handle *handle, char
 FEXPORT void fsm_construct_copy_sigma(struct fsm_construct_handle *handle, struct sigma *sigma);
 FEXPORT struct fsm *fsm_construct_done(struct fsm_construct_handle *handle);
 
+
+/******************/
+/* String hashing */
+/******************/
+
+struct sh_handle {
+    struct sh_hashtable *hash;
+};
+
+struct sh_hashtable {
+    char *string;
+    struct sh_hashtable *next;
+};
+
+struct sh_handle *sh_init();
+void sh_done(struct sh_handle *sh);
+char *sh_find_string(struct sh_handle *sh, char *string);
+char *sh_find_add_string(struct sh_handle *sh, char *string);
+char *sh_add_string(struct sh_handle *sh, char *string);
+
+/*********************/
+/* Trie construction */
+/*********************/
+
+struct trie_hash {
+    char *insym;
+    char *outsym;
+    unsigned int sourcestate;
+    unsigned int targetstate;
+    struct trie_hash *next;
+};
+
+struct trie_states {
+    _Bool is_final;
+};
+
+struct fsm_trie_handle {
+    struct trie_states *trie_states;
+    unsigned int trie_cursor;
+    struct trie_hash *trie_hash;
+    unsigned int used_states;
+    unsigned int statesize;
+    struct sh_handle *sh_hash;
+};
+
+FEXPORT struct fsm_trie_handle *fsm_trie_init();
+FEXPORT struct fsm *fsm_trie_done(struct fsm_trie_handle *th);
+FEXPORT void fsm_trie_new_word(struct fsm_trie_handle *th);
+FEXPORT void fsm_trie_add_word(struct fsm_trie_handle *th, char *word);
+FEXPORT void fsm_trie_end_word(struct fsm_trie_handle *th);
+FEXPORT void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outsym);
 
 /***********************/
 /* Extraction routines */

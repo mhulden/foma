@@ -155,6 +155,8 @@ struct global_help {
     {"read cmatrix <filename>","read a confusion matrix and associate it with the network on top of the stack",""},
     {"read prolog <filename>","reads prolog format file",""},
     {"read lexc <filename>","read and compile lexc format file",""},
+    {"read spaced-text <filename>","compile space-separated words/word-pairs separated by newlines into a FST",""},
+    {"read text <filename>","compile a list of words separated by newlines into an automaton",""},
     {"reverse net","reverses top FSM","Short form: rev\nSee .r\n"},
     {"rotate stack","rotates stack",""},
     {"save defined <filename>","save all defined networks to binary file","Short form: saved" },
@@ -197,7 +199,7 @@ struct global_help {
     {"variable hopcroft-min","ON = Hopcroft minimization, OFF = Brzozowski minimization","Default value: ON\n"},
     {"variable med-limit","the limit on number of matches in apply med","Default value: 3\n"},
     {"variable med-cutoff","the cost limit for terminating a search in apply med","Default value: 3\n"},
-    {"variable att-epsilon","the EPSILON symbol when writing/writing AT&T files","Default value: @0@\n"},
+    {"variable att-epsilon","the EPSILON symbol when reading/writing AT&T files","Default value: @0@\n"},
     {"write prolog (> filename)","writes top network to prolog format file/stdout","Short form: wpl"},
     {"write att (> <filename>)","writes top network to AT&T format file/stdout","Short form: watt"},
     {"re operator: (∀<var name>)(F)","universal quantification","Example: $.A is equivalent to:\n(∃x)(x ∈ A ∧ (∀y)(¬(y ∈ A ∧ ¬(x = y))))"},
@@ -212,7 +214,7 @@ struct global_help {
     {"logic re operator: ∨","disjunction","Operationally equivalent to ∪\n"},
     {"logic re operator: →","implication","A → B is equivalent to ¬A ∨ B "},
     {"logic re operator: ↔","biconditional","A ↔ B is equivalent to (¬A ∨ B) ∧ (¬B ∨ A)"},
-    {"re operator: ∘ (or .o.) ","compose","A .o. B is the composition of transducers/recognizers A and B\nThe composition algorithm can be controlled with the variable\ncompose-tristate.  The default algorithms is a `bistate' composition that eliminates redundant paths but may fail to find the shortest path.\n"},
+    {"re operator: ∘ (or .o.) ","compose","A .o. B is the composition of transducers/recognizers A and B\nThe composition algorithm can be controlled with the variable\ncompose-tristate.  The default algorithm is a `bistate' composition that eliminates redundant paths but may fail to find the shortest path.\n"},
     {"re operator: × (or .x.) ","cross-product","A × B (where A and B are recognizers, not transducers\nyields the cross-product of A and B.\n"},
     {"re operator: .O. ","`lenient' composition","Lenient composition as defined in Karttunen(1998)  A .O. B = [A ∘ B] .P. B\n"},
     {"re operator: ∥ (or <>) ","shuffle (asynchronous product)","A ∥ B yields the asynchronous (or shuffle) product of FSM A and B.\n" },
@@ -559,7 +561,7 @@ void iface_load_stack(char *filename) {
     char *net_name;
 
     if (io_gz_file_to_mem(filename) == 0) {
-        printf("File error.\n");
+        perror("File error");
         return;
     }
     while ((net = io_net_read(&net_name)) != NULL)
@@ -705,50 +707,54 @@ void iface_quit() {
 }
 
 void iface_random_lower(int limit) {
-    char *result;
-    struct apply_handle *ah;
-    int i;
-    limit = (limit == -1) ? g_list_random_limit : limit;
-    if (iface_stack_check(1)) {
-      ah = stack_get_ah();
-        for (i = limit; i > 0; i--) {
-            result = apply_random_lower(ah);
-            if (result != NULL)
-                printf("%s\n",result);
-        }
-	apply_reset_enumerator(ah);
-    }
+    iface_apply_random(&apply_random_lower, limit);
 }
 
 void iface_random_upper(int limit) {
-    char *result;
-    struct apply_handle *ah;
-    int i;
-    limit = (limit == -1) ? g_list_random_limit : limit;
-    if (iface_stack_check(1)) {
-      ah = stack_get_ah();
-        for (i = limit; i > 0; i--) {
-            result = apply_random_upper(ah);
-            if (result != NULL)
-                printf("%s\n",result);
-        }
-	apply_reset_enumerator(ah);
-    }
+    iface_apply_random(&apply_random_upper, limit);
 }
 
 void iface_random_words(int limit) {
+    iface_apply_random(&apply_random_words, limit);
+}
+
+void iface_apply_random(char *(*applyer)(), int limit) {
     char *result;
     struct apply_handle *ah;
     int i;
+    struct apply_results {
+	char *string;
+	int count;
+    } *results, *tempresults;
+
     limit = (limit == -1) ? g_list_random_limit : limit;
     if (iface_stack_check(1)) {
-      ah = stack_get_ah();
+	results = xxcalloc(limit, sizeof(struct apply_results));
+	ah = stack_get_ah();
         for (i = limit; i > 0; i--) {
-            result = apply_random_words(ah);
-            if (result != NULL)
-                printf("%s\n",result);
+            result = applyer(ah);
+            if (result != NULL) {
+		for (tempresults = results; tempresults - results < limit; tempresults++) {
+		    if (tempresults->string == NULL) {
+			tempresults->string = strdup(result);
+			tempresults->count = 1;
+			break;
+		    }
+		    else if (strcmp(tempresults->string, result) == 0) {
+			tempresults->count++;
+			break;
+		    }
+		}
+	    }
         }
-      apply_reset_enumerator(ah);
+	for (tempresults = results; tempresults - results < limit; tempresults++) {
+	    if (tempresults->string != NULL) {
+		printf("[%i] %s\n", tempresults->count, tempresults->string);
+		xxfree(tempresults->string);
+	    }
+	}
+	xxfree(results);
+	apply_reset_enumerator(ah);
     }
 }
 
@@ -838,6 +844,26 @@ int iface_read_prolog(char *filename) {
         stack_add(tempnet);
         return 0;
     }
+}
+
+int iface_read_spaced_text(char *filename) {
+    struct fsm *net;
+    net = fsm_read_spaced_text_file(filename);
+    if (net == NULL) {
+	perror("File error");
+	return 1;
+    }
+    stack_add(net);
+}
+
+int iface_read_text(char *filename) {
+    struct fsm *net;
+    net = fsm_read_text_file(filename);
+    if (net == NULL) {
+	perror("File error");
+	return 1;
+    }
+    stack_add(net);
 }
 
 int iface_stack_check (int size) {
@@ -1177,7 +1203,7 @@ static int print_net(struct fsm *net, char *filename) {
       printf("Writing network to file %s.\n", filename);
   }
   fsm_count(net);
-  finals = xxmalloc_atomic(sizeof(int)*(net->statecount));
+  finals = xxmalloc(sizeof(int)*(net->statecount));
   stateptr = net->states;
 
   for (i=0; (stateptr+i)->state_no != -1; i++) {
@@ -1278,6 +1304,8 @@ int print_stats(struct fsm *net) {
         printf("Cyclic");
     else if (net->pathcount == -2)
         printf("more than %lld paths",LLONG_MAX);
+    else if (net->pathcount == -3)
+        printf("unknown number of paths");
     else
         printf("%lld paths",net->pathcount);
     printf(".\n");    

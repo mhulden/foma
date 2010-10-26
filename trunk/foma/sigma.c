@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -27,9 +27,11 @@ struct sigma *sigma_remove(char *symbol, struct sigma *sigma) {
     if (strcmp(sigma->symbol,symbol) == 0) {
       if (sigma_prev == NULL) {
 	sigma_start = sigma->next;
+	xxfree(sigma->symbol);
 	xxfree(sigma);
       } else {
 	(sigma_prev)->next = sigma->next;
+	xxfree(sigma->symbol);
 	xxfree(sigma);
       }
       break;
@@ -137,8 +139,7 @@ int sigma_add (char *symbol, struct sigma *sigma) {
       }
     }
     sigma->next = NULL;
-    sigma->symbol = xxmalloc(sizeof(char)*(strlen(symbol)+1));
-    strcpy(sigma->symbol, symbol);
+    sigma->symbol = xxstrdup(symbol);
     return(assert);
   }
 }
@@ -151,7 +152,7 @@ int sigma_add (char *symbol, struct sigma *sigma) {
 void sigma_cleanup (struct fsm *net, int force) {
     int i,j,first,maxsigma,*attested;
     struct fsm_state *fsm;
-    struct sigma *sig, *sig_prev;
+    struct sigma *sig, *sig_prev, *sign;
     
     if (force == 0) {
         if (sigma_find_number(IDENTITY, net->sigma) != -1)
@@ -184,15 +185,18 @@ void sigma_cleanup (struct fsm *net, int force) {
             (fsm+i)->out = *(attested+(fsm+i)->out);
     }
     sig_prev = NULL;
-    for (sig = net->sigma; sig != NULL && sig->number != -1; sig = sig->next) {
+    for (sig = net->sigma; sig != NULL && sig->number != -1; sig = sign) {
         first = 1;
+	sign = sig->next;
         if (!*(attested+(sig->number))) {
+	    xxfree(sig->symbol);
+	    xxfree(sig);
             if (sig_prev != NULL) {
-                sig_prev->next = sig->next;
+                sig_prev->next = sign;
                 first = 0;
             } else {
                 first = 0;
-                net->sigma = sig->next;
+                net->sigma = sign;
             }
         } else {
             sig->number = sig->number >= 3 ? *(attested+(sig->number)) : sig->number;
@@ -200,6 +204,7 @@ void sigma_cleanup (struct fsm *net, int force) {
         if (first)
             sig_prev = sig;
     }
+    xxfree(attested);
     return;
 }
 
@@ -298,25 +303,25 @@ int ssortcmp(struct ssort *a, struct ssort *b) {
 }
 
 struct sigma *sigma_copy(struct sigma *sigma) {
-  int f = 0;
-  struct sigma *copy_sigma, *copy_sigma_s;
+    int f = 0;
+    struct sigma *copy_sigma, *copy_sigma_s;
 
-  copy_sigma_s = xxmalloc(sizeof(struct sigma));
+    copy_sigma_s = xxmalloc(sizeof(struct sigma));
 
-  for (copy_sigma = copy_sigma_s; sigma != NULL; sigma=sigma->next) {
-    if (f == 1) {
-      copy_sigma->next = xxmalloc(sizeof(struct sigma));
-      copy_sigma = copy_sigma->next;
+    for (copy_sigma = copy_sigma_s; sigma != NULL; sigma=sigma->next) {
+	if (f == 1) {
+	    copy_sigma->next = xxmalloc(sizeof(struct sigma));
+	    copy_sigma = copy_sigma->next;
+	}
+	copy_sigma->number = sigma->number;
+	if (sigma->symbol != NULL)
+	    copy_sigma->symbol = xxstrdup(sigma->symbol);
+	else
+	    copy_sigma->symbol = NULL;
+	copy_sigma->next = NULL;
+	f = 1;
     }
-    copy_sigma->number = sigma->number;
-    if (sigma->symbol != NULL)
-	copy_sigma->symbol = xxstrdup(sigma->symbol);
-    else
-	copy_sigma->symbol = NULL;
-    copy_sigma->next = NULL;
-    f = 1;
-  }
-  return(copy_sigma_s);
+    return(copy_sigma_s);
 }
 
 /* Assigns a consecutive numbering to symbols in sigma > IDENTITY */

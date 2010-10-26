@@ -431,6 +431,7 @@ struct fsm *fsm_construct_done(struct fsm_construct_handle *handle) {
     }
 
     net = fsm_create("");
+    xxfree(net->sigma);
     fsm_state_close(net);
     
     net->sigma = fsm_construct_convert_sigma(handle);
@@ -458,7 +459,6 @@ struct fsm *fsm_construct_done(struct fsm_construct_handle *handle) {
             xxfree(sigmahash);
             sigmahash = sigmahashnext;
         }
-
     }
     xxfree(handle->fsm_sigma_list);
     xxfree(handle->fsm_sigma_hash);

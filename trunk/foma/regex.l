@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -48,7 +48,7 @@ extern struct rewrite_set *rewrite_rules;
 extern struct fsm *current_parse;
 
 char *yyget_text(yyscan_t yyscanner);
-
+char *tempstr;
 int yylex_init (yyscan_t* scanner);
 int yylex_destroy (yyscan_t scanner);
 int my_yyparse(char *my_string, int lineno);
@@ -133,9 +133,32 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   yylval_param->net = fsm_explode(yytext);
   return NET;
 }
+
  /* Read binary file */
 ([\100]["][^"]+[\042]) {
-  yylval_param->net = fsm_read_binary_file(xxstrndup(yytext+2,yyleng-3));
+  tempstr = xxstrndup(yytext+2,yyleng-3);
+  yylval_param->net = fsm_read_binary_file(tempstr);
+  xxfree(tempstr);
+  if (yylval_param->net != NULL) {
+    return NET;
+  }
+}
+
+ /* Read text file */
+([\100]txt["][^"]+[\042]) {
+  tempstr = xxstrndup(yytext+5,yyleng-6);
+  yylval_param->net = fsm_read_text_file(tempstr);
+  xxfree(tempstr);
+  if (yylval_param->net != NULL) {
+    return NET;
+  }
+}
+
+ /* Read spaced text file */
+([\100]stxt["][^"]+[\042]) {
+  tempstr = xxstrndup(yytext+6,yyleng-7);
+  yylval_param->net = fsm_read_spaced_text_file(tempstr);
+  xxfree(tempstr);
   if (yylval_param->net != NULL) {
     return NET;
   }
@@ -274,7 +297,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   }
   *(yytext+j) = *(yytext+i);
   if (substituting) {
-    yylval_param->string = strdup(yytext);
+    yylval_param->string = xxstrdup(yytext);
     return SUBVAL;
   }
   yylval_param->string = xxstrdup(yytext);

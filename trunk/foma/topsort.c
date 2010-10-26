@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -45,12 +45,12 @@ struct fsm *fsm_topsort (struct fsm *net) {
 
     fsm = net->states;
     
-    statemap = xxmalloc_atomic(sizeof(int)*net->statecount);
-    order = xxmalloc_atomic(sizeof(int)*net->statecount);
-    pathcount = xxmalloc_atomic(sizeof(long long)*net->statecount);
-    newnum = xxmalloc_atomic(sizeof(int)*net->statecount);
-    invcount = xxmalloc_atomic(sizeof(unsigned short int)*net->statecount);
-    treated =  xxmalloc_atomic(sizeof(unsigned char)*net->statecount);
+    statemap = xxmalloc(sizeof(int)*net->statecount);
+    order = xxmalloc(sizeof(int)*net->statecount);
+    pathcount = xxmalloc(sizeof(long long)*net->statecount);
+    newnum = xxmalloc(sizeof(int)*net->statecount);
+    invcount = xxmalloc(sizeof(unsigned short int)*net->statecount);
+    treated =  xxmalloc(sizeof(unsigned char)*net->statecount);
    
     for (i=0; i < net->statecount; i++) {
 	*(statemap+i) = -1;
@@ -127,7 +127,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
         goto cyclic;
     }
 
-    new_fsm = xxmalloc_atomic(sizeof(struct fsm_state) * (lc+1));
+    new_fsm = xxmalloc(sizeof(struct fsm_state) * (lc+1));
     for (i=0, j=0 ; i < net->statecount; i++) {
 
         curr_state = *(order+i);

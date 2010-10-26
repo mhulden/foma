@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -103,7 +103,7 @@ void iface_crossproduct(void);
 void iface_determinize(void);
 void iface_eliminate_flags(void);
 void iface_eliminate_flag(char *name);
-int iface_extract_number(char *s);
+int  iface_extract_number(char *s);
 void iface_extract_ambiguous(void);
 void iface_extract_unambiguous(void);
 void iface_help_search(char *s);
@@ -131,6 +131,7 @@ void iface_print_shortest_string();
 void iface_print_shortest_string_size();
 void iface_print_name(void);
 void iface_quit(void);
+void iface_apply_random(char *(*applyer)(), int limit);
 void iface_random_lower(int limit);
 void iface_random_upper(int limit);
 void iface_random_words(int limit);
@@ -141,8 +142,10 @@ void iface_sort(void);
 int  iface_stack_check(int size);
 void iface_upper_words(int limit);
 void iface_prune(void);
-int iface_read_att(char *filename);
+int  iface_read_att(char *filename);
 int  iface_read_prolog(char *filename);
+int  iface_read_spaced_text(char *filename);
+int  iface_read_text(char *filename);
 void iface_reverse(void);
 void iface_rotate(void);
 void iface_save_defined(char *filename);
@@ -172,4 +175,4 @@ void iface_words(int limit);
 void iface_write_att(char *filename);
 void iface_write_prolog(char *filename);
 void iface_zero_plus(void);
-int print_stats(struct fsm *net);
+int  print_stats(struct fsm *net);

@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -45,8 +45,6 @@ static unsigned int primes[26] = {61,127,251,509,1021,2039,4093,8191,16381,32749
 static struct e_closure_memo *e_closure_memo;
 
 int T_last_unmarked, T_limit;
-
-static struct fsm_state *fsm_out;
 
 struct nhash_list {
     int setnum;
@@ -94,7 +92,7 @@ inline static int hashf(int *set, int setsize);
 static int nhash_insert(int hashval, int *set, int setsize);
 static void nhash_rebuild_table ();
 static void nhash_init (int initial_size);
-static void nhash_free();
+static void nhash_free(struct nhash_list *nptr, int size);
 static void e_closure_free();
 static void init_trans_array(struct fsm *net);
 static struct fsm *fsm_subset(struct fsm *net, int operation);
@@ -184,7 +182,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
     if (deterministic == 1 && epsilon_symbol == -1 && num_start_states == 1 && numss == 0) {
         net->is_deterministic = YES;
         net->is_epsilon_free = YES;
-        nhash_free();
+        nhash_free(table, nhash_tablesize);
         xxfree(T_ptr);
         xxfree(e_table);
         xxfree(trans_list);
@@ -199,7 +197,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
 
     if (operation == SUBSET_EPSILON_REMOVE && epsilon_symbol == -1) {
         net->is_epsilon_free = YES;
-        nhash_free();
+        nhash_free(table, nhash_tablesize);
         xxfree(T_ptr);
         xxfree(e_table);
         xxfree(trans_list);
@@ -316,7 +314,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
     } while ((T = next_unmarked()) != -1);
     
     /* wrapup() */
-    nhash_free();
+    nhash_free(table, nhash_tablesize);
     xxfree(set_table);
     xxfree(T_ptr);
     xxfree(temp_move);
@@ -347,13 +345,12 @@ static void init(struct fsm *net) {
     /* passing to hash function */
     
     /* Table for listing current results of move & e-closure */
-    temp_move = xxmalloc_atomic((net->statecount + 1) *sizeof(int));
+    temp_move = xxmalloc((net->statecount + 1) *sizeof(int));
     
     /* We malloc this much memory to begin with for the new fsm */
     /* Then grow it by the double as needed */
 
     limit = next_power_of_two(net->linecount);
-    fsm_out = xxmalloc(limit*sizeof(struct fsm_state));
     fsm_linecount = 0;
     sigma_to_pairs(net);
 
@@ -649,8 +646,8 @@ static void sigma_to_pairs(struct fsm *net) {
   maxsigma = sigma_max(net->sigma);
   maxsigma++;
 
-  single_sigma_array = xxmalloc_atomic(2*maxsigma*maxsigma*sizeof(int));
-  double_sigma_array = xxmalloc_atomic(maxsigma*maxsigma*sizeof(int));
+  single_sigma_array = xxmalloc(2*maxsigma*maxsigma*sizeof(int));
+  double_sigma_array = xxmalloc(maxsigma*maxsigma*sizeof(int));
   
   for (i=0; i < maxsigma; i++) {
     for (j=0; j< maxsigma; j++) {
@@ -810,12 +807,13 @@ static void nhash_rebuild_table () {
     struct nhash_list *oldtable, *tableptr, *ntableptr, *newptr;
     unsigned int hashval;
     
+    oldtable = table;
     oldsize = nhash_tablesize;
+
     nhash_load = 0;
     for (i=0; primes[i] < nhash_tablesize; i++) { }
     nhash_tablesize = primes[(i+1)];
     
-    oldtable = table;
     table = xxcalloc(nhash_tablesize,sizeof(struct nhash_list));
     for (i=0; i < oldsize;i++) {
         if ((oldtable+i)->size == 0) {
@@ -842,7 +840,7 @@ static void nhash_rebuild_table () {
             }
         }
     }
-    xxfree(oldtable);
+    nhash_free(oldtable, oldsize);
 }
 
 static void nhash_init (int initial_size) {
@@ -871,15 +869,14 @@ static void e_closure_free() {
     xxfree(e_closure_memo);
 }
 
-static void nhash_free() {
-    struct nhash_list *nptr, *nptr2, *nnext;
+static void nhash_free(struct nhash_list *nptr, int size) {
+    struct nhash_list *nptr2, *nnext;
     int i;
-    nptr = table;
-    for (i=0; i < nhash_tablesize; i++) {
+    for (i=0; i < size; i++) {
         for (nptr2 = (nptr+i)->next; nptr2 != NULL; nptr2 = nnext) {
             nnext = nptr2->next;
             xxfree(nptr2);
         }
     }
-    xxfree(table);
+    xxfree(nptr);
 }

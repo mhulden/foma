@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -38,9 +38,9 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
   /* printf("statecount %i\n",net->statecount); */
   old_statecount = net->statecount;
   inverses = xxcalloc(net->statecount, sizeof(struct invtable));
-  coacc = xxmalloc_atomic(sizeof(int)*(net->statecount));
-  mapping = xxmalloc_atomic(sizeof(int)*(net->statecount));
-  added = xxmalloc_atomic(sizeof(int)*(net->statecount));
+  coacc = xxmalloc(sizeof(int)*(net->statecount));
+  mapping = xxmalloc(sizeof(int)*(net->statecount));
+  added = xxmalloc(sizeof(int)*(net->statecount));
 
   for (i=0; i < (net->statecount); i++) {
     (inverses+i)->state = -1;

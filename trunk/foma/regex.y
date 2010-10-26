@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2010 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -88,11 +88,40 @@ struct fsm *function_apply(void) {
 
 void add_context_pair(struct fsm *L, struct fsm *R) {
     struct fsmcontexts *newcontext;
-    newcontext = xxmalloc(sizeof(struct fsmcontexts));
+    newcontext = xxcalloc(1,sizeof(struct fsmcontexts));
     newcontext->left = L;
     newcontext->right = R;
     newcontext->next = contexts;
     contexts = newcontext;
+}
+
+void clear_rewrite_ruleset(struct rewrite_set *rewrite_rules) {
+    struct rewrite_set *rule, *rulep;
+    struct fsmcontexts *contexts, *contextsp;
+    struct fsmrules *r, *rp;
+    for (rule = rewrite_rules; rule != NULL; rule = rulep) {
+
+	for (r = rule->rewrite_rules ; r != NULL; r = rp) {
+	    fsm_destroy(r->left);
+	    fsm_destroy(r->right);
+	    fsm_destroy(r->right2);
+	    rp = r->next;
+	    xxfree(r);
+	}
+	
+	for (contexts = rule->rewrite_contexts; contexts != NULL ; contexts = contextsp) {
+
+	    contextsp = contexts->next;
+	    fsm_destroy(contexts->left);
+	    fsm_destroy(contexts->right);
+	    fsm_destroy(contexts->cpleft);
+	    fsm_destroy(contexts->cpright);
+	    xxfree(contexts);
+	}
+       	rulep = rule->next;
+	//fsm_destroy(rules->cpunion);
+	xxfree(rule);
+    }
 }
 
 void add_rewrite_rule() {
@@ -103,6 +132,8 @@ void add_rewrite_rule() {
         new_rewrite_rule->rewrite_contexts = contexts;
         new_rewrite_rule->next = rewrite_rules;
         new_rewrite_rule->rule_direction = rule_direction;
+        new_rewrite_rule->cpunion = NULL;
+
         rewrite_rules = new_rewrite_rule;
         rules = NULL;
         contexts = NULL;
@@ -117,7 +148,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
     newrule = xxmalloc(sizeof(struct fsmrules));
 
     if ((type & ARROW_DOTTED) != 0) {
-        newrule->left = fsm_minus(fsm_copy(L), fsm_empty_string());       
+        newrule->left = fsm_minus(fsm_copy(L), fsm_empty_string());
     } else {
         newrule->left = L;
     }
@@ -133,7 +164,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
 
     if ((type & ARROW_DOTTED) != 0) {
         /* Add empty [..] -> B for dotted rules (only if LHS contains the empty string) */
-        test = fsm_intersect(fsm_copy(L),fsm_empty_string());
+        test = fsm_intersect(L,fsm_empty_string());
         if (!fsm_isempty(test)) {
             newrule = xxmalloc(sizeof(struct fsmrules));
             newrule->left = test;
@@ -142,7 +173,9 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
             newrule->next = rules;
             newrule->arrow_type = type;
             rules = newrule;
-        }
+        } else {
+	    //fsm_destroy(test);
+	}
     }
 }
 
@@ -212,7 +245,7 @@ network: networkA { }
 | network LENIENT_COMPOSE networkA { $$ = fsm_lenient_compose($1,$3); }
 | network CROSS_PRODUCT networkA   { $$ = fsm_cross_product($1,$3);   }
 
-networkA: n0 { if (rewrite) { add_rewrite_rule(); $$ = fsm_rewrite(rewrite_rules); } rewrite = 0; contexts = NULL; rules = NULL; rewrite_rules = NULL; }
+networkA: n0 { if (rewrite) { add_rewrite_rule(); $$ = fsm_rewrite(rewrite_rules); clear_rewrite_ruleset(rewrite_rules); } rewrite = 0; contexts = NULL; rules = NULL; rewrite_rules = NULL; }
 
 n0: network1 { }
 | n0 CONTEXT n0          { $$ = NULL; add_context_pair($1,$3);}
@@ -225,7 +258,7 @@ n0: network1 { }
 | CONTEXT n0             { add_context_pair(fsm_empty_string(),$2); }
 | CONTEXT n0 COMMA n0    { add_context_pair(fsm_empty_string(),$2); }
 | n0 CONTEXT n0 COMMA n0 { add_context_pair($1,$3); }
-| n0 CRESTRICT n0        { $$ = fsm_context_restrict($1,contexts);}
+| n0 CRESTRICT n0        { $$ = fsm_context_restrict($1,contexts); fsm_clear_contexts(contexts);}
 | n0 ARROW n0            { add_rule($1,$3,NULL,$2);if ($3 == NULL) { YYERROR;}}
 
 | LDOT n0 RDOT ARROW n0  { add_rule($2,$5,NULL,$4|ARROW_DOTTED); if ($5 == NULL) { YYERROR;}}
