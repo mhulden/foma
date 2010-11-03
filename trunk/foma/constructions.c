@@ -2197,25 +2197,6 @@ struct fsm *fsm_universal() {
     return(net);
 }
 
-struct fsm *fsm_any() {
-    struct fsm *net;
-    int s;
-    net = fsm_create("");
-    fsm_update_flags(net, YES, YES, YES, YES, YES, NO);
-    net->states = xxmalloc(sizeof(struct fsm_state)*3);
-    s = sigma_add_special(IDENTITY,net->sigma);
-    add_fsm_arc(net->states, 0, 0, s, s, 1, 0, 1);
-    add_fsm_arc(net->states, 1, 1, -1, -1, -1, 1, 0);
-    add_fsm_arc(net->states, 2, -1, -1, -1, -1, -1, -1);
-    net->arccount = 1;
-    net->statecount = 2;
-    net->linecount = 3;
-    net->finalcount = 1;
-    net->pathcount = 1;
-    return(net);
-}
-
-
 struct fsm *fsm_contains_one(struct fsm *net) {
   /* $A - $[[?+ A ?* & A ?*] | [A ?+ & A]] */
     struct fsm *ret;

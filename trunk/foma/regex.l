@@ -250,7 +250,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 }
  /* TODO: This S(x,y) conflicts with function definitions. */
  /*  Need to resolve this somehow. */
-(S\() { return SUCCESSOR_OF; }
+(_S\() { return SUCCESSOR_OF; }
 
 (_isunambiguous\()  { return ISUNAMBIGUOUS;   }
 (_isidentity\()     { return ISIDENTITY;      } 
@@ -317,13 +317,14 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 }
 
 \.#\. { yylval_param->net = fsm_symbol(".#."); return NET;    }
-(\_)                      { return CONTEXT;              }
+(\_)                       { return CONTEXT;             }
 \.(u|1)|[\342][\202][\201] { return XUPPER;              }
 \.(l|2)|[\342][\202][\202] { return XLOWER;              }
 (\.f)                      { return FLAG_ELIMINATE;      }
 \[\./[^#]                  { return LDOT;                }
 (\.\])                     { return RDOT;                }
 ([\342][\206][\222])       { return IMPLIES;             }
+([\342][\206][\224])       { return BICOND;              }
 ([\xe2][\x88][\x88])       { return IN;                  }
 (\~|[\302][\254])          { return COMPLEMENT;          }
 (\.o\.|[\342][\210][\230]) { return COMPOSE;             }

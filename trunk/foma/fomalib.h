@@ -208,7 +208,6 @@ FEXPORT struct fsm *fsm_quotient_interleave(struct fsm *net1, struct fsm *net2);
 FEXPORT struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *substitute);
 FEXPORT struct fsm *fsm_substitute_symbol(struct fsm *net, char *original, char *substitute);
 FEXPORT struct fsm *fsm_universal();
-FEXPORT struct fsm *fsm_any();
 FEXPORT struct fsm *fsm_empty_set();
 FEXPORT struct fsm *fsm_empty_string();
 FEXPORT struct fsm *fsm_identity();

@@ -165,9 +165,9 @@ int sigma_find_number (int number, struct sigma *sigma);
 char *sigma_string(int number, struct sigma *sigma);
 int sigma_sort (struct fsm *net);
 void sigma_cleanup (struct fsm *net, int force);
-struct sigma *sigma_create ();
+FEXPORT struct sigma *sigma_create ();
 int sigma_size(struct sigma *sigma);
-int sigma_max(struct sigma *sigma);
+FEXPORT int sigma_max(struct sigma *sigma);
 struct fsm_sigma_list *sigma_to_list(struct sigma *sigma);
 
 /* Debug */
@@ -195,7 +195,7 @@ void strip_newline(char *s);
 char *streqrep(char *s, char *oldstring, char *newstring);
 char *xxstrndup(const char *s, size_t n);
 char *xxstrdup(const char *s);
-void *xxmalloc(size_t size);
+FEXPORT void *xxmalloc(size_t size);
 void *xxcalloc(size_t nmemb, size_t size);
 void *xxrealloc(void *ptr, size_t size);
 void xxfree(void *ptr);

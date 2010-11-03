@@ -776,7 +776,7 @@ void iface_print_shortest_string() {
         one = fsm_copy(stack_find_top()->fsm);
         /* L -  ?+  [[L .o. [?:"@TMP@"]*].l .o. "@TMP@":?*].l; */
         if (stack_find_top()->fsm->arity == 1) {           
-            Result = fsm_minimize(fsm_minus(fsm_copy(one),fsm_concat(fsm_kleene_plus(fsm_any()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(one),fsm_kleene_star(fsm_cross_product(fsm_any(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_any())))))));
+            Result = fsm_minimize(fsm_minus(fsm_copy(one),fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(one),fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_identity())))))));
             ah = apply_init(Result);
             word = apply_words(ah);
             if (word != NULL) printf("%s\n",word);
@@ -784,8 +784,8 @@ void iface_print_shortest_string() {
         } else {
             onel = fsm_lower(fsm_copy(one));
             oneu = fsm_upper(one);
-            ResultU = fsm_minimize(fsm_minus(fsm_copy(oneu),fsm_concat(fsm_kleene_plus(fsm_any()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(oneu),fsm_kleene_star(fsm_cross_product(fsm_any(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_any())))))));
-            ResultL = fsm_minimize(fsm_minus(fsm_copy(onel),fsm_concat(fsm_kleene_plus(fsm_any()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(onel),fsm_kleene_star(fsm_cross_product(fsm_any(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_any())))))));
+            ResultU = fsm_minimize(fsm_minus(fsm_copy(oneu),fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(oneu),fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_identity())))))));
+            ResultL = fsm_minimize(fsm_minus(fsm_copy(onel),fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(onel),fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_identity())))))));
             ah = apply_init(ResultU);
             word = apply_words(ah);
             if (word == NULL) word = "";
@@ -806,14 +806,14 @@ void iface_print_shortest_string_size() {
         one = fsm_copy(stack_find_top()->fsm);
         /* [L .o. [?:a]*].l; */
         if (stack_find_top()->fsm->arity == 1) {
-            Result = fsm_minimize(fsm_lower(fsm_compose(one,fsm_kleene_star(fsm_cross_product(fsm_any(),fsm_symbol("a"))))));
+            Result = fsm_minimize(fsm_lower(fsm_compose(one,fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("a"))))));
             printf("Shortest acyclic path length: %i\n",Result->statecount-1);
 
         } else {
             onel = fsm_lower(fsm_copy(one));
             oneu = fsm_upper(one);
-            ResultU = fsm_minimize(fsm_lower(fsm_compose(oneu,fsm_kleene_star(fsm_cross_product(fsm_any(),fsm_symbol("a"))))));
-            ResultL = fsm_minimize(fsm_lower(fsm_compose(onel,fsm_kleene_star(fsm_cross_product(fsm_any(),fsm_symbol("a"))))));
+            ResultU = fsm_minimize(fsm_lower(fsm_compose(oneu,fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("a"))))));
+            ResultL = fsm_minimize(fsm_lower(fsm_compose(onel,fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("a"))))));
             printf("Shortest acyclic upper path length: %i\n",(ResultU->statecount)-1);
             printf("Shortest acyclic lower path length: %i\n",(ResultL->statecount)-1);            
         }
@@ -853,7 +853,7 @@ int iface_read_spaced_text(char *filename) {
 	perror("File error");
 	return 1;
     }
-    stack_add(net);
+    stack_add(fsm_topsort(fsm_minimize(net)));
 }
 
 int iface_read_text(char *filename) {
@@ -863,7 +863,7 @@ int iface_read_text(char *filename) {
 	perror("File error");
 	return 1;
     }
-    stack_add(net);
+    stack_add(fsm_topsort(fsm_minimize(net)));
 }
 
 int iface_stack_check (int size) {
