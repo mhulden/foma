@@ -671,7 +671,7 @@ struct fsm *rewrite_cp(struct fsm *U, struct fsm *L) {
     Result = fsm_minimize(fsm_intersect(fsm_intersect(One,Two),Three));
     Result = fsm_intersect(Result, fsm_complement(fsm_concat(fsm_universal(),fsm_symbol("@<@"))));
     fsm_destroy(U);
-    fsm_destroy(L);    
+    fsm_destroy(L);
     return(Result);
 }
 
