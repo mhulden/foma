@@ -210,6 +210,10 @@ void fsm_construct_check_size(struct fsm_construct_handle *handle, int state_no)
 void fsm_construct_set_final(struct fsm_construct_handle *handle, int state_no) {
     struct fsm_state_list *sl;
     fsm_construct_check_size(handle, state_no);
+
+    if (state_no > handle->maxstate)
+        handle->maxstate = state_no;
+
     sl = handle->fsm_state_list;
     if (!(sl+state_no)->is_final) {
         (sl+state_no)->is_final = 1;
@@ -220,6 +224,10 @@ void fsm_construct_set_final(struct fsm_construct_handle *handle, int state_no) 
 void fsm_construct_set_initial(struct fsm_construct_handle *handle, int state_no) {
     struct fsm_state_list *sl;
     fsm_construct_check_size(handle, state_no);
+
+    if (state_no > handle->maxstate)
+        handle->maxstate = state_no;
+
     sl = handle->fsm_state_list;
     (sl+state_no)->is_initial = 1;
 }
