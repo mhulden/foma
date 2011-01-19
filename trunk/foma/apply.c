@@ -690,7 +690,7 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
 void apply_create_sigmatch(struct apply_handle *h) {
     struct sigma *sig;
     struct sigmatch *tmp_sig = NULL;
-    int i, thismatch;
+    int i, thismatch, maxmatchsig, maxmatchlen;
 
     if (((h->mode) & ENUMERATE) == ENUMERATE) { return; }
 
@@ -710,7 +710,10 @@ void apply_create_sigmatch(struct apply_handle *h) {
     }
 
     for (i=0; i <= strlen(h->instring); i++) {
+
 	thismatch = 0;
+	maxmatchsig = maxmatchlen = 0;
+	    
 	for (sig = h->gsigma; sig != NULL ; sig = sig->next) {
 	    if (sig->number == EPSILON || sig->number == UNKNOWN) {
 		continue;
@@ -719,14 +722,23 @@ void apply_create_sigmatch(struct apply_handle *h) {
 		/* add to list */
 		if (thismatch == 0)
 		    thismatch = 1;
-		tmp_sig = xxmalloc(sizeof(struct sigmatch));
-		tmp_sig->next = (h->sigmatch+i)->next;
-		(h->sigmatch+i)->next = tmp_sig;
 		
-		tmp_sig->signumber = sig->number;
-		tmp_sig->consumes = strlen(sig->symbol);
+		if (maxmatchlen < strlen(sig->symbol)) {
+		    maxmatchlen = strlen(sig->symbol);
+		    maxmatchsig = sig->number;
+		}
 	    }
 	}
+
+	if (thismatch == 1) {
+	    tmp_sig = xxmalloc(sizeof(struct sigmatch));
+	    tmp_sig->next = (h->sigmatch+i)->next;
+	    (h->sigmatch+i)->next = tmp_sig;
+	    
+	    tmp_sig->signumber = maxmatchsig;
+	    tmp_sig->consumes = maxmatchlen;
+	}
+
 	if (thismatch == 0 && i < strlen(h->instring)) {
 	    /* Add ? to the list */
 	    tmp_sig = xxmalloc(sizeof(struct sigmatch));
