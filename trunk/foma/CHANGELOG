@@ -1,3 +1,11 @@
+0.9.14alpha (20110203)
+
+- Changed tokenization in apply_up() and apply_down() to always choose the leftmost longest tokenization in case of multicharacter symbols sharing the same prefix.  Previously, all possible tokenizations were given.  For example, earlier regex [a a|aa] would match the input string "aa" in two ways, yielding two outputs, whereas only one tokenization is given now, the leftmost-longest one.  This also speeds up the apply functions.
+- Fix minor bug in fsm_construct_set_final() and fsm_construct_set_initial(), affecting fsm_reverse()
+- Minimize automata read with "read text" and "read spaced-text"
+- Minor change in .dot output style
+- Fix bug in fsm_trie
+
 0.9.13alpha (20101025)
 
 - Various memory-management improvements throughout
