@@ -52,13 +52,29 @@ struct apply_handle {
     int printcount;
     int *statemap ; 
     int *marks;
+
+    struct sigma_trie {
+	int signum;
+	struct sigma_trie *next;
+    } *sigma_trie;
+
+    struct sigmatch_array {
+	int signumber ;
+	int consumes ;
+    } *sigmatch_array;
+
+    struct sigma_trie_arrays {
+	struct sigma_trie *arr;
+	struct sigma_trie_arrays *next;
+    } *sigma_trie_arrays;
+
+    int sigmatch_array_size;
     int has_flags;
     int apply_stack_ptr;
     int apply_stack_top; 
     int oldflagneg;
     int outstringtop; 
     int iterate_old ;
-    int sigmatch_size;
     int iterator ;
     char *outstring;
     char *instring;
@@ -81,12 +97,6 @@ struct apply_handle {
 	char *name;
 	char *value;
     } *flag_lookup ;
-
-    struct sigmatch { 
-	int signumber ;
-	int consumes ;
-	struct sigmatch *next;
-    } *sigmatch;
 
     struct searchstack { 
 	int offset;

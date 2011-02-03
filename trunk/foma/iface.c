@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -1362,9 +1362,9 @@ static int print_dot(struct fsm *net, char *filename) {
   /* Go through states */
   for (i=0; i < net->statecount; i++) {
     if (*(finals+i)) {
-      fprintf(dotfile,"node [shape=doublecircle,style=filled] s%i\n",i);
+      fprintf(dotfile,"node [shape=doublecircle,style=filled] %i\n",i);
     } else {
-      fprintf(dotfile,"node [shape=circle,style=filled] s%i\n",i);
+      fprintf(dotfile,"node [shape=circle,style=filled] %i\n",i);
     }
   }
 
@@ -1373,7 +1373,7 @@ static int print_dot(struct fsm *net, char *filename) {
   for (i=0; (stateptr+i)->state_no != -1; i++) {      
       if ((stateptr+i)->target == -1 || printed[i] == 1)
           continue;
-      fprintf(dotfile,"s%i -> s%i [label=\"", (stateptr+i)->state_no, (stateptr+i)->target);
+      fprintf(dotfile,"%i -> %i [label=\"", (stateptr+i)->state_no, (stateptr+i)->target);
       linelen = 0;
       for (j=i; (stateptr+j)->state_no == (stateptr+i)->state_no; j++) {
           if (((stateptr+i)->target == ((stateptr+j)->target)) && printed[j] == 0) {
