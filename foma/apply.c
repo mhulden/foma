@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -57,7 +57,6 @@ static int apply_stack_isempty(struct apply_handle *h);
 static void apply_stack_pop (struct apply_handle *h);
 static void apply_stack_push (struct apply_handle *h,int sptr, int sipos, int sopos, int szeroes, char *sflagname, char *sflagvalue, int sflagneg);
 static void apply_force_clear_stack(struct apply_handle *h);
-
 static void apply_force_clear_stack(struct apply_handle *h) {
 
     /* Make sure stack is empty and marks reset */
@@ -126,33 +125,19 @@ char *apply_random_upper(struct apply_handle *h) {
     return(apply_enumerate(h));
 }
 
-void apply_free_sigmatch(struct apply_handle *h) {
-    struct sigmatch *sigm, *sigp;
-    int i;
-    if (h->sigmatch == NULL)
-        return;
-    for (i=0; i < h->sigmatch_size; i++) {
-
-        sigm = ((h->sigmatch)+i)->next;
-        while (sigm != NULL) {
-            sigp = sigm;
-            sigm = sigm->next;
-            xxfree(sigp);
-        }
-    }
-    xxfree(h->sigmatch);
-    h->sigmatch = NULL;
-    h->sigmatch_size = 0;
-}
 
 /* Frees memory associated with applies */
 void apply_clear(struct apply_handle *h) {
+    struct sigma_trie_arrays *sta, *stap;
+    for (sta = h->sigma_trie_arrays; sta != NULL; ) {
+	stap = sta;
+	xxfree(sta->arr);
+	sta = sta->next;
+	xxfree(stap);
+    }
     if (h->statemap != NULL) {
         xxfree(h->statemap);
         h->statemap = NULL;
-    }
-    if (h->sigmatch != NULL) {
-        apply_free_sigmatch(h);
     }
     if (h->marks != NULL) {
         xxfree(h->marks);
@@ -173,7 +158,7 @@ void apply_clear(struct apply_handle *h) {
     h->last_net = NULL;
     h->iterator = 0;
     xxfree(h->outstring);
-    xxfree(h);
+    xxfree(h);    
 }
 
 char *apply_updown(struct apply_handle *h, char *word) {
@@ -224,7 +209,6 @@ struct apply_handle *apply_init(struct fsm *net) {
     h->iterator = 0;
     h->instring = NULL;
     h->flag_list = NULL;
-    h->sigmatch = NULL;    
     h->flag_lookup = NULL;
 
     h->last_net = net;
@@ -290,9 +274,7 @@ static void apply_stack_push (struct apply_handle *h, int sptr, int sipos, int s
     (h->searchstack+h->apply_stack_ptr)->flagname   = sflagname;
     (h->searchstack+h->apply_stack_ptr)->flagvalue  = sflagvalue;
     (h->searchstack+h->apply_stack_ptr)->flagneg    = sflagneg;
-
-    (h->apply_stack_ptr)++;
-    
+    (h->apply_stack_ptr)++;    
 }
 
 void apply_reset_enumerator(struct apply_handle *h) {
@@ -379,7 +361,6 @@ char *apply_net(struct apply_handle *h) {
 		    fvalue = h->oldflagvalue;
 		    fneg = h->oldflagneg;
                     
-/* 		    printf("Pushing: [%s][%s][%i]\n",fname,fvalue,fneg); */
 		} else {
 		    fname = fvalue = NULL;
 		    fneg = 0;
@@ -387,7 +368,6 @@ char *apply_net(struct apply_handle *h) {
 
                 apply_stack_push(h, h->curr_ptr, h->ipos, h->opos, h->zeroes, fname, fvalue, fneg);
 
-		// if (eatupi == 0 && ((h->gstates+h->curr_ptr)->target == (h->gstates+h->curr_ptr)->state_no))
                 if (eatupi == 0)
 		    (h->zeroes)++;
 		f = 1;
@@ -420,8 +400,7 @@ char *apply_net(struct apply_handle *h) {
                     return(h->outstring);
 		}
             } else {
-                //printf("printing [%s]\n",outstring);
-                return(h->outstring);
+		return(h->outstring);
             }
         }
 
@@ -453,8 +432,7 @@ char *apply_net(struct apply_handle *h) {
 	  h->iterator = 0;
 	  h->iterate_old = 0;
           return(h->outstring);    
-    }
-    
+    }    
     apply_stack_clear(h);
     return NULL;
 }
@@ -577,7 +555,6 @@ int apply_append (struct apply_handle *h, int cptr, int sym) {
 /* For flags, we consume 0 symbols of the input string, naturally */
 
 int apply_match_str(struct apply_handle *h, int symbol, int position) {
-    struct sigmatch *sigm;
     if (((h->mode) & ENUMERATE) == ENUMERATE) {
 	if (h->has_flags && (h->flag_lookup+symbol)->type) {
 	    if (!g_obey_flags) {
@@ -587,30 +564,34 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 		return 0;
 	    } else {
 		return -1;
-	    }
-	    
+	    }	    
 	}
 	return(0);
 	return (strlen(*(h->sigs+symbol)));
     }
+    if (symbol == EPSILON) {
+	return 0;
+    }
     
     /* If symbol is a flag, we need to check consistency */
-
     if (h->has_flags && (h->flag_lookup+symbol)->type) {
 	if (!g_obey_flags) {
 	    return 0;
 	}
 	if (apply_check_flag(h,(h->flag_lookup+symbol)->type, (h->flag_lookup+symbol)->name, (h->flag_lookup+symbol)->value) == SUCCEED) {
-/* 	    printf("CF: [%i][%s][%s]", (flag_lookup+symbol)->type, (flag_lookup+symbol)->name, (flag_lookup+symbol)->value); */
 	    return 0;
 	} else {
 	    return -1;
 	}
     }
-
-    for (sigm = h->sigmatch+position; sigm != NULL; sigm = sigm->next) {
-	if (sigm->signumber == symbol)
-	    return (sigm->consumes);
+    
+    if ((h->sigmatch_array+position)->signumber == symbol) {
+	return((h->sigmatch_array+position)->consumes);
+    }
+    if ((symbol == IDENTITY) || (symbol == UNKNOWN)) {
+	if ((h->sigmatch_array+position)->signumber == IDENTITY) {
+	    return 1;
+	}
     }
     return -1;
 }
@@ -633,6 +614,33 @@ void apply_create_statemap(struct apply_handle *h, struct fsm *net) {
     }
 }
 
+void apply_add_sigma_trie(struct apply_handle *h, int number, char *symbol) {
+    int i, len;
+    struct sigma_trie *st;
+    struct sigma_trie_arrays *sta;
+
+    len = strlen(symbol);
+    st = h->sigma_trie;
+    for (i = 0; i < len; i++) {
+	st = st+(unsigned char)*(symbol+i);
+	if (i == (len-1)) {
+	    st->signum = number;
+	} else {
+	    if (st->next == NULL) {
+		st->next = xxcalloc(256,sizeof(struct sigma_trie));		
+		st = st->next;
+		/* store these arrays to free them later */
+		sta = xxmalloc(sizeof(struct sigma_trie_arrays));
+		sta->arr = st;
+		sta->next = h->sigma_trie_arrays;
+		h->sigma_trie_arrays = sta;
+	    } else {
+		st = st->next;
+	    }
+	}
+    }
+}
+
 void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
     struct sigma *sig;
     struct fsm_state *fsm;
@@ -643,21 +651,31 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
 
     maxsigma = sigma_max(net->sigma);
 
+    h->sigmatch_array = xxcalloc(1024,sizeof(struct sigmatch_array));
+    h->sigmatch_array_size = 1024;
+
     h->sigs = xxmalloc(sizeof(char **)*(maxsigma+1));
     h->has_flags = 0;
     h->flag_list = NULL;
 
+    /* Malloc first array of trie and store trie ptrs to free later */
+    h->sigma_trie = xxcalloc(256,sizeof(struct sigma_trie));
+    h->sigma_trie_arrays = xxmalloc(sizeof(struct sigma_trie_arrays));
+    h->sigma_trie_arrays->arr = h->sigma_trie;
+    h->sigma_trie_arrays->next = NULL;
+
+    for (i=0;i<256;i++)
+	(h->sigma_trie+i)->next = NULL;
     for (sig = h->gsigma; sig != NULL && sig->number != -1; sig = sig->next) {
 	if (flag_check(sig->symbol)) {
 	    h->has_flags = 1;
 	    apply_add_flag(h, flag_get_name(sig->symbol));
-/* 	    printf("Isflag: [%s]\n",sig->symbol); */
-/* 	    printf("Type: [%i]\n",flag_get_type(sig->symbol)); */
-/* 	    printf("Name: [%s]\n",flag_get_name(sig->symbol)); */
-/* 	    printf("Value: [%s]\n",flag_get_value(sig->symbol)); */
 	}
-	//	*(h->sigs+(sig->number)) = xxstrdup(sig->symbol);
 	*(h->sigs+(sig->number)) = sig->symbol;
+	/* Add sigma entry to trie */
+	if (sig->number > IDENTITY) {
+	    apply_add_sigma_trie(h, sig->number, sig->symbol);
+	}
     }
 
     if (h->has_flags) {
@@ -678,79 +696,58 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
     }
 }
 
-/* We need to know which symbols in sigma we can match for all positions */
+/* We need to know which symbols in sigma we can match for all positions           */
 /* in the input string.  Alternatively, if there is no input string as is the case */
-/* when we just list the words or randomly search the graph, we can match */
-/* any symbol in sigma. */
+/* when we just list the words or randomly search the graph, we can match          */
+/* any symbol in sigma.                                                            */
 
-/* We create an array that points to a linked list of all the symbols we can match */
-/* at any given position of the input string, together with the information about */
-/* how many symbols we consume if we do match */
+/* We create an array that for each position in the input string        */
+/* has information on which symbol we can match at that position        */
+/* as well as how many symbols matching consumes                        */
 
 void apply_create_sigmatch(struct apply_handle *h) {
-    struct sigma *sig;
-    struct sigmatch *tmp_sig = NULL;
-    int i, thismatch, maxmatchsig, maxmatchlen;
-
-    if (((h->mode) & ENUMERATE) == ENUMERATE) { return; }
-
+    char *symbol;
+    struct sigma_trie *st;
+    int i, j, inlen, lastmatch, consumes;
     /* We create a sigmatch array only in case we match against a real string */
-
-    if (h->sigmatch != NULL) {
-      apply_free_sigmatch(h);
+    if (((h->mode) & ENUMERATE) == ENUMERATE) {
+	return;
     }
-    h->sigmatch_size = strlen(h->instring)+1;
-    h->sigmatch = xxmalloc(sizeof(struct sigmatch)*h->sigmatch_size);
-
-    /* We can always match EPSILON */
-    for (i=0; i <= strlen(h->instring); i++) {
-	(h->sigmatch+i)->signumber = EPSILON;
-	(h->sigmatch+i)->consumes = 0;
-	(h->sigmatch+i)->next = NULL;
+    symbol = h->instring;
+    inlen = strlen(symbol);
+    if (inlen > h->sigmatch_array_size) {
+	xxfree(h->sigmatch_array);
+	h->sigmatch_array = xxmalloc(sizeof(struct sigmatch_array)*inlen);
+	h->sigmatch_array_size = inlen;
     }
-
-    for (i=0; i <= strlen(h->instring); i++) {
-
-	thismatch = 0;
-	maxmatchsig = maxmatchlen = 0;
-	    
-	for (sig = h->gsigma; sig != NULL ; sig = sig->next) {
-	    if (sig->number == EPSILON || sig->number == UNKNOWN) {
-		continue;
+    for (i=0; i < inlen;  ) {
+	st = h->sigma_trie;
+	for (j=0, lastmatch = 0; ; j++) {
+	    if (*(symbol+i+j) == '\0') {
+		break;
 	    }
-	    else if (strncmp((h->instring+i), sig->symbol, strlen(sig->symbol)) == 0) {
-		/* add to list */
-		if (thismatch == 0)
-		    thismatch = 1;
-		
-		if (maxmatchlen < strlen(sig->symbol)) {
-		    maxmatchlen = strlen(sig->symbol);
-		    maxmatchsig = sig->number;
-		}
+	    st = st+(unsigned char)*(symbol+i+j);
+	    if (st->signum != 0) {
+		lastmatch = st->signum;
+		if (st->next == NULL)
+		    break;
+		st = st->next;	
+	    } else if (st->next != NULL) {
+		st = st->next;
+	    } else {
+		break;
 	    }
 	}
-
-	if (thismatch == 1) {
-	    tmp_sig = xxmalloc(sizeof(struct sigmatch));
-	    tmp_sig->next = (h->sigmatch+i)->next;
-	    (h->sigmatch+i)->next = tmp_sig;
-	    
-	    tmp_sig->signumber = maxmatchsig;
-	    tmp_sig->consumes = maxmatchlen;
-	}
-
-	if (thismatch == 0 && i < strlen(h->instring)) {
-	    /* Add ? to the list */
-	    tmp_sig = xxmalloc(sizeof(struct sigmatch));
-	    tmp_sig->next = (h->sigmatch+i)->next;
-	    tmp_sig->signumber = UNKNOWN;
-	    tmp_sig->consumes = 1;
-	    (h->sigmatch+i)->next = tmp_sig;
-	    tmp_sig = xxmalloc(sizeof(struct sigmatch));
-	    tmp_sig->next = (h->sigmatch+i)->next;
-	    tmp_sig->signumber = IDENTITY;
-	    tmp_sig->consumes = 1;
-	    (h->sigmatch+i)->next = tmp_sig;
+	if (lastmatch != 0) {
+	    (h->sigmatch_array+i)->signumber = lastmatch;
+	    consumes = strlen(*(h->sigs+lastmatch));
+	    (h->sigmatch_array+i)->consumes = consumes;
+	    i = i + consumes;
+	} else {
+	    /* Not found */
+	    (h->sigmatch_array+i)->signumber = IDENTITY;
+	    (h->sigmatch_array+i)->consumes = 1;
+	    i++;
 	}
     }
 }
