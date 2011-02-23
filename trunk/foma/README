@@ -1,8 +1,8 @@
 Foma
 ====
 
-version 0.9.13alpha
-2010/10/25
+version 0.9.14alpha
+2011/02/03
 
 Email: wampeter@users.sourceforge.net
 WWW: http://foma.sourceforge.net
@@ -39,5 +39,5 @@ To compile foma (and flookup) as well as the foma static and dynamic library, "m
 Bugs
 ----
 
-Many. The current release is 0.9.13alpha, and bug reports will be gratefully received at 
+Many. The current release is 0.9.14alpha, and bug reports will be gratefully received at 
 wampeter@users.sourceforge.net.

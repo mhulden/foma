@@ -179,13 +179,14 @@ struct stack_entry *stack_find_second () {
   return(stack_ptr->previous);
 }
 
-int stack_clear () {
+int stack_clear(void) {
   struct stack_entry *stack_ptr;
   for (stack_ptr = main_stack ; stack_ptr->next != NULL; stack_ptr = main_stack) {
     if (stack_ptr->ah != NULL)
       apply_clear(stack_ptr->ah);
 
     main_stack = stack_ptr->next;
+    fsm_destroy(stack_ptr->fsm);
     xxfree(stack_ptr);
   }
   xxfree(stack_ptr);
