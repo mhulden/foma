@@ -584,17 +584,22 @@ void iface_minimize() {
         g_minimal = store_minimal_var;
     }
 }
+
 void iface_one_plus() {
     if (iface_stack_check(1))
         stack_add(fsm_topsort(fsm_minimize(fsm_kleene_plus(stack_pop()))));
 }
+
 void iface_pop() {
+    struct fsm *net;
     if (stack_size() < 1)
         printf("Stack is empty.\n");
-    else
-        stack_pop();
-        
+    else {
+        net = stack_pop();
+	fsm_destroy(net);
+    }        
 }
+
 void iface_lower_words(int limit) {
     char *result;
     struct apply_handle *ah;

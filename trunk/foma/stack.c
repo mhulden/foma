@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -72,6 +72,7 @@ struct fsm *stack_pop_q () {
   struct stack_entry *stack_ptr;
   if (stack_size() == 1) {
     fsm = main_stack->fsm;
+    main_stack->fsm = NULL;
     stack_clear();
     return(fsm);
   }
@@ -98,12 +99,13 @@ struct apply_handle *stack_get_ah() {
     return(se->ah);
 }
 
-struct fsm *stack_pop () {
+struct fsm *stack_pop(void) {
   int i;
   struct fsm *fsm;
   struct stack_entry *stack_ptr;
   if (stack_size() == 1) {
     fsm = main_stack->fsm;
+    main_stack->fsm = NULL;
     stack_clear();
     return(fsm);
   }
