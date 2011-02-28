@@ -59,6 +59,7 @@ install: foma libfoma
 	-@if [ ! -d $(exec_prefix) ]; then mkdir -p $(exec_prefix); fi
 	-@if [ ! -d $(includedir)  ]; then mkdir -p $(includedir); fi
 	-@if [ ! -d $(libdir)      ]; then mkdir -p $(libdir); fi
+	-@if [ ! -d $(bindir)      ]; then mkdir -p $(bindir); fi
 	cp fomalib.h fomalibconf.h $(includedir);
 	chmod 644 $(includedir)/fomalib.h
 	cp foma $(bindir)
