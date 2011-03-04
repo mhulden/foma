@@ -63,6 +63,8 @@ static int view_net(struct fsm *net);
 #define FVAR_INT    2
 #define FVAR_STRING 3
 
+#define LINE_LIMIT 8192
+
 struct g_v {
     void *ptr;
     char *name;
@@ -334,7 +336,7 @@ void iface_apply_med(char *word) {
 }
 
 void iface_apply_file(char *infilename, char *outfilename, int direction) {
-    char *result, inword[1024];
+    char *result, inword[LINE_LIMIT];
     struct fsm *net;
     struct apply_handle *ah;
     FILE *OUTFILE, *INFILE;
@@ -363,7 +365,7 @@ void iface_apply_file(char *infilename, char *outfilename, int direction) {
     net = stack_find_top()->fsm;
     ah = stack_get_ah();
 
-    while ((fgets(inword,1024,INFILE)) != NULL) {
+    while ((fgets(inword,LINE_LIMIT,INFILE)) != NULL) {
         if (inword[strlen(inword)-1] == '\n') {
             inword[strlen(inword)-1] = '\0';
         }

@@ -5,7 +5,7 @@
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -21,12 +21,14 @@
 #include <getopt.h>
 #include "fomalib.h"
 
+#define LINE_LIMIT 262144
+
 char *usagestring = "Usage: flookup [-h] [-i] [-s \"separator\"] [-v] [-x] <binary foma file>\n";
 char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file\nOptions:\n-h\t\tprint help\n-i\t\tinverse application (apply down instead of up)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
 
 int main(int argc, char *argv[]) {
     int opt, echo = 1;
-    char *infilename, line[LINE_MAX], *result, *separator = "\t";
+    char *infilename, line[LINE_LIMIT], *result, *separator = "\t";
     struct fsm *net;
     struct apply_handle *ah;
     FILE *INFILE;
@@ -67,7 +69,7 @@ int main(int argc, char *argv[]) {
     }
     ah = apply_init(net);
     INFILE = stdin;
-    while (fgets(line, LINE_MAX, INFILE) != NULL) {
+    while (fgets(line, LINE_LIMIT, INFILE) != NULL) {
 	line[strcspn(line, "\n")] = '\0'; /* chomp */
 	result = applyer(ah, line);
 	if (result == NULL) {

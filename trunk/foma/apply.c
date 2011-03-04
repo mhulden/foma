@@ -34,7 +34,6 @@
 #define SUCCEED 1
 
 #define DEFAULT_OUTSTRING_SIZE 2048
-#define DEFAULT_LIMIT 1000
 #define DEFAULT_STACK_SIZE 128
 
 extern int g_obey_flags;
@@ -564,10 +563,10 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 		return 0;
 	    } else {
 		return -1;
-	    }	    
+	    }
 	}
 	return(0);
-	return (strlen(*(h->sigs+symbol)));
+	//	return (strlen(*(h->sigs+symbol)));
     }
     if (symbol == EPSILON) {
 	return 0;
@@ -585,6 +584,10 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 	}
     }
     
+    if (position >= h->sigmatch_array_size) {
+	return -1;
+    }
+
     if ((h->sigmatch_array+position)->signumber == symbol) {
 	return((h->sigmatch_array+position)->consumes);
     }
@@ -650,7 +653,7 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
     fsm = net->states;
 
     maxsigma = sigma_max(net->sigma);
-
+    // Default size created at init, resized later if necessary
     h->sigmatch_array = xxcalloc(1024,sizeof(struct sigmatch_array));
     h->sigmatch_array_size = 1024;
 
@@ -714,10 +717,11 @@ void apply_create_sigmatch(struct apply_handle *h) {
 	return;
     }
     symbol = h->instring;
+
     inlen = strlen(symbol);
-    if (inlen > h->sigmatch_array_size) {
+    if (inlen >= h->sigmatch_array_size) {
 	xxfree(h->sigmatch_array);
-	h->sigmatch_array = xxmalloc(sizeof(struct sigmatch_array)*inlen);
+	h->sigmatch_array = xxmalloc(sizeof(struct sigmatch_array)*(inlen));
 	h->sigmatch_array_size = inlen;
     }
     for (i=0; i < inlen;  ) {
