@@ -33,7 +33,7 @@
 #define FAIL 0
 #define SUCCEED 1
 
-#define DEFAULT_OUTSTRING_SIZE 2048
+#define DEFAULT_OUTSTRING_SIZE 4096
 #define DEFAULT_STACK_SIZE 128
 
 extern int g_obey_flags;
@@ -584,10 +584,9 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 	}
     }
     
-    if (position >= h->sigmatch_array_size) {
+    if (position >= h->current_instring_length) {
 	return -1;
     }
-
     if ((h->sigmatch_array+position)->signumber == symbol) {
 	return((h->sigmatch_array+position)->consumes);
     }
@@ -717,8 +716,8 @@ void apply_create_sigmatch(struct apply_handle *h) {
 	return;
     }
     symbol = h->instring;
-
     inlen = strlen(symbol);
+    h->current_instring_length = inlen;
     if (inlen >= h->sigmatch_array_size) {
 	xxfree(h->sigmatch_array);
 	h->sigmatch_array = xxmalloc(sizeof(struct sigmatch_array)*(inlen));
@@ -735,7 +734,7 @@ void apply_create_sigmatch(struct apply_handle *h) {
 		lastmatch = st->signum;
 		if (st->next == NULL)
 		    break;
-		st = st->next;	
+		st = st->next;
 	    } else if (st->next != NULL) {
 		st = st->next;
 	    } else {
