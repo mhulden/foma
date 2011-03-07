@@ -69,6 +69,7 @@ struct apply_handle {
     } *sigma_trie_arrays;
 
     int sigmatch_array_size;
+    int current_instring_length;
     int has_flags;
     int apply_stack_ptr;
     int apply_stack_top; 
@@ -172,7 +173,7 @@ FEXPORT struct sigma *sigma_remove(char *symbol, struct sigma *sigma);
 
 int sigma_find (char *symbol, struct sigma *sigma);
 int sigma_find_number (int number, struct sigma *sigma);
-FEXPORT char *sigma_string(int number, struct sigma *sigma);
+char *sigma_string(int number, struct sigma *sigma);
 int sigma_sort (struct fsm *net);
 void sigma_cleanup (struct fsm *net, int force);
 FEXPORT struct sigma *sigma_create ();
