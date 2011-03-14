@@ -857,7 +857,7 @@ struct fsm *lexc_to_fsm() {
     struct trans *t;
     int i, j,  linecount;
 
-    printf("Building lexicon...");
+    printf("Building lexicon...\n");
     fflush(stdout);
     lexc_merge_states();
     net = fsm_create("");
@@ -903,10 +903,10 @@ struct fsm *lexc_to_fsm() {
     sigma_cleanup(net,0);
     sigma_sort(net);
     
-    printf("Determinizing...");
+    printf("Determinizing...\n");
     fflush(stdout);
     net = fsm_determinize(net);
-    printf("Minimizing...");
+    printf("Minimizing...\n");
     fflush(stdout);
     net = fsm_topsort(fsm_minimize(net));
     printf("Done!\n");
