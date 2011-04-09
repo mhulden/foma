@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include "foma.h"
 #include "zlib.h"
 
@@ -54,6 +55,21 @@ struct fsm *io_net_read(char **net_name);
 static inline int explode_line (char *buf, int *values);
 
 static char *io_buf = NULL, *io_buf_ptr = NULL;
+
+void escape_print(FILE *stream, char* string) {
+    int i;
+    if (strchr(string, '"') != NULL) {
+	for (i = 0; *(string+i) != '\0'; i++) {
+	    if (*(string+i) == '"') {
+		fprintf(stream, "\\\""); 
+	    } else {
+		fputc(*(string+i), stream);
+	    }
+	}
+    } else {
+	fprintf(stream, "%s", string);
+    }
+}
 
 int write_prolog (struct fsm *net, char *filename) {
   struct fsm_state *stateptr;
@@ -100,8 +116,13 @@ int write_prolog (struct fsm *net, char *filename) {
   for (i = 3; i <= maxsigma; i++) {
     if (*(used_symbols+i) == 0) {
       instring = sigma_string(i, net->sigma);
-      if (strcmp(instring,"0") == 0) instring = "%0";      
-      fprintf(out, "symbol(%s, \"%s\").\n", identifier, instring);
+      if (strcmp(instring,"0") == 0) {
+	  instring = "%0";
+      } 
+      fprintf(out, "symbol(%s, \"", identifier);
+      escape_print(out, instring);
+      fprintf(out, "\").\n"); 
+
     }
   }
   
@@ -120,18 +141,32 @@ int write_prolog (struct fsm *net, char *filename) {
 
     if (strcmp(instring,"0") == 0 && stateptr->in != 0) instring = "%0";
     if (strcmp(outstring,"0") == 0 && stateptr->out != 0) outstring = "%0";
+    if (strcmp(instring,"?") == 0 && stateptr->in > 2) instring = "%?";
+    if (strcmp(outstring,"?") == 0 && stateptr->in > 2) outstring = "%?";
+    /* Escape quotes */
     
     if (net->arity == 2 && stateptr->in == IDENTITY && stateptr->out == IDENTITY) {
-      fprintf(out, "\"?\").\n");    
+      fprintf(out, "\"?\").\n");
     }
     else if (net->arity == 2 && stateptr->in == stateptr->out && stateptr->in != UNKNOWN) {
-      fprintf(out, "\"%s\").\n", instring);
+	fprintf(out, "\"");
+	escape_print(out, instring);
+	fprintf(out, "\").\n");
     }
-    else if (net->arity == 2) 
-      fprintf(out, "\"%s\":\"%s\").\n", instring, outstring);
-    else if (net->arity == 1)
-      fprintf(out, "\"%s\").\n", instring);
+    else if (net->arity == 2) {	
+      fprintf(out, "\"");
+      escape_print(out, instring);
+      fprintf(out, "\":\"");
+      escape_print(out, outstring); 
+      fprintf(out, "\").\n");
+    }
+    else if (net->arity == 1) {
+	fprintf(out, "\"");
+	escape_print(out, instring);
+	fprintf(out, "\").\n");
+    }
   }
+
   for (i = 0; i < net->statecount; i++) {
     if (*(finals+i)) {
       fprintf(out, "final(%s, %i).\n", identifier, i);
@@ -315,6 +350,12 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    if (strcmp(out, "%0") == 0) {
 		strcpy(out,"0");
 	    }
+	    if (strcmp(in, "%?") == 0) {
+		strcpy(in,"?");
+	    }
+	    if (strcmp(out, "%?") == 0) {
+		strcpy(out,"?");
+	    }
 	    
 	    if (arity == 1) { 
 		fsm_construct_add_arc(outh, source, target, in, in);	    
@@ -340,6 +381,7 @@ void io_free() {
         io_buf = NULL;
     }
 }
+
 char *spacedtext_get_next_line(char **text) {
     char *t, *ret;
     ret = *text;
@@ -425,7 +467,7 @@ struct fsm *fsm_read_spaced_text_file(char *filename) {
 struct fsm *fsm_read_text_file(char *filename) {
     struct fsm_trie_handle *th;
     char *text, *textp1, *textp2;
-    int i, lastword;
+    int lastword;
 
     text = file_to_mem(filename);
     if (text == NULL) {
@@ -449,7 +491,6 @@ struct fsm *fsm_read_text_file(char *filename) {
     xxfree(text);
     return(fsm_trie_done(th));
 }
-
 
 struct fsm *fsm_read_binary_file(char *filename) {
     char *net_name;
@@ -723,7 +764,9 @@ int foma_net_print(struct fsm *net, gzFile *outfile) {
 
     /* Properties */
     gzprintf(outfile, "%s","##props##\n");
-    gzprintf(outfile, "%i %i %i %i %i %lld %i %i %i %i %i %i %s\n",net->arity, net->arccount, net->statecount, net->linecount, net->finalcount, net->pathcount, net->is_deterministic, net->is_pruned, net->is_minimized, net->is_epsilon_free, net->is_loop_free, net->is_completed, net->name);
+
+    gzprintf(outfile, 
+	     "%i %i %i %i %i %lld %i %i %i %i %i %i %s\n", net->arity, net->arccount, net->statecount, net->linecount, net->finalcount, net->pathcount, net->is_deterministic, net->is_pruned, net->is_minimized, net->is_epsilon_free, net->is_loop_free, net->is_completed, net->name);
     
     /* Sigma */
     gzprintf(outfile, "%s","##sigma##\n");
