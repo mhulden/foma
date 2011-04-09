@@ -1,11 +1,11 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -36,7 +36,8 @@ struct lexstates {             /* Separate list of LEXICON states */
     char *name;    
     struct states *state;
     struct lexstates *next;
-    int targeted;
+    unsigned char targeted;
+    unsigned char has_outgoing;
 };
 
 struct states {
@@ -360,19 +361,22 @@ void lexc_set_current_lexicon(char *name, int which) {
 
     struct lexstates *l;
     struct states *newstate;
+
     for (l = lexstates; l != NULL; l = l->next) {
         if (strcmp(name,l->name) == 0) {
-            if (which == 0)
+            if (which == 0) {
+		l->has_outgoing = 1;
                 clexicon = l;
-            else
+	    } else {
                 ctarget = l;
-
+	    }
             return;
         }
     }
     l = xxmalloc(sizeof(struct lexstates));
     l->next = lexstates;
     l->name = xxstrdup(name);
+    l->has_outgoing = 0;
     l->targeted = 0;
     lexstates = l;
     newstate = xxmalloc(sizeof(struct states));
@@ -382,37 +386,45 @@ void lexc_set_current_lexicon(char *name, int which) {
     newstate->mergeable = 0;
     newstate->merge_with = newstate;
     l->state = newstate;
-    if (which == 0)
+    if (which == 0) {
         clexicon = l;
-    else 
+	l->has_outgoing = 1;
+    } else { 
         ctarget = l;
+    }
 }
 
 char *lexc_find_delim(char *name, char delimiter, char escape) {
     int i;
     for (i=0; *(name+i) != '\0'; i++) {
-        // if (*(name+i) == delimiter && i > 0 && *(name+i-1) != escape)
-        if (*(name+i) == delimiter && i > 0 && *(name+i-1) != escape) {
-            return name+i;
-        }
-        if (*(name+i) == delimiter && i == 0) {
+	if (*(name+i) == escape && *(name+i+1) != '\0') {
+	    i++;
+	    continue;
+	}
+        if (*(name+i) == delimiter) {
             return name+i;
         }
     }
     return NULL;
 }
 
-void lexc_deescape_string(char *name, char escape) {
+void lexc_deescape_string(char *name, char escape, int mode) {
     int i, j;
     for (i=0, j=0; *(name+i) != '\0'; i++) {
         *(name+j) = *(name+i);
-        if (*(name+i) == escape && *(name+i+1) == '0') {
-            *(name+j) = '0';
+        if (*(name+i) == escape) {
+            *(name+j) = *(name+i+1);
             j++;
             i++;
             continue;
         }
-        if (*(name+i) != escape && *(name+i) != '0') {
+	else if (mode == 1 && *(name+i) == '0') {
+	    /* Marks alignment EPSILON */
+	    *(name+j) = (unsigned char) 0xff;
+	    j++;
+	    continue;
+	}
+        else if (*(name+i) != escape && *(name+i) != '0') {
             j++;
             continue;
         }
@@ -434,16 +446,15 @@ void lexc_set_current_word(char *name) {
     if (outstring != NULL) {
         *outstring = '\0';
         outstring = outstring+1;
-        lexc_deescape_string(outstring,'%');
+        lexc_deescape_string(outstring,'%',1);
         carity = 2;
     }
-    lexc_deescape_string(instring, '%');
+    lexc_deescape_string(instring, '%',1);
     /* printf("CWin2: [%s] CWout2: [%s]\n", instring, outstring); */
     lexc_string_to_tokens(instring, cwordin);
     if (carity == 2) {
         lexc_string_to_tokens(outstring, cwordout);
         lexc_pad();
-
     } else {
         for (i=0; *(cwordin+i) != -1; i++) {
             *(cwordout+i) = *(cwordin+i);
@@ -457,6 +468,12 @@ void lexc_pad() {
     int i, pad;
     /* Pad the shorter of current in, out words in cwordin, cwordout with EPSILON */
     /* A MED option would be nice here to minimize different symbol pairs */
+
+    if (*cwordin == -1 && *cwordout == -1) {
+	*cwordin = *cwordout = EPSILON;
+	*(cwordin+1) = *(cwordout+1) = -1;
+	return;
+    }
 
     for (i=0, pad = 0; ;i++) {
         if (pad == 1 && *(cwordout+i) == -1) {
@@ -491,6 +508,15 @@ void lexc_string_to_tokens(char *string, int *intarr) {
     struct multichar_symbols *mcs;
     len = strlen(string);
     for (i=0, pos = 0; i < len; ) {
+
+	/* EPSILON for alignment is marked as 0xff */
+	if ((unsigned char) string[i] == 0xff) {
+	    *(intarr+pos) = EPSILON;
+	    pos++;
+	    i++;
+	    continue;
+	}
+
         multi = 0;
         mchashval = (unsigned int) ((unsigned char) *(string+i)) * 256 + (unsigned int) ((unsigned char) *(string+i+1));
         if ((i < len-1) && *(mchash+mchashval) == 1) {
@@ -544,7 +570,7 @@ void lexc_add_mc(char *symbol) {
     int s, len;
     unsigned int mchashval;
     struct multichar_symbols *mcs, *mcprev, *mcnew;
-    lexc_deescape_string(symbol,'%');
+    lexc_deescape_string(symbol,'%',0);
     if (!lexc_find_mc(symbol)) {
         len = utf8strlen(symbol);
         mcprev = NULL;
@@ -684,7 +710,10 @@ void lexc_number_states() {
             s->state->number = smax-1;
             s->final = 1;
             hasfinal = 1;
-        }
+        } else if (s->state->lexstate != NULL && strcmp(s->state->lexstate->name, "#") != 0 && s->state->lexstate->has_outgoing == 0) {
+	    /* Also mark uncontinued states as final (this is warned about elsewhere) */
+            s->final = 1;
+	}
     }
 
     for (s = statelist; s != NULL; s = s->next) { 
@@ -697,6 +726,10 @@ void lexc_number_states() {
     for (l = lexstates; l != NULL ; l = l->next) {
         if (l->targeted == 0 && l->state->number != 0) {
             printf("*Warning: lexicon '%s' defined but not used\n",l->name);
+            fflush(stdout);
+        }
+        if (l->has_outgoing == 0 && strcmp(l->name, "#") != 0) {
+            printf("***Warning: lexicon '%s' used but never defined\n",l->name);
             fflush(stdout);
         }
     }

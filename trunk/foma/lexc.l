@@ -1,11 +1,11 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -75,7 +75,11 @@ void lexc_trim(char *s) {
 %}
 
  /* Nonreserved = anything except ; < > ! or space */
-NONRESERVED [\001-\177]{-}[\011\012\014\040\041\073\074\076]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277]|[\045][\011]|[\045][\012]|[\045][\014]|[\045][\040]|[\045][\045]|[\045][\073]|[\045][\074]|[\045][\076]
+ /* NONRESERVED [\001-\177]{-}[\011\012\014\040\041\042\045\073\074\076]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277]|[\045][\011]|[\045][\012]|[\045][\014]|[\045][\040]|[\045][\045]|[\045][\073]|[\045][\074]|[\045][\076]|[\045][\041]|[\045][\042] */
+
+NONRESERVED [\001-\177]{-}[\011\012\014\040\041\042\045\073\074\076]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277]|[\045][\001-\177]|[\045][\300-\337][\200-\277]|[\045][\340-\357][\200-\277][\200-\277]|[\045][\360-\367][\200-\277][\200-\277][\200-\277]
+
+INFOSTRING [\001-\177]{-}[\042\012]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277]
 
 INSIDEREGEX [\001-\177]{-}[\073\173\175\042\045\076]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277]|(@>)|(>@)|(->)|(=>)
 
@@ -85,7 +89,7 @@ SPACE  [\040]|[\011]|[\014]
 
 ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277]
 
-%x MCS LEXICON DEF LEXENTRIES INSIDEREGEX REGEX REGEXB REGEXQ DEFREGEX DEFREGEXB DEFREGEXQ
+%x MCS LEXICON DEF LEXENTRIES INSIDEREGEX REGEX REGEXB REGEXQ DEFREGEX DEFREGEXB DEFREGEXQ EATUPINFO
 %%
 
  /* Files begin with one of these three identifiers */
@@ -124,13 +128,33 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
   BEGIN(LEXENTRIES);
 }
 
+ /* Grab info string */
+<EATUPINFO>[\042]{INFOSTRING}*[\042]{SPACE}*; {
+  BEGIN(LEXENTRIES);
+}
+ /* Target followed by info string */
+<LEXENTRIES>{NONRESERVED}+{SPACE}+/[\042]{INFOSTRING}*[\042]{SPACE}*; {
+    lexc_trim(lexctext);
+    lexc_set_current_lexicon(lexctext, TARGET_LEXICON);
+    lexc_add_word();
+    lexc_clear_current_word();
+    lexentries++;
+    if (lexentries %10000 == 0) {
+      printf("%i...",lexentries);
+      fflush(stdout);
+    }
+    BEGIN(EATUPINFO);
+}
+
+
  /* Regular entries contain anything (not starting with <) and end in a nonescaped SPACE */
 <LEXENTRIES>{NONRESERVED}+ {
       lexc_set_current_word(lexctext);
 }
 
- /* A target has anything and ends in a semicolon */
+
 <LEXENTRIES>{NONRESERVED}+{SPACE}*; {
+    //printf("[%s]\n", lexctext);
     lexc_trim(lexctext);
     lexc_set_current_lexicon(lexctext, TARGET_LEXICON);
     lexc_add_word();

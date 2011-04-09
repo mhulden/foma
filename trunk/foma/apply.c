@@ -819,11 +819,8 @@ int apply_check_flag(struct apply_handle *h, int type, char *name, char *value) 
     }
 
     if (type == FLAG_DISALLOW) {
-	if (value == NULL && flist->value == NULL) {
+	if (flist->value == NULL) {
 	    return SUCCEED;
-	}
-	if (value != NULL && flist->value == NULL) {
-	    return FAIL;
 	}
 	if (value == NULL && flist->value != NULL) {
 	    return FAIL;
