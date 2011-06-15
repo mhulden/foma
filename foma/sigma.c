@@ -306,6 +306,9 @@ struct sigma *sigma_copy(struct sigma *sigma) {
     int f = 0;
     struct sigma *copy_sigma, *copy_sigma_s;
 
+    if (sigma == NULL) {
+      return NULL;
+    }
     copy_sigma_s = xxmalloc(sizeof(struct sigma));
 
     for (copy_sigma = copy_sigma_s; sigma != NULL; sigma=sigma->next) {
