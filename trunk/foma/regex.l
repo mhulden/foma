@@ -48,7 +48,7 @@ extern struct rewrite_set *rewrite_rules;
 extern struct fsm *current_parse;
 
 char *yyget_text(yyscan_t yyscanner);
-char *tempstr;
+char *tempstr, *tempstr2;
 int yylex_init (yyscan_t* scanner);
 int yylex_destroy (yyscan_t scanner);
 int my_yyparse(char *my_string, int lineno);
@@ -73,6 +73,17 @@ struct fsm *fsm_parse_regex(char *regex) {
     return(fsm_minimize(current_parse));
   } else {
     xxfree(newregex);
+    return(NULL);
+  }
+}
+
+struct fsm *fsm_parse_regex_string(char *regex) {
+  current_parse = NULL;
+  if (my_yyparse(regex,1) == 0) {
+    xxfree(regex);
+    return(fsm_minimize(current_parse));
+  } else {
+    xxfree(regex);
     return(NULL);
   }
 }
@@ -120,7 +131,7 @@ ANYUTF      [\001-\177]|[\300-\337].|[\340-\357]..|[\360-\367]...
  /* Reserved multicharacter symbols are a little tricky to define */
  /* what we're doing is excluding some combinations of multibyte sequences */
  /* using the {-} construct in flex */
-NONRESERVED [0-9A-Za-z\?\'\=]|[\300-\301].|[\302]([\000-\377]{-}[\254])|[\303]([\000-\377]{-}[\227])|[\304-\315].|[\316]([\000-\377]{-}[\243\265])|[\317-\337].|[\340-\341]..|[\342][\000-\200].|[\342][201][\000-\377]{-}[\273]|[\342][\202][\000-\377]{-}[\201\202]|[\342][\203-\205][\000-\377][\342][\206]([\000-\377]{-}[\222\224])|[\342][\207].|[\342][\210]([\000-\377]{-}[\200\203\205\210\230\245\247\250\251\252])|[\342][\211]([\000-\377]{-}[\240\244\245\272\273])|[\342][\212-\377].|[\343-\357]..|[\360-\367]...
+NONRESERVED [0-9A-Za-z\?\'\=]|[\300-\301].|[\302]([\000-\377]{-}[\254])|[\303]([\000-\377]{-}[\227])|[\304-\315].|[\316]([\000-\377]{-}[\243\265])|[\317-\337].|[\340-\341]..|[\342][\000-\200].|[\342][\201][\000-\377]{-}[\273]|[\342][\202][\000-\377]{-}[\201\202]|[\342][\203-\205][\000-\377]|[\342][\206]([\000-\377]{-}[\222\224])|[\342][\207].|[\342][\210]([\000-\377]{-}[\200\203\205\210\230\245\247\250\251\252])|[\342][\211]([\000-\377]{-}[\240\244\245\272\273])|[\342][\212-\377].|[\343-\357]..|[\360-\367]...
 BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 
 %x DEFI QTD QTDEND UQ EQ ENDQ
@@ -141,6 +152,19 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   xxfree(tempstr);
   if (yylval_param->net != NULL) {
     return NET;
+  }
+}
+
+ /* Read regex from file */
+([\100]re["][^"]+[\042]) {
+  tempstr = xxstrndup(yytext+4,yyleng-5);
+  tempstr2 = file_to_mem(tempstr);
+  xxfree(tempstr);
+  if (tempstr2 != NULL) {
+    yylval_param->net = fsm_parse_regex_string(tempstr2);
+    if (yylval_param->net != NULL) {
+       return NET;
+     }  
   }
 }
 
