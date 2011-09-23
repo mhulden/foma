@@ -466,8 +466,8 @@ void iface_compose() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
         while (stack_size()>1) {
-	    one = stack_pop;
-	    two = stack_pop;
+	  one = stack_pop();
+	  two = stack_pop();
 	    stack_add(fsm_topsort(fsm_minimize(fsm_compose(one,two))));
 	}
     }
