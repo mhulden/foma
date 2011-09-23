@@ -466,8 +466,8 @@ void iface_compose() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
         while (stack_size()>1) {
-	    one = stack_pop_q();
-	    two = stack_pop_q();
+	    one = stack_pop;
+	    two = stack_pop;
 	    stack_add(fsm_topsort(fsm_minimize(fsm_compose(one,two))));
 	}
     }
@@ -477,8 +477,8 @@ void iface_conc() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
         while (stack_size()>1) {
-	    one = stack_pop_q();
-	    two = stack_pop_q();         
+	    one = stack_pop();
+	    two = stack_pop();         
 	    stack_add(fsm_topsort(fsm_minimize(fsm_concat(one,two))));
 	}
     }
@@ -487,8 +487,8 @@ void iface_conc() {
 void iface_crossproduct() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
-	one = stack_pop_q();
-	two = stack_pop_q();         
+	one = stack_pop();
+	two = stack_pop();         
         stack_add(fsm_topsort(fsm_minimize(fsm_cross_product(one,two))));
     }
 }
@@ -526,8 +526,8 @@ void iface_eliminate_flag(char *name) {
 void iface_ignore() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
-	one = stack_pop_q();
-	two = stack_pop_q();         
+	one = stack_pop();
+	two = stack_pop();         
         stack_add(fsm_topsort(fsm_minimize(fsm_ignore(one,two,OP_IGNORE_ALL))));
     }
 }
@@ -535,7 +535,7 @@ void iface_ignore() {
 void iface_intersect() {
     if (iface_stack_check(2)) {
         while (stack_size()>1) 
-            stack_add(fsm_topsort(fsm_minimize(fsm_intersect(stack_pop_q(),stack_pop_q()))));
+            stack_add(fsm_topsort(fsm_minimize(fsm_intersect(stack_pop(),stack_pop()))));
     }
 }
 
@@ -1031,7 +1031,7 @@ void iface_set_variable(char *name, char *value) {
 void iface_shuffle() {
     if (iface_stack_check(2))
         while (stack_size()>1)
-            stack_add(fsm_minimize(fsm_shuffle(stack_pop_q(),stack_pop_q())));
+            stack_add(fsm_minimize(fsm_shuffle(stack_pop(),stack_pop())));
 }
 
 void iface_sigma_net() {
@@ -1108,7 +1108,7 @@ void iface_twosided_flags() {
 void iface_union() {
     if (iface_stack_check(2))
         while (stack_size()>1)
-            stack_add(fsm_minimize(fsm_union(stack_pop_q(),stack_pop_q())));
+            stack_add(fsm_minimize(fsm_union(stack_pop(),stack_pop())));
 }
 void iface_upper_side() {
     if (iface_stack_check(1))

@@ -67,26 +67,6 @@ int stack_add(struct fsm *fsm) {
   return(stack_ptr->number);
 }
 
-struct fsm *stack_pop_q () {
-  struct fsm *fsm;
-  struct stack_entry *stack_ptr;
-  if (stack_size() == 1) {
-    fsm = main_stack->fsm;
-    main_stack->fsm = NULL;
-    stack_clear();
-    return(fsm);
-  }
-  stack_ptr = main_stack;
-  fsm = main_stack->fsm;
-  main_stack = main_stack->next;
-  if (stack_ptr->ah != NULL) {
-      apply_clear(stack_ptr->ah);
-      stack_ptr->ah = NULL;
-  }
-  xxfree(stack_ptr);
-  return(fsm);
-}
-
 struct apply_handle *stack_get_ah() {
     struct stack_entry *se;
     se = stack_find_top();
