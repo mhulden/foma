@@ -21,13 +21,14 @@ extern "C" {
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+#include "zlib.h"
 
 #define FEXPORT __attribute__((visibility("default")))
 
 /* Library version */
 #define MAJOR_VERSION 0
 #define MINOR_VERSION 9
-#define BUILD_VERSION 14
+#define BUILD_VERSION 15
 #define STATUS_VERSION "alpha"
 
 /* Special symbols on arcs */
@@ -114,7 +115,7 @@ struct fsm_state {
     int target;
     char final_state ;
     char start_state ;
-} ;
+};
 
 struct fsmcontexts {
     struct fsm *left;
@@ -162,10 +163,14 @@ FEXPORT char *fsm_get_library_version_string();
 
 FEXPORT struct fsm *fsm_determinize(struct fsm *net);
 FEXPORT struct fsm *fsm_epsilon_remove(struct fsm *net);
+    FEXPORT struct fsm *fsm_find_ambiguous(struct fsm *net, int **extras);
 FEXPORT struct fsm *fsm_minimize(struct fsm *net);
 FEXPORT struct fsm *fsm_coaccessible(struct fsm *net);
 FEXPORT struct fsm *fsm_topsort(struct fsm *net);
 
+FEXPORT struct fsm *fsm_mark_ambiguous(struct fsm *net);
+FEXPORT struct fsm *fsm_sequentialize(struct fsm *net);
+FEXPORT struct fsm *fsm_bimachine(struct fsm *net);
 FEXPORT struct fsm *fsm_parse_regex(char *regex);
 FEXPORT struct fsm *fsm_reverse(struct fsm *net);
 FEXPORT struct fsm *fsm_invert(struct fsm *net);
@@ -245,7 +250,7 @@ FEXPORT int fsm_isfunctional(struct fsm *net);
 FEXPORT int fsm_isunambiguous(struct fsm *net);
 FEXPORT int fsm_isidentity(struct fsm *net);
 FEXPORT int fsm_isuniversal(struct fsm *net);
-FEXPORT int fsm_isstarfree(struct fsm *net);
+FEXPORT int fsm_issequential(struct fsm *net);
 
 /* Test if a symbol occurs in a FSM */
 /* side = M_UPPER (upper side) M_LOWER (lower side), M_UPPER+M_LOWER (both) */
@@ -255,6 +260,7 @@ FEXPORT int fsm_symbol_occurs(struct fsm *net, char *symbol, int side);
 FEXPORT void fsm_merge_sigma(struct fsm *net1, struct fsm *net2);
 
 /* Copies an alphabet */
+
 FEXPORT struct sigma *sigma_copy(struct sigma *sigma);
 
 /* Create empty FSM */
@@ -267,18 +273,23 @@ FEXPORT int fsm_sigma_destroy(struct sigma *sigma);
 /* Frees a FSM, associated data such as alphabet and confusion matrix */
 FEXPORT int fsm_destroy(struct fsm *net);
 
+
+
 /* IO functions */
 FEXPORT struct fsm *read_att(char *filename);
 FEXPORT int net_print_att(struct fsm *net, FILE *outfile);
-FEXPORT struct fsm *fsm_read_prolog (char *filename);
-FEXPORT char *file_to_mem (char *name);
+FEXPORT struct fsm *fsm_read_prolog(char *filename);
+FEXPORT char *file_to_mem(char *name);
 FEXPORT struct fsm *fsm_read_binary_file(char *filename);
+FEXPORT struct fsm *fsm_read_binary_file_multiple(fsm_read_binary_handle fsrh);
+FEXPORT fsm_read_binary_handle fsm_read_binary_file_multiple_init(char *filename);
 FEXPORT struct fsm *fsm_read_text_file(char *filename);
 FEXPORT struct fsm *fsm_read_spaced_text_file(char *filename);
 FEXPORT int load_defined(char *filename);
 FEXPORT int save_defined();
 FEXPORT int save_stack_att();
 FEXPORT int write_prolog(struct fsm *net, char *filename);
+FEXPORT int foma_net_print(struct fsm *net, gzFile *outfile);
 
 /* Lookups */
 
@@ -413,7 +424,7 @@ FEXPORT int fsm_get_next_initial(struct fsm_read_handle *handle);
 FEXPORT int fsm_get_next_final(struct fsm_read_handle *handle);
 FEXPORT int fsm_get_next_state(struct fsm_read_handle *handle);
 /* Frees memory associated with a read handle */
-FEXPORT void *fsm_read_done(struct fsm_read_handle *handle);
+FEXPORT void fsm_read_done(struct fsm_read_handle *handle);
 
 #ifdef  __cplusplus
 }
