@@ -154,10 +154,14 @@ void apply_clear(struct apply_handle *h) {
         xxfree(h->flag_lookup);
         h->flag_lookup = NULL;
     }
+    if (h->sigmatch_array != NULL) {
+	xxfree(h->sigmatch_array);
+	h->sigmatch_array = NULL;
+    }
     h->last_net = NULL;
     h->iterator = 0;
     xxfree(h->outstring);
-    xxfree(h);    
+    xxfree(h);
 }
 
 char *apply_updown(struct apply_handle *h, char *word) {
