@@ -317,7 +317,11 @@ char *apply_net(struct apply_handle *h) {
 
     h->ptr = 0; h->ipos = 0; h->opos = 0; h->zeroes = 0;
     apply_stack_clear(h);
-
+    
+    if (h->has_flags) {
+	apply_clear_flags(h);
+    }
+    
     /* "The use of four-letter words like goto can occasionally be justified */
     /*  even in the best of company." Knuth (1974). */
 
