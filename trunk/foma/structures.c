@@ -261,6 +261,46 @@ int fsm_isempty(struct fsm *net) {
         return 0;
 }
 
+int fsm_issequential(struct fsm *net) {
+    int i, *sigtable, sequential, seentrans, epstrans, laststate, insym;
+    struct fsm_state *fsm;
+    sigtable = xxcalloc(sigma_max(net->sigma)+1,sizeof(int));
+    for (i = 0 ; i < sigma_max(net->sigma)+1; i++) {
+	sigtable[i] = -2;
+    }
+    fsm = net->states;
+    seentrans = epstrans = 0;
+    laststate = -1;
+    for (sequential = 1, i = 0; (fsm+i)->state_no != -1 ; i++) {
+	insym = (fsm+i)->in;
+	if (insym < 0) {
+	    continue;
+	}
+	if ((fsm+i)->state_no != laststate) {
+	    laststate = (fsm+i)->state_no;
+	    epstrans = 0;
+	    seentrans = 0;
+	}
+	if (*(sigtable+insym) == laststate || epstrans == 1) {
+	    sequential = 0;
+	    break;
+	}
+	if (insym == EPSILON) {
+	    if (epstrans == 1 || seentrans == 1) {
+		sequential = 0;
+		break;
+	    }
+	    epstrans = 1;
+	}
+	*(sigtable+insym) = laststate;
+	seentrans = 1;
+    }
+    xxfree(sigtable);
+    if (!sequential)
+	printf("fails at state %i\n",(fsm+i)->state_no);
+    return(sequential);
+}
+
 int fsm_isfunctional(struct fsm *net) {
     return(fsm_isidentity(fsm_minimize(fsm_compose(fsm_invert(fsm_copy(net)),fsm_copy(net)))));
 }
