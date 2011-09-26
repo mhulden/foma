@@ -55,8 +55,6 @@ int yylex_init (yyscan_t* scanner);
 int yylex_destroy (yyscan_t scanner);
 int my_yyparse(char *my_string, int lineno);
 
-static int errlineno;
-
 int yywrap(yyscan_t scanner) {return 1; }
 
 int yyerror(YYLTYPE* yylloc, yyscan_t scanner, char *msg) {
@@ -100,7 +98,6 @@ int my_yyparse(char *my_string, int lineno) {
    
    yylex_init(&scanner);
    YY_BUFFER_STATE my_string_buffer;
-   errlineno = lineno;
    my_string_buffer = yy_scan_string(my_string, scanner);
    yyset_lineno(lineno, scanner);
    if (g_parse_depth > 0) {
