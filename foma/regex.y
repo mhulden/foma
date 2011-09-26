@@ -192,7 +192,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
 %expect 507
 %parse-param {void     *scanner } /* Assume yyparse is called with this argument */
 %lex-param   {yyscan_t *scanner } /* Call flex functions with this argument      */
-
+%locations
 %initial-action {
     clear_quantifiers();
     rewrite = 0;

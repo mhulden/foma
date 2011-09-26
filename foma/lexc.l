@@ -18,6 +18,9 @@
 %option noyywrap
 %option nounput
 %option noinput
+%top{
+#define YY_BUF_SIZE 16777216
+}
 %{
 #include <stdio.h>
 #include "foma.h"
@@ -25,7 +28,7 @@
 
 #define SOURCE_LEXICON 0
 #define TARGET_LEXICON 1
-
+#define YY_USER_ACTION lexccolumn += lexcleng;
 static int lexentries;
 extern int lexclex();
 extern struct defined *defines;
@@ -33,6 +36,7 @@ static struct defined *olddefines;
 extern int my_yyparse(char *my_string, int lineno);
 extern struct fsm *current_parse;
 static char *tempstr;
+int lexccolumn = 0;
 
 struct fsm *fsm_lexc_parse_string(char *string) {
 
@@ -108,7 +112,7 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
 }
 
 <*>{SPACE}+ { }
-<*>\n { lexclineno++; }
+<*>\n { lexclineno++; lexccolumn = 1;}
  /* Multichar definitions */
 
  /* A Multichar definition can contain anything except nonescaped space */
@@ -241,4 +245,4 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
 }
 <*>((!).*\n) { /* printf ("Comment: [%s]\n",lexctext); */ }
 
-<*>(.) { printf("\n***Syntax error on line %i at '%s'\n",lexclineno,lexctext); return 1;}
+<*>(.) { printf("\n***Syntax error on line %i column %i at '%s'\n",lexclineno,lexccolumn,lexctext); return 1;}

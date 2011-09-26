@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -90,7 +90,7 @@ struct apply_handle *stack_get_ah();
 /* Iface */
 void iface_ambiguous_upper(void);
 void iface_apply_down(char *word);
-void iface_apply_file(char *infilename, char *outfilename, int direction);
+int iface_apply_file(char *infilename, char *outfilename, int direction);
 void iface_apply_med(char *word);
 void iface_apply_up(char *word);
 void iface_apropos(char *s);
@@ -171,7 +171,7 @@ void iface_upper_side(void);
 void iface_view(void);
 void iface_warranty(void);
 void iface_words(int limit);
-void iface_write_att(char *filename);
+int iface_write_att(char *filename);
 void iface_write_prolog(char *filename);
 void iface_zero_plus(void);
 int  print_stats(struct fsm *net);
