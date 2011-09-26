@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -44,17 +44,22 @@ struct binaryline {
 
 extern char *g_att_epsilon;
 
-void io_free();
-static int io_gets(char *target);
+struct io_buf_handle {
+    char *io_buf;
+    char *io_buf_ptr;
+};
+
+struct io_buf_handle *io_init();
+void io_free(struct io_buf_handle *iobh);
+static int io_gets(struct io_buf_handle *iobh, char *target);
 static size_t io_get_gz_file_size(char *filename);
 static size_t io_get_file_size(char *filename);
 static size_t io_get_regular_file_size(char *filename);
-size_t io_gz_file_to_mem (char *filename);
+size_t io_gz_file_to_mem (struct io_buf_handle *iobh, char *filename);
 int foma_net_print(struct fsm *net, gzFile *outfile);
-struct fsm *io_net_read(char **net_name);
+struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name);
 static inline int explode_line (char *buf, int *values);
 
-static char *io_buf = NULL, *io_buf_ptr = NULL;
 
 void escape_print(FILE *stream, char* string) {
     int i;
@@ -375,11 +380,20 @@ struct fsm *fsm_read_prolog (char *filename) {
     }
 }
 
-void io_free() {
-    if (io_buf != NULL) {
-        xxfree(io_buf);
-        io_buf = NULL;
+struct io_buf_handle *io_init() {
+    struct io_buf_handle *iobh;
+    iobh = xxmalloc(sizeof(struct io_buf_handle));
+    (iobh->io_buf) = NULL;
+    (iobh->io_buf_ptr) = NULL;
+    return(iobh);
+}
+
+void io_free(struct io_buf_handle *iobh) {
+    if (iobh->io_buf != NULL) {
+        xxfree(iobh->io_buf);
+        (iobh->io_buf) = NULL;
     }
+    xxfree(iobh);
 }
 
 char *spacedtext_get_next_line(char **text) {
@@ -492,15 +506,46 @@ struct fsm *fsm_read_text_file(char *filename) {
     return(fsm_trie_done(th));
 }
 
+struct fsm *fsm_read_binary_file_multiple(fsm_read_binary_handle fsrh) {
+    char *net_name;
+    struct fsm *net;
+    struct io_buf_handle *iobh;
+    iobh = (struct io_buf_handle *) fsrh;
+    net = io_net_read(iobh, &net_name);
+    if (net == NULL) {
+	io_free(iobh);
+	return(NULL);
+    } else {
+	xxfree(net_name);
+	return(net);
+    }
+}
+
+fsm_read_binary_handle fsm_read_binary_file_multiple_init(char *filename) {
+
+    struct io_buf_handle *iobh;
+    fsm_read_binary_handle fsm_read_handle;
+
+    iobh = io_init();
+    if (io_gz_file_to_mem(iobh, filename) == 0) {
+	io_free(iobh);
+	return NULL;
+    }
+    fsm_read_handle = (void *) iobh;
+    return(fsm_read_handle);
+}
+
 struct fsm *fsm_read_binary_file(char *filename) {
     char *net_name;
     struct fsm *net;
-
-    if (io_gz_file_to_mem(filename) == 0) {
+    struct io_buf_handle *iobh;
+    iobh = io_init();
+    if (io_gz_file_to_mem(iobh, filename) == 0) {
+	io_free(iobh);
         return NULL;
     }
-    net = io_net_read(&net_name);
-    io_free();
+    net = io_net_read(iobh, &net_name);
+    io_free(iobh);
     return(net);
 }
 
@@ -528,20 +573,24 @@ int save_defined(char *filename) {
 int load_defined(char *filename) {
     struct fsm *net;
     char *net_name;
+    struct io_buf_handle *iobh;
+
+    iobh = io_init();
     printf("Loading definitions from %s.\n",filename);
-    if (io_gz_file_to_mem(filename) == 0) {
+    if (io_gz_file_to_mem(iobh, filename) == 0) {
         printf("File error.\n");
+	io_free(iobh);
         return 0;
     }
 
-    while ((net = io_net_read(&net_name)) != NULL) {
+    while ((net = io_net_read(iobh, &net_name)) != NULL) {
         add_defined(net, net_name);
     }
-    io_free();
+    io_free(iobh);
     return(1);
 }
 
-static inline int explode_line (char *buf, int *values) {
+static inline int explode_line(char *buf, int *values) {
 
     int i, j, items;
     j = i = items = 0;
@@ -611,7 +660,7 @@ static inline int explode_line (char *buf, int *values) {
 /* AS gzopen will read uncompressed files as well, one can gunzip a file */
 /* that contains a network and still read it */
 
-struct fsm *io_net_read(char **net_name) {
+struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
 
     char buf[READ_BUF_SIZE];
     struct fsm *net;
@@ -621,7 +670,7 @@ struct fsm *io_net_read(char **net_name) {
     int i, items, new_symbol_number, laststate, lineint[5], *cm;
     char last_final;
 
-    if (io_gets(buf) == 0) {
+    if (io_gets(iobh, buf) == 0) {
         return NULL;
     }
     
@@ -631,17 +680,17 @@ struct fsm *io_net_read(char **net_name) {
         printf("File format error foma!\n");
         return NULL;
     }
-    io_gets(buf);
+    io_gets(iobh, buf);
     if (strcmp(buf, "##props##") != 0) {
         printf("File format error props!\n");
         return NULL;
     }
     /* Properties */
-    io_gets(buf);
+    io_gets(iobh, buf);
     sscanf(buf, "%i %i %i %i %i %lld %i %i %i %i %i %i %s", &net->arity, &net->arccount, &net->statecount, &net->linecount, &net->finalcount, &net->pathcount, &net->is_deterministic, &net->is_pruned, &net->is_minimized, &net->is_epsilon_free, &net->is_loop_free, &net->is_completed, buf);
     strcpy(net->name, buf);
     *net_name = xxstrdup(buf);
-    io_gets(buf);
+    io_gets(iobh, buf);
 
     /* Sigma */
     if (strcmp(buf, "##sigma##") != 0) {
@@ -650,7 +699,7 @@ struct fsm *io_net_read(char **net_name) {
     }
     net->sigma = sigma_create();
     for (;;) {
-        io_gets(buf);
+        io_gets(iobh, buf);
         if (buf[0] == '#') break;
         new_symbol = strstr(buf, " ");
         new_symbol[0] = '\0';
@@ -667,7 +716,7 @@ struct fsm *io_net_read(char **net_name) {
     fsm = net->states;
     laststate = -1;
     for (i=0; ;i++) {
-        io_gets(buf);
+        io_gets(iobh, buf);
         if (buf[0] == '#') break;
 
         /* scanf is just too slow here */
@@ -726,7 +775,7 @@ struct fsm *io_net_read(char **net_name) {
         cmatrix_init(net);
         cm = net->medlookup->confusion_matrix;
         for (;;) {
-            io_gets(buf);
+            io_gets(iobh, buf);
             if (buf[0] == '#') break;
             sscanf(buf,"%i", &i);
             *cm = i;
@@ -740,16 +789,16 @@ struct fsm *io_net_read(char **net_name) {
     return(net);
 }
 
-static int io_gets(char *target) {
+static int io_gets(struct io_buf_handle *iobh, char *target) {
     int i;
-    for (i = 0; *(io_buf_ptr+i) != '\n' && *(io_buf_ptr+i) != '\0'; i++) {
-        *(target+i) = *(io_buf_ptr+i);
-    }   
+    for (i = 0; *((iobh->io_buf_ptr)+i) != '\n' && *((iobh->io_buf_ptr)+i) != '\0'; i++) {
+        *(target+i) = *((iobh->io_buf_ptr)+i);
+    }
     *(target+i) = '\0';
-    if (*(io_buf_ptr+i) == '\0')
-        io_buf_ptr = io_buf_ptr + i;
+    if (*((iobh->io_buf_ptr)+i) == '\0')
+    (iobh->io_buf_ptr) = (iobh->io_buf_ptr) + i;
     else
-        io_buf_ptr = io_buf_ptr + i + 1;
+        (iobh->io_buf_ptr) = (iobh->io_buf_ptr) + i + 1;
 
     return(i);
 }
@@ -887,7 +936,7 @@ static size_t io_get_file_size(char *filename) {
     return(size);
 }
 
-size_t io_gz_file_to_mem(char *filename) {
+size_t io_gz_file_to_mem(struct io_buf_handle *iobh, char *filename) {
 
     size_t size;
     gzFile *FILE;
@@ -896,12 +945,12 @@ size_t io_gz_file_to_mem(char *filename) {
     if (size == 0) {
         return 0;
     }
-    io_buf = xxmalloc((size+1)*sizeof(char));
+    (iobh->io_buf) = xxmalloc((size+1)*sizeof(char));
     FILE = gzopen(filename, "rb");
-    gzread(FILE, io_buf, size);
+    gzread(FILE, iobh->io_buf, size);
     gzclose(FILE);
-    *(io_buf+size) = '\0';
-    io_buf_ptr = io_buf;
+    *((iobh->io_buf)+size) = '\0';
+    iobh->io_buf_ptr = iobh->io_buf;
     return(size);
 }
 
