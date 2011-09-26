@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -19,8 +19,10 @@
 %option nounput
 %option noinput
 %option yylineno
+%top{
+#define YY_BUF_SIZE 16777216
+}
 %{
-#include <stdio.h>
 #include <stdio.h>
 #include "foma.h"
 #define RE 0 /* regex  */
@@ -103,7 +105,7 @@ void my_interfaceparse(char *my_string) {
 
    YY_BUFFER_STATE my_string_buffer;
    my_string_buffer = interface_scan_string(my_string);
-   yylineno = 1;
+   interfacelineno = 1;
    func_args = NULL;
    interfacelex();
    //interface_delete_buffer(my_string_buffer);
@@ -127,7 +129,8 @@ SP         [\040]|[\011]
 NOSP       [^ \t];
 NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 
-%x REGEX DEFI DEF SOURCE APPLY_DOWN APPLY_FILE_IN APPLY_MED APPLY_UP APPLY_P ELIMINATE_FLAG UNDEFINE RPL RLEXC RCMATRIX READ_TEXT READ_SPACED_TEXT SHOW_VAR SET_VAR SET_VALUE SAVE_STACK SAVE_DEFINED LOAD_STACK LOAD_DEFINED IGNORELINE REGEXQ REGEXB PUSH NAME_NET ECHO SYSTEM FUNC_1 FUNC_2 FUNC_3 FUNC_4 APROPOS HELP PRINT_NET_FILE PRINT_NET_NAME PRINT_NET_NAME_FILE PRINT_NET_NAME_FILE2 PRINT_DOT_FILE PRINT_DOT_NAME SUBSTITUTE_SYMBOL SUBSTITUTE_SYMBOL_2 SUBSTITUTE_SYMBOL_3 SUBSTITUTE_DEFINED SUBSTITUTE_DEFINED_2 SUBSTITUTE_DEFINED_3 WRITE_ATT_FILE WRITE_PROLOG_FILE RCOMMENT APPLY_FILE_EATUP APPLY_FILE_OUT ATT EXCMATRIX
+%x REGEX DEFI DEF SOURCE APPLY_DOWN APPLY_FILE_IN APPLY_MED APPLY_UP APPLY_P ELIMINATE_FLAG UNDEFINE RPL RLEXC RCMATRIX READ_TEXT READ_SPACED_TEXT SHOW_VAR SET_VAR SET_VALUE SAVE_STACK SAVE_DEFINED LOAD_STACK LOAD_DEFINED IGNORELINE REGEXQ REGEXB PUSH NAME_NET ECHO SYSTEM FUNC_1 FUNC_2 FUNC_3 FUNC_4 APROPOS HELP PRINT_NET_FILE PRINT_NET_NAME PRINT_NET_NAME_FILE PRINT_NET_NAME_FILE2 PRINT_DOT_FILE PRINT_DOT_NAME SUBSTITUTE_SYMBOL SUBSTITUTE_SYMBOL_2 SUBSTITUTE_SYMBOL_3 SUBSTITUTE_DEFINED SUBSTITUTE_DEFINED_2 SUBSTITUTE_DEFINED_3 WRITE_ATT_FILE WRITE_PROLOG_FILE RCOMMENT APPLY_FILE_EATUP APPLY_FILE_OUT ATT EXCMATRIX ASSERT_STACK
+
 %%
 %{ 
   if (YY_START == APPLY_P && promptmode == PROMPT_MAIN) 
@@ -144,6 +147,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 		  ^{SP}*(apply{SP}+)?up{SP}* { if (iface_stack_check(1)) {promptmode = PROMPT_A; apply_direction = AP_U; ah = stack_get_ah(); BEGIN(APPLY_P);}}
 ^{SP}*(apply{SP}+)?up{SP}*[ \t]*<[ ]* { applydir = AP_U; BEGIN(APPLY_FILE_IN);}
 ^{SP}*apr(o(p(os?)?)?)?{SP}+/[^ ] {BEGIN(APROPOS); }
+^{SP}*assert-stack{SP} {BEGIN(ASSERT_STACK);}
 ^{SP}*clear({SP}+st(a(ck?)?)?)? {  stack_clear();}
 ^{SP}*comp(a(ct?)?){SP}+sig(ma?)? { iface_compact(); }
 ^{SP}*compl(e(te?)?)?({SP}+net?)?   { iface_complete();}
@@ -197,6 +201,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 ^{SP}*(pr(i(nt?)?)?{SP}+)?random\-words{SP}+[0-9]+ { iface_random_words(iface_extract_number(interfacetext)); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?sig(ma?)? { iface_print_sigma(); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?size? { iface_print_stats(); }
+^{SP}*(pr(i(nt?)?)?{SP}+)?stack-size? { printf("STACK SIZE: %d\n", stack_size()); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?upp(e(r(\-(w(o(r(ds?)?)?)?)?)?)?)? { iface_upper_words(-1); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?upp(e(r(\-(w(o(r(ds?)?)?)?)?)?)?)?{SP}+[0-9]+ { iface_upper_words(iface_extract_number(interfacetext)); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?words { iface_words(-1);}
@@ -211,7 +216,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 ^{SP}*(re(ad?)?{SP}+)?cmatrix{SP}*<?{SP}*/[^ \t] { BEGIN(RCMATRIX); }
 ^{SP}*(re(ad?)?{SP}+)?prol(og?)?{SP}*<?{SP}*|rpl{SP}*<?{SP}* { BEGIN(RPL); }
 ^{SP}*(re(ad?)?{SP}+)?lexc{SP}*<?{SP}* { BEGIN(RLEXC); }
-^{SP}*(re(ad?)?{SP}+)?re(g(ex?)?)? { pmode = RE; BEGIN(REGEX); }
+^{SP}*(re(ad?)?{SP}+)?re(g(ex?)?)?{SP}+ { pmode = RE; BEGIN(REGEX); }
 ^{SP}*(re(ad?)?{SP}+)?spaced\-text{SP}*<?{SP}* { BEGIN(READ_SPACED_TEXT); }
 ^{SP}*(re(ad?)?{SP}+)?text{SP}*<?{SP}* { BEGIN(READ_TEXT); }
 ^{SP}*rev(e(r(se?)?)?)?({SP}+net?)?  { iface_reverse(); }
@@ -235,7 +240,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 ^{SP}*(test{SP}+non-null|tnn) {  iface_test_nonnull(); }
 ^{SP}*(test{SP}+null|tnu) {  iface_test_null(); }
 ^{SP}*(test{SP}+lower-universal|tlu) {  iface_test_lower_universal(); }
-^{SP}*(test{SP}+star-free|tsf) {  iface_test_star_free(); }
+^{SP}*(test{SP}+sequential|tseq) {  iface_test_sequential(); }
 ^{SP}*(test{SP}+upper-univesal|tuu) {  iface_test_upper_universal(); }
 ^{SP}*tu(rn?)?({SP}+st(a(ck?)?)?)? {  iface_turn(); }
 ^{SP}*(twosided{SP}+flag-diacritics|tfd) {  iface_twosided_flags(); }
@@ -363,7 +368,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 <RCOMMENT>{ANY}  { yymore(); }
 
 <REGEX>(;) {
-    if (my_yyparse(interfacetext, yylineno) == 0) {
+    if (my_yyparse(interfacetext, interfacelineno) == 0) {
       /* regex xxx line */
       if (pmode == RE) {
         stack_add(fsm_topsort(fsm_minimize(current_parse)));
@@ -441,16 +446,18 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 
 <DEFI>(([\001-\010]|[\013-\037]|[\041-\047]|[\051-\072]|[\074-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\360-\367][\200-\277][\200-\277][\200-\277])+)[ \t]+?;? {
 
+   tempnet = NULL;
    /* Define the top network on stack */
-   if (iface_stack_check(1))
-     tempnet = stack_pop();
-     olddef = add_defined(tempnet,remove_trailing(interfacetext,';'));
-     if (olddef) {
-       printf("redefined %s: ",interfacetext);
-     } else {
-        printf("defined %s: ",interfacetext);
+   if (iface_stack_check(1)) {
+       tempnet = stack_pop();
+       olddef = add_defined(tempnet,remove_trailing(interfacetext,';'));
+       if (olddef) {
+         printf("redefined %s: ",interfacetext);
+       } else {
+          printf("defined %s: ",interfacetext);
+       }
+       print_stats(tempnet);
      }
-     print_stats(tempnet);
      BEGIN(INITIAL);
 }
 
@@ -495,7 +502,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
   if ((yyin = fopen(trim(interfacetext), "r" )) != NULL) {
     printf("Opening file '%s'.\n", trim(interfacetext));    
     input_is_file = 1;
-    yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE ));
+    yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE*2));
   } else {
     printf("Error opening file '%s'\n",trim(interfacetext));
   }
@@ -572,6 +579,15 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
   BEGIN(INITIAL);
 }
 
+<ASSERT_STACK>{NONL} {
+    int level = strtoul(interfacetext, 0, 10);
+    if (level != stack_size()) {
+      fprintf(stderr, "Stack size %d not %d\n", stack_size(), level);
+      exit(1);
+    }
+    BEGIN(INITIAL);
+}
+
 <ATT>{NONL}+ {
   iface_read_att(trim(interfacetext));
   BEGIN(INITIAL);
@@ -619,7 +635,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
       if (!input_is_file)
         printf("Unknown command. Ignoring until end of line.\n");
       else 
-        printf("***Unknown command '%s' on line %i. Aborting.\n",interfacetext,yylineno);
+        printf("***Unknown command '%s' on line %i. Aborting.\n",interfacetext,interfacelineno);
       return 1;
 }
 

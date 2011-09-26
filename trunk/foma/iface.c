@@ -48,9 +48,6 @@ extern int g_med_limit ;
 extern int g_med_cutoff ;
 extern char *g_att_epsilon;
 
-extern void io_free();
-extern size_t io_gz_file_to_mem (char *filename);
-extern struct fsm *io_net_read(char **net_name);
 extern int foma_net_print(struct fsm *net, gzFile *outfile);
 
 static char *sigptr(struct sigma *sigma, int number);
@@ -180,6 +177,7 @@ struct global_help {
     {"test upper-universal","test if upper side is Σ*","Short form: tuu\n"},
     {"test non-null","test if top machine is not the empty language","Short form:tnn\n" },
     {"test null","test if top machine is the empty language (∅)","Short form: tnu\n" },
+    {"test sequential","tests if top machine is sequential","Short form: tseq\n"},
     {"test star-free","test if top FSM is star-free","Short form: tsf\n"},
     {"turn stack","turns stack upside down","" },
     {"twosided flag-diacritics","changes flags to always be identity pairs","Short form: tfd" },
@@ -335,7 +333,7 @@ void iface_apply_med(char *word) {
         apply_med(stack_find_top()->fsm, word);
 }
 
-void iface_apply_file(char *infilename, char *outfilename, int direction) {
+int iface_apply_file(char *infilename, char *outfilename, int direction) {
     char *result, inword[LINE_LIMIT];
     struct fsm *net;
     struct apply_handle *ah;
@@ -343,13 +341,14 @@ void iface_apply_file(char *infilename, char *outfilename, int direction) {
 
     if (direction != AP_D && direction != AP_U) {
         perror("Invalid direction in iface_apply_file().\n");
-        return;
+        return 1;
     }
-    if (!iface_stack_check(1)) { return; }
+    if (!iface_stack_check(1)) { return 0; }
     INFILE = fopen(infilename, "r");
     if (INFILE == NULL) {
+	fprintf(stderr, "%s: ", infilename);
         perror("Error opening file");
-        return;
+        return 1;
     }
     
     if (outfilename == NULL) {
@@ -358,8 +357,9 @@ void iface_apply_file(char *infilename, char *outfilename, int direction) {
         OUTFILE = fopen(outfilename, "w");
         printf("Writing output to file %s.\n", outfilename);
         if (OUTFILE == NULL) {
+	    fprintf(stderr, "%s: ", outfilename);
             perror("Error opening output file.");
-            return;
+            return 1;
         }
     }
     net = stack_find_top()->fsm;
@@ -394,6 +394,7 @@ void iface_apply_file(char *infilename, char *outfilename, int direction) {
     }
     if (outfilename != NULL)
         fclose(OUTFILE);
+    return 0;
 }
 
 void iface_apply_down(char *word) {
@@ -466,8 +467,8 @@ void iface_compose() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
         while (stack_size()>1) {
-	  one = stack_pop();
-	  two = stack_pop();
+	    one = stack_pop();
+	    two = stack_pop();
 	    stack_add(fsm_topsort(fsm_minimize(fsm_compose(one,two))));
 	}
     }
@@ -477,8 +478,9 @@ void iface_conc() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
         while (stack_size()>1) {
+	    printf("dd");
 	    one = stack_pop();
-	    two = stack_pop();         
+	    two = stack_pop();
 	    stack_add(fsm_topsort(fsm_minimize(fsm_concat(one,two))));
 	}
     }
@@ -560,15 +562,15 @@ void iface_load_defined(char *filename) {
 
 void iface_load_stack(char *filename) {
     struct fsm *net;
-    char *net_name;
+    fsm_read_binary_handle fsrh;
 
-    if (io_gz_file_to_mem(filename) == 0) {
+    if ((fsrh = fsm_read_binary_file_multiple_init(filename)) == NULL) {
+	fprintf(stderr, "%s: ", filename);
         perror("File error");
         return;
     }
-    while ((net = io_net_read(&net_name)) != NULL)
+    while ((net = fsm_read_binary_file_multiple(fsrh)) != NULL)
         stack_add(net);
-    io_free();
     return;
 }
 
@@ -832,6 +834,7 @@ int iface_read_att(char *filename) {
     printf("Reading AT&T file: %s\n",filename);
     tempnet = read_att(filename);
     if (tempnet == NULL) {
+	fprintf(stderr, "%s: ", filename);
         perror("Error opening file");
         return 1;
     } else {
@@ -845,6 +848,7 @@ int iface_read_prolog(char *filename) {
     printf("Reading prolog: %s\n",filename);
     tempnet = fsm_read_prolog(filename);
     if (tempnet == NULL) {
+	fprintf(stderr, "%s: ", filename);
         perror ("Error opening file");
         return 1;
     } else {
@@ -857,20 +861,24 @@ int iface_read_spaced_text(char *filename) {
     struct fsm *net;
     net = fsm_read_spaced_text_file(filename);
     if (net == NULL) {
+	fprintf(stderr, "%s: ", filename);
 	perror("File error");
 	return 1;
     }
     stack_add(fsm_topsort(fsm_minimize(net)));
+    return 0;
 }
 
 int iface_read_text(char *filename) {
     struct fsm *net;
     net = fsm_read_text_file(filename);
     if (net == NULL) {
+	fprintf(stderr, "%s: ", filename);
 	perror("File error");
 	return 1;
     }
     stack_add(fsm_topsort(fsm_minimize(net)));
+    return 0;
 }
 
 int iface_stack_check (int size) {
@@ -980,12 +988,11 @@ void iface_show_variable(char *name) {
     int i;
     for (i=0; global_vars[i].name != NULL; i++) {
         if (strncmp(name,global_vars[i].name,8) == 0) {
-            printf("%s = %s\n",global_vars[i].name, ((int )(global_vars[i].ptr)) == 1 ? "ON" : "OFF");
+	    printf("%s = %s\n",global_vars[i].name, ((int)(global_vars[i].ptr)) == 1 ? "ON" : "OFF");
             return;
-        }      
+        }
     }
-    printf("*There is no global variable '%s'.\n",name);
-    
+    printf("*There is no global variable '%s'.\n",name);    
 }
 
 void iface_set_variable(char *name, char *value) {
@@ -1059,24 +1066,10 @@ void iface_test_functional() {
     if (iface_stack_check(1))
         iface_print_bool(fsm_isfunctional(stack_find_top()->fsm));
 }
-void iface_test_unambiguous() {
-    if (iface_stack_check(1))
-        iface_print_bool(fsm_isunambiguous(stack_find_top()->fsm));
-}
 
 void iface_test_identity() {
     if (iface_stack_check(1))
         iface_print_bool(fsm_isidentity(stack_find_top()->fsm));
-}
-
-void iface_test_lower_universal() {
-    if (iface_stack_check(1))
-        iface_print_bool(fsm_isempty(fsm_complement(fsm_lower(fsm_copy(stack_find_top()->fsm)))));
-}
-
-void iface_test_upper_universal() {
-    if (iface_stack_check(1))
-        iface_print_bool(fsm_isempty(fsm_complement(fsm_upper(fsm_copy(stack_find_top()->fsm)))));
 }
 
 void iface_test_nonnull() {
@@ -1089,9 +1082,24 @@ void iface_test_null() {
         iface_print_bool(fsm_isempty(fsm_copy(stack_find_top()->fsm)));
 }
 
-void iface_test_star_free() {
+void iface_test_unambiguous() {
     if (iface_stack_check(1))
-        iface_print_bool(fsm_isstarfree(fsm_copy(stack_find_top()->fsm)));
+        iface_print_bool(fsm_isunambiguous(stack_find_top()->fsm));
+}
+
+void iface_test_lower_universal() {
+    if (iface_stack_check(1))
+        iface_print_bool(fsm_isempty(fsm_complement(fsm_lower(fsm_copy(stack_find_top()->fsm)))));
+}
+
+void iface_test_sequential() {
+    if (iface_stack_check(1))
+        iface_print_bool(fsm_issequential(stack_find_top()->fsm));
+}
+
+void iface_test_upper_universal() {
+    if (iface_stack_check(1))
+        iface_print_bool(fsm_isempty(fsm_complement(fsm_upper(fsm_copy(stack_find_top()->fsm)))));
 }
 
 void iface_turn() {
@@ -1137,10 +1145,12 @@ void iface_words(int limit) {
     }
 }
 
-void iface_write_att(char *filename) {
+int iface_write_att(char *filename) {
     FILE    *outfile;
     struct fsm *net;
-    if (!iface_stack_check(1)) {return;}
+    if (!iface_stack_check(1)) {
+	return 1;
+    }
     net = stack_find_top()->fsm;
     if (filename == NULL) {
         outfile = stdout;
@@ -1148,14 +1158,15 @@ void iface_write_att(char *filename) {
         printf("Writing AT&T file: %s\n",filename);
         outfile = fopen(filename, "w");
         if(outfile == NULL) {
-            perror("File error.");
-            return;
+	    fprintf(stderr, "%s: ", filename);
+            perror("File error opening.");
+            return 1;
         }
     }
     net_print_att(net, outfile);
     if (filename != NULL)
         fclose(outfile);
-    return;
+    return 0;
 }
 
 void iface_write_prolog(char *filename) {
