@@ -15,7 +15,7 @@ LEXCMATRIX = flex -8 --prefix=cmatrix
 RM = /bin/rm -f
 LDFLAGS = -lreadline -lz -ltermcap
 FLOOKUPLDFLAGS = libfoma.a -lz
-CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden
+CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
 FOMAOBJS = foma.o stack.o iface.o lex.interface.o
 FLOOKUPOBJS = flookup.o
 LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.tab.o
@@ -50,7 +50,9 @@ endif
 
 LIBS = $(SHAREDLIBV) $(STATICLIB)
 
-libfoma: $(LIBOBJS)
+libfoma: $(SHAREDLIBV)
+
+$(SHAREDLIBV): $(LIBOBJS)
 	$(AR) $(ARFLAGS) $(STATICLIB) $(LIBOBJS)
 	$(RANLIB) $(STATICLIB)
 	$(CC) $(CFLAGS) -shared -Wl,$(DFLAG),$(SHAREDLIBM) -o $(SHAREDLIBV) $(LIBOBJS) $(LDFLAGS)
