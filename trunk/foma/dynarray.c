@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -297,7 +297,7 @@ void fsm_construct_add_arc_nums(struct fsm_construct_handle *handle, int source,
 void fsm_construct_copy_sigma(struct fsm_construct_handle *handle, struct sigma *sigma) {
 
     unsigned int hash;
-    int i, symnum;
+    int symnum;
     struct fsm_sigma_hash *fh, *newfh;
     char *symbol, *symdup;
 
@@ -541,7 +541,7 @@ struct fsm_read_handle *fsm_read_init(struct fsm *net) {
 
 void fsm_read_reset(struct fsm_read_handle *handle) {
     if (handle == NULL)
-	return NULL;
+	return;
     handle->arcs_cursor = NULL;
     handle->initials_cursor = NULL;
     handle->finals_cursor = NULL;
@@ -657,7 +657,7 @@ int fsm_get_next_state(struct fsm_read_handle *handle) {
     return *(handle->states_cursor);
 }
 
-void *fsm_read_done(struct fsm_read_handle *handle) {
+void fsm_read_done(struct fsm_read_handle *handle) {
     xxfree(handle->fsm_sigma_list);
     xxfree(handle->finals_head);
     xxfree(handle->initials_head);
