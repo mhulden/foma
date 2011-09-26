@@ -28,6 +28,8 @@ struct fsm_sigma_hash {
     struct fsm_sigma_hash *next;
 };
 
+typedef void *fsm_read_binary_handle;
+
 struct fsm_construct_handle {
     struct fsm_state_list *fsm_state_list;
     int fsm_state_list_size;
@@ -99,7 +101,7 @@ struct apply_handle {
 	char *value;
     } *flag_lookup ;
 
-    struct searchstack { 
+    struct searchstack {
 	int offset;
 	int opos;
 	int ipos;
