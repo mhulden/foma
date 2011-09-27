@@ -59,11 +59,11 @@ extern "C" {
 /* Flag types */
 #define FLAG_UNIFY 1
 #define FLAG_CLEAR 2
-#define FLAG_DISALLOW 3
-#define FLAG_NEGATIVE 4
-#define FLAG_POSITIVE 5
-#define FLAG_REQUIRE 6
-#define FLAG_EQUAL 7
+#define FLAG_DISALLOW 4
+#define FLAG_NEGATIVE 8
+#define FLAG_POSITIVE 16
+#define FLAG_REQUIRE 32
+#define FLAG_EQUAL 64
 
 #define NO  0
 #define YES 1
