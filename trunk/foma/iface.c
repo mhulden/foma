@@ -453,6 +453,7 @@ void iface_apply_up(char *word) {
 void iface_compact() {
     if (iface_stack_check(1)) {
         fsm_compact(stack_find_top()->fsm); 
+	sigma_sort(stack_find_top()->fsm);
         stack_add(fsm_topsort(fsm_minimize(stack_pop())));
     }
 }
