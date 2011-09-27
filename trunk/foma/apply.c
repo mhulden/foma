@@ -364,10 +364,10 @@ char *apply_net(struct apply_handle *h) {
 
 		eatupo = apply_append(h, h->curr_ptr, symout);
 		if (g_obey_flags && h->has_flags && ((h->flag_lookup+symin)->type & (FLAG_UNIFY|FLAG_CLEAR|FLAG_POSITIVE|FLAG_NEGATIVE))) {
-		    fname = h->flag_list->name;
+                    fname = (h->flag_lookup+symin)->name;
 		    fvalue = h->oldflagvalue;
 		    fneg = h->oldflagneg;
-                    
+
 		} else {
 		    fname = fvalue = NULL;
 		    fneg = 0;
@@ -857,6 +857,7 @@ int apply_check_flag(struct apply_handle *h, int type, char *name, char *value) 
     }
 
     if (type == FLAG_REQUIRE) {
+
 	if (value == NULL) {
 	    if (flist->value == NULL) {
 		return FAIL;
