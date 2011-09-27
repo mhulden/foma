@@ -18,10 +18,6 @@
 #include <stdlib.h>
 #include "foma.h"
 
-/* int dfa_sort_cmp2(const struct fsm_state *a, const struct fsm_state *b) { */
-/*   return (a->state_no - b->state_no); */
-/* } */
-
 struct fsm *fsm_reverse(struct fsm *net) {
     struct fsm *revnet;
     struct fsm_construct_handle *revh;
@@ -31,19 +27,22 @@ struct fsm *fsm_reverse(struct fsm *net) {
     inh = fsm_read_init(net);
     revh = fsm_construct_init(net->name);
     fsm_construct_copy_sigma(revh, net->sigma);
+
     while (fsm_get_next_arc(inh)) {
-	fsm_construct_add_arc_nums(revh, fsm_get_arc_target(inh), fsm_get_arc_source(inh), fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
+	fsm_construct_add_arc_nums(revh, fsm_get_arc_target(inh)+1, fsm_get_arc_source(inh)+1, fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
     }
+
     while ((i = fsm_get_next_final(inh)) != -1) {
-	fsm_construct_set_initial(revh, i);
+	fsm_construct_add_arc_nums(revh, 0, i+1, EPSILON, EPSILON);
     }
     while ((i = fsm_get_next_initial(inh)) != -1) {
-	fsm_construct_set_final(revh, i);
+	fsm_construct_set_final(revh, i+1);
     }
+    fsm_construct_set_initial(revh, 0);
     fsm_read_done(inh);
     revnet = fsm_construct_done(revh);
     revnet->is_deterministic = 0;
+    revnet->is_epsilon_free = 0;
     fsm_destroy(net);
     return(revnet);
 }
-
