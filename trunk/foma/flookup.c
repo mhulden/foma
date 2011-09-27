@@ -23,8 +23,8 @@
 
 #define LINE_LIMIT 262144
 
-char *usagestring = "Usage: flookup [-h] [-i] [-s \"separator\"] [-v] [-x] <binary foma file>\n";
-char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file.\nIf the file contains several nets, inputs will be passed through all of them (simulating composition).\nOptions:\n-h\t\tprint help\n-i\t\tinverse application (apply down instead of up)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
+char *usagestring = "Usage: flookup [-h] [-i] [-s \"separator\"] [-w \"wordseparator\"] [-v] [-x] <binary foma file>\n";
+char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file.\nIf the file contains several nets, inputs will be passed through all of them (simulating composition).\nOptions:\n-h\t\tprint help\n-i\t\tinverse application (apply down instead of up)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-w \"separator\"\tchange words separator symbol (default is newline)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
 
 struct lookup_chain {
     struct fsm *net;
@@ -53,7 +53,7 @@ void app_print(int echo, char *line, char *separator, char *result) {
 int main(int argc, char *argv[]) {
     
     int opt, echo = 1, apply_in_chain = 0, numnets = 0, direction = DIR_UP, results;
-    char *infilename, line[LINE_LIMIT], *result, *tempstr, *separator = "\t";
+    char *infilename, line[LINE_LIMIT], *result, *tempstr, *separator = "\t", *wordseparator = "\n";
     struct fsm *net;
     FILE *INFILE;   
     struct lookup_chain *chain_head, *chain_tail, *chain_new, *chain_pos;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
     char *(*applyer)() = &apply_up; /* Default apply direction */
 
-    while ((opt = getopt(argc, argv, "chis:vx")) != -1) {
+    while ((opt = getopt(argc, argv, "chis:w:vx")) != -1) {
         switch(opt) {
         case 'c':
 	    apply_in_chain = 1;
@@ -76,8 +76,11 @@ int main(int argc, char *argv[]) {
 	case 's':
 	    separator = strdup(optarg);
 	    break;
+	case 'w':
+	    wordseparator = strdup(optarg);
+	    break;
         case 'v':
-	    printf("flookup 1.0 (foma library version %s)\n", fsm_get_library_version_string());
+	    printf("flookup 1.01 (foma library version %s)\n", fsm_get_library_version_string());
 	    exit(0);
         case 'x':
 	    echo = 0;
@@ -163,6 +166,7 @@ int main(int argc, char *argv[]) {
 	if (results == 0) {
 	    app_print(echo, line, separator, NULL);
 	}
+	printf("%s", wordseparator);
     }
 
     /* Cleanup */
