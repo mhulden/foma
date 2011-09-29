@@ -54,16 +54,16 @@ static void apply_clear_flags(struct apply_handle *h);
 static void apply_stack_clear(struct apply_handle *h);
 static int apply_stack_isempty(struct apply_handle *h);
 static void apply_stack_pop (struct apply_handle *h);
-static void apply_stack_push (struct apply_handle *h,int sptr, int sipos, int sopos, int szeroes, char *sflagname, char *sflagvalue, int sflagneg);
+static void apply_stack_push (struct apply_handle *h,int sptr, int sipos, int sopos, int vmark, char *sflagname, char *sflagvalue, int sflagneg);
 static void apply_force_clear_stack(struct apply_handle *h);
 static void apply_force_clear_stack(struct apply_handle *h) {
 
     /* Make sure stack is empty and marks reset */
     if (!apply_stack_isempty(h)) {
-	*(h->marks+(h->gstates+h->ptr)->state_no) = -1;
+	*(h->marks+(h->gstates+h->ptr)->state_no) = 0;
 	while (!apply_stack_isempty(h)) {
 	    apply_stack_pop(h);
-	    *(h->marks+(h->gstates+h->ptr)->state_no) = -1;	    
+	    *(h->marks+(h->gstates+h->ptr)->state_no) = 0;
 	}
 	h->iterator = 0;
 	h->iterate_old = 0;
@@ -246,7 +246,9 @@ void apply_stack_pop (struct apply_handle *h) {
     h->ptr = (h->searchstack+h->apply_stack_ptr)->offset;
     h->ipos = (h->searchstack+h->apply_stack_ptr)->ipos;
     h->opos = (h->searchstack+h->apply_stack_ptr)->opos;
-    h->zeroes = (h->searchstack+h->apply_stack_ptr)->zeroes;
+    /* Restore mark */
+    *(h->marks+(h->gstates+h->ptr)->state_no) = (h->searchstack+h->apply_stack_ptr)->visitmark;
+
     if (h->has_flags && (h->searchstack+h->apply_stack_ptr)->flagname != NULL) {
 	/* Restore flag */
 	for (h->flist = h->flag_list; h->flist != NULL; h->flist = h->flist->next) {
@@ -261,7 +263,7 @@ void apply_stack_pop (struct apply_handle *h) {
     }
 }
 
-static void apply_stack_push (struct apply_handle *h, int sptr, int sipos, int sopos, int szeroes, char *sflagname, char *sflagvalue, int sflagneg) {
+static void apply_stack_push (struct apply_handle *h, int sptr, int sipos, int sopos, int vmark, char *sflagname, char *sflagvalue, int sflagneg) {
     if (h->apply_stack_ptr == h->apply_stack_top) {
 	h->searchstack = xxrealloc(h->searchstack, sizeof(struct searchstack)* ((h->apply_stack_top)*2));
 	if (h->searchstack == NULL) {
@@ -273,18 +275,18 @@ static void apply_stack_push (struct apply_handle *h, int sptr, int sipos, int s
     (h->searchstack+h->apply_stack_ptr)->offset     = sptr;
     (h->searchstack+h->apply_stack_ptr)->ipos       = sipos;
     (h->searchstack+h->apply_stack_ptr)->opos       = sopos;
-    (h->searchstack+h->apply_stack_ptr)->zeroes     = szeroes;
+    (h->searchstack+h->apply_stack_ptr)->visitmark  = vmark;
     (h->searchstack+h->apply_stack_ptr)->flagname   = sflagname;
     (h->searchstack+h->apply_stack_ptr)->flagvalue  = sflagvalue;
     (h->searchstack+h->apply_stack_ptr)->flagneg    = sflagneg;
-    (h->apply_stack_ptr)++;    
+    (h->apply_stack_ptr)++;
 }
 
 void apply_reset_enumerator(struct apply_handle *h) {
     int statecount, i;
     statecount = h->last_net->statecount;
     for (i=0; i < statecount; i++) {
-	*(h->marks+i) = -1;
+	*(h->marks+i) = 0;
     }
     h->iterator = 0;
     h->iterate_old = 0;
@@ -294,7 +296,7 @@ char *apply_net(struct apply_handle *h) {
 
     char *fname, *fvalue;
     int eatupi, eatupo, symin, symout, f, fneg; 
-    int m, vcount;
+    int vcount, msource, mtarget;
     
 /*     We perform a basic DFS on the graph, with two minor complications:       */
 
@@ -311,13 +313,14 @@ char *apply_net(struct apply_handle *h) {
 /*        Since we're doing a DFS, we can be sure to return to the previous     */
 /*        global flag state by just remembering that last flag change.          */
     
+    /* If called with NULL as the input word, this will be set */
     if (h->iterate_old == 1) {
         goto resume;
     }
 
-    h->ptr = 0; h->ipos = 0; h->opos = 0; h->zeroes = 0;
+    h->ptr = 0; h->ipos = 0; h->opos = 0;
     apply_stack_clear(h);
-    
+
     if (h->has_flags) {
 	apply_clear_flags(h);
     }
@@ -331,8 +334,10 @@ char *apply_net(struct apply_handle *h) {
 	
 	apply_stack_pop(h);
 
+	/* Last line */
 	if ((h->gstates+h->ptr)->state_no != (h->gstates+h->ptr+1)->state_no) {
-	    *(h->marks+(h->gstates+h->ptr)->state_no) = -1;
+	    /* Restore mark */
+	    *(h->marks+(h->gstates+h->ptr)->state_no) = 0;
 	    continue;
 	}
 	(h->ptr)++;
@@ -360,8 +365,10 @@ char *apply_net(struct apply_handle *h) {
 	    symin  = (((h->mode)&DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->in  : (h->gstates+h->curr_ptr)->out;
 	    symout = (((h->mode)&DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->out : (h->gstates+h->curr_ptr)->in;
 	    
-	    if ((eatupi = apply_match_str(h, symin, h->ipos)) != -1) {
-
+	    msource = *(h->marks+(h->gstates+h->ptr)->state_no);
+	    mtarget = *(h->marks+(h->gstates+(*(h->statemap+(h->gstates+h->curr_ptr)->target)))->state_no);
+	    
+	    if (((eatupi = apply_match_str(h, symin, h->ipos)) != -1) && -1-(h->ipos)-eatupi != mtarget) {
 		eatupo = apply_append(h, h->curr_ptr, symout);
 		if (g_obey_flags && h->has_flags && ((h->flag_lookup+symin)->type & (FLAG_UNIFY|FLAG_CLEAR|FLAG_POSITIVE|FLAG_NEGATIVE))) {
                     fname = (h->flag_lookup+symin)->name;
@@ -372,30 +379,28 @@ char *apply_net(struct apply_handle *h) {
 		    fname = fvalue = NULL;
 		    fneg = 0;
 		}
+		
+                apply_stack_push(h, h->curr_ptr, h->ipos, h->opos, msource, fname, fvalue, fneg);
 
-                apply_stack_push(h, h->curr_ptr, h->ipos, h->opos, h->zeroes, fname, fvalue, fneg);
-
-                if (eatupi == 0)
-		    (h->zeroes)++;
 		f = 1;
                 h->ptr = *(h->statemap+(h->gstates+h->curr_ptr)->target);
 		h->ipos = (h->ipos)+eatupi;
 		h->opos = (h->opos)+eatupo;
 		break;
-	    }
+	    } 
 	}
 
 	/* There were no more edges on this vertex? */
 	if (!f) {
-	    /* Unmark, break */
-	    *(h->marks+(h->gstates+h->ptr)->state_no) = -1;
+	    /* Unmark? */
+	    *(h->marks+(h->gstates+h->ptr)->state_no) = 0;
 	    continue;
 	}
 	
 	/* Print accumulated string */
 
     L2:
-	if ((h->gstates+h->ptr)->final_state == 1 && ((((h->mode) & ENUMERATE) == ENUMERATE) || (h->ipos == strlen(h->instring)))) {
+	if ((h->gstates+h->ptr)->final_state == 1 && ((((h->mode) & ENUMERATE) == ENUMERATE) || (h->ipos == h->current_instring_length))) {
             /* Stick a 0 to endpos to avoid getting old accumulated gunk strings printed */
             *(h->outstring+h->opos) = '\0';
 	    if (((h->mode) & RANDOM) == RANDOM) {
@@ -413,24 +418,15 @@ char *apply_net(struct apply_handle *h) {
 
     resume:
 	
-	/* Check Mark */
-	m = *(h->marks+(h->gstates+h->ptr)->state_no);
-	
-	/* If we're randomly generating strings, we randomly decide whether or not */
-	/* to obey the restriction against looping */
-	
-	if ((m != -1)  && (((h->mode) & ENUMERATE) == ENUMERATE)) {
-	  continue;
-	} else if ((m != -1) && (((h->mode) & ENUMERATE) != ENUMERATE) && (h->zeroes) > (strlen(h->instring)+1)) {
-     	    continue;
-        }
-
 	/* Mark */
+	/* 0 = unseen, +ipos = seen at ipos, -ipos = seen second time at ipos */
 	if ((h->mode & RANDOM) != RANDOM) {
-	  *(h->marks+(h->gstates+h->ptr)->state_no) = 1;
-	  *(h->marks+(h->gstates+h->ptr)->state_no) = h->ipos;
+	    if (*(h->marks+(h->gstates+h->ptr)->state_no) == h->ipos+1) {
+		*(h->marks+(h->gstates+h->ptr)->state_no) = -(h->ipos+1);
+	    } else {
+		*(h->marks+(h->gstates+h->ptr)->state_no) = h->ipos+1;
+	    }
 	}
-
 	goto L1;
     }
     /* Catch unprinted random which didn't stop at a final state */
@@ -439,7 +435,7 @@ char *apply_net(struct apply_handle *h) {
 	  h->iterator = 0;
 	  h->iterate_old = 0;
           return(h->outstring);    
-    }    
+    }
     apply_stack_clear(h);
     return NULL;
 }
@@ -574,7 +570,6 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 	    }
 	}
 	return(0);
-	//	return (strlen(*(h->sigs+symbol)));
     }
     if (symbol == EPSILON) {
 	return 0;
@@ -615,7 +610,7 @@ void apply_create_statemap(struct apply_handle *h, struct fsm *net) {
 
     for (i=0; i < net->statecount; i++) {
 	*(h->statemap+i) = -1;
-	*(h->marks+i) = -1;
+	*(h->marks+i) = 0;
     }
     for (i=0; (fsm+i)->state_no != -1; i++) {
 	if (*(h->statemap+(fsm+i)->state_no) == -1) {

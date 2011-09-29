@@ -47,12 +47,11 @@ struct apply_handle {
 
     int ptr;
     int curr_ptr; 
-    int ipos; 
-    int opos; 
-    int zeroes; 
-    int mode; 
+    int ipos;
+    int opos;
+    int mode;
     int printcount;
-    int *statemap ; 
+    int *statemap; 
     int *marks;
 
     struct sigma_trie {
@@ -105,7 +104,7 @@ struct apply_handle {
 	int offset;
 	int opos;
 	int ipos;
-	int zeroes;
+	int visitmark;
 	char *flagname;
 	char *flagvalue;
 	int flagneg;
