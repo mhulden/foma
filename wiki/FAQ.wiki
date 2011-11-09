@@ -234,3 +234,25 @@ SET flag-is-epsilon ON
 }}}
 
 _before_ composing the rules together with the lexicon. This will allow the rules to trigger even with flags intervening in the contexts.
+
+
+== There's a word path in a transducer which I can see with mine own eyes, but foma won't accept the word in apply down/up ==
+
+Probably a tokenization issue. Foma does a leftmost-longest tokenization on all words before looking them up in a transducer. It's dangerous to use multicharacter symbols where their prefixes overlap. `[`Well, it's dangerous to use multicharacter symbols, period.`]`
+
+Consider:
+
+{{{
+regex c a t | ca r;
+}}}
+
+and now
+
+{{{
+apply down> cat
+???
+}}}
+
+The word is not accepted because the input `cat` gets tokenized `ca+t` (because we have symbols `ca` and `t` in the alphabet).  But there is no path matching `ca+t`, only `c+a+t`; hence, it won't match.
+
+A good debugging strategy is to always look at the alphabet in situations like this (with the `sigma` command).
