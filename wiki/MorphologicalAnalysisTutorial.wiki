@@ -626,3 +626,214 @@ Now, we can combine the two with the main grammar as follows:
 {{{
 regex Exceptions .P. [Grammar | ParallelForms] ;
 }}}
+
+-----
+
+= Advanced: long-distance dependencies and flag diacritics =
+
+In some cases, we need to model long-distance dependencies between morphemes - something that is not easy to do in the _lexc_-formalism.  Flag diacritics offer a way to perform long-distance dependency checks during word formation.
+
+English morphology has few (if any) truly general long-distance dependencies, but to have a concrete example to illustrate the technique with, let's consider the following verbs and deverbal adjectives:
+
+{{{
+undrinkable+Adj
+unpayable+Adj
+undoable+Adj
+drinkable+Adj
+payable+Adj
+doable+Adj
+*undrink+V+Inf
+*unpay+V+Inf
+undo+V+Inf
+}}}
+
+To write a _lexc_-grammar that captures everything (except the two forms we have deemed ungrammatical), we could presumably do something like the following skeleton:
+
+{{{
+Multichar_Symbols +V +Inf +Adj +Pl UN+
+
+LEXICON Root
+Prefix;
+
+LEXICON Prefix
+UN+:un Verb;
+       Verb;
+
+LEXICON Verb
+
+do    Vinf;
+drink Vinf;
+pay   Vinf;
+
+
+LEXICON Vinf
+
+able    Adjinf;  
++V+Inf:0  #;
+
+LEXICON Adjinf
++Adj:0      #;
++Adj+Pl:s   #;
+}}}
+
+The script now generates all `3*6 = 18` combinations of:
+
+{{{
+VERB
+VERB+able
+VERB+ables
+un+VERB
+un+VERB+able
+un+VERB+ables
+}}}
+
+To address the two wordforms that shouldn't be allowed (`*`*undrink( and `*`*unpay*) the first problem is that, somehow, the `Vinf`-lexicon should be aware if the `UN+` prefix had been selected from the prefix lexicon and in that case force the selection of `able` to disallow `*undrink`, for example. This is tricky to manage in a clean way in the continuation-class formalism of _lexc_.  The second problem is that we don't want this restriction to apply in the case of `doable`.  Both of these restriction can be accomplished by the use of flag diacritic symbols placed into the grammar which gives a more fine-grained control over co-occurrence.
+
+=== Flag diacritics to control co-occurrence ===
+
+Flag diacritics are "invisible" symbols that allow one to express constraints between disjoint parts of words.  All flag symbols in a grammar are of the following format:
+
+ * `@FLAGTYPE.FEATURE.VALUE@
+
+The flag values and features are arbitrary strings, and up to the user to decide.  During application of a transducer, the runtime of _foma_ will decide whether or not a word is to be accepted depending on which flags co-occur in the same word.  A good way to handle co-occurrence problems is generally to drop suitable flags by certain morphemes, which then prevents them from combining, but leaving the flags invisible to the user.
+
+The different flag types are 
+
+  * `U` unify features `@U.FEATURE.VALUE@`
+  * `P` positive set `@P.FEATURE.VALUE@`
+  * `N` negate `@N.FEATURE.VALUE@`
+  * `R` require feature/value `@R.FEATURE.VALUE@` or `@R.FEATURE@`
+  * `D` disallow feature/value `@D.FEATURE.VALUE@` or `@D.FEATURE@`
+  * `C` clear feature `@C.FEATURE@`
+  * `E` require equal feature/values `@E.FEATURE.VALUE@`
+
+We will not use all of the flag types here, and restrict ourselves only to a few, namely *positive* (`P`), *clear* (`C`), and *disallow* (`D`) which set a value to a feature, clear a feature, and disallow a feature to have certain (or any) values, respectively.
+
+The functioning of flags is best illustrated through an example.  Let's add some flags to the previous lexc-script:
+
+{{{
+Multichar_Symbols +V +Inf +Adj +Pl UN+ @P.UN.ON@ @D.UN@ @C.UN@
+
+LEXICON Root
+Prefix;
+
+LEXICON Prefix
+@P.UN.ON@UN+:@P.UN.ON@un Verb;
+       Verb;
+
+LEXICON Verb
+
+@C.UN@do    Vinf;
+drink Vinf;
+pay   Vinf;
+
+
+LEXICON Vinf
+
+able    Adjinf;  
+@D.UN@+V+Inf:@D.UN@ #;
+
+LEXICON Adjinf
++Adj:0      #;
++Adj+Pl:s   #;
+}}}
+
+
+Note the following things:
+
+ * We declared the flags together with the other multi-character symbols
+ * We put a `@P.UN.ON@`-flag on the un-prefix
+ * We put a `@D.UN@`-flag on the infinitive
+ * We put a `@C.UN@`-flag on the do-lemma
+ * We put the flags on both sides (the upper side, and lower side), and made sure they lined up by putting them first in the string whenever we had upper`:`lower entry pairs.
+
+The flags in this grammar interact as follows to capture the phenomena we require:
+
+ * do gives the value `ON` to the feature named `UN` (`@P.UN.ON@`), (positive set) 
+ * the bare infinitive disallows the feature `UN` to have any value `@D.UN@` (disallow)
+
+Now, this leads to that, even though lexc generates the combination
+
+{{{
+@P.UN.ON@unpay@D.UN@
+}}} 
+
+the apply runtime sees that the feature `UN` was first set, and later in the same string disallowed to have any value, thus blocking this word `[`we could have used `@D.UN.ON@` just as well: this would have disallowed `UN` to have the specific value `ON` whereas we disallowed any value at all by `@D.UN@`.`]` This gets us almost everything, with the exception that we want to allow `undo`, unlike the two other un-VERB combinations.  That is handled by the `@C.UN@`-flag, which _clears_ any value the feature `UN` may have.  In other words, for that particular combination, _lexc_ generates:
+
+{{{
+@P.UN.ON@un@C.UN@do@D.UN@
+}}}
+
+And in this case, the runtime flag-watcher has no problem accepting it because the feature `UN` was cleared before it was disallowed.
+
+If you load this file in _foma_, it will actually still say it accepts 18 paths:
+
+{{{
+Root...1, Prefix...2, Verb...3, Vinf...2, Adjinf...2
+Building lexicon...Determinizing...Minimizing...Done!
+1.2 kB. 21 states, 27 arcs, 18 paths.
+}}}
+
+However, doing a `lower-words` will only print out 16 - those words that are accepted.
+
+==== Flag commands ====
+
+If you want to see the flags in the output, you can issue:
+
+{{{
+set show-flags ON
+}}}
+
+And now, `lower-words` or `upper-words` gives something like:
+
+{{{
+@P.UN.ON@un@C.UN@do@D.UN@
+}}}
+
+Foma can also calculate the equivalent transducer without the flags present by `eliminate flags`
+
+{{{
+foma[1]: eliminate flags
+1.3 kB. 26 states, 32 arcs, 16 paths.
+}}}
+
+And now we see that after the flags have been purged and an equivalent FST calculated, the number of paths has been reduced to 16, since they are no longer part of the FST at all.
+
+If you want the _foma_ apply commands to disregard flag constraints, say for debugging purposes, you can also issue the command:
+
+{{{
+set obey-flags OFF
+}}}
+
+==== Flags and replacement rules ====
+
+A common trap with using flag diacritics is to forget that they are actual symbols in the transducers.  This often manifests itself in the design of replacement rules.  Consider a rule like:
+
+{{{
+b -> p || _ .#. ;
+}}}
+
+This rule changes *b* to *p* at the end of a word. Now, if the word is designed with a flag-bearing grammar, it may actually look like:
+
+{{{
+blab@U.SOMEFEATURE.SOMEVALUE@
+}}}
+
+although the flag is never seen when the strings are printed.  In this case the rule will not apply. There are two easy remedies for this:
+
+ * Make rules flag-aware:
+
+{{{
+b -> p || _ ("@U.SOMEFEATURE.SOMEVALUE@") .#. ;
+}}}
+ 
+or
+
+ * Issue the command `set flag-is-epsilon ON` in the _foma_ interface *before* composing the lexicon with the replacement rules.
+
+The following general guidelines should help to steer clear of trouble with flag diacritics:
+
+ * Declare all flags as `Multicharacter_Symbols` in lexc.
+ * Make sure the flags are both on the upper and lower side in lexc, aligned. Put the flag first (before the morpheme) in a lexc entry, and on both sides of the colon if the entry is two-level.
+ * Use `set show-flags ON` when debugging.
+ * Make sure the replacement rules take the flag symbols into account.
