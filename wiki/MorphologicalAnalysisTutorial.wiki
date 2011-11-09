@@ -1,4 +1,5 @@
 #summary A self-contained tutorial for building morphological analyzers.
+#labels Featured
 
 = Morphological analysis with FSTs =
 
