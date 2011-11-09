@@ -8,7 +8,7 @@ The following is a brief and basic tutorial on how to construct a *morphological
 
 Since a "morphological analyzer" could mean any number of things, let's first settle on a task description and define what the morphological analyzer is supposed to accomplish.  In this implementation, a morphological analyzer is taken to be a black box (as in Fig. 1), which happens to be implemented as a finite-state transducer, that translates word forms (such as *runs*) into a string that represents its morphological makeup, such as *run+V+3p+Sg*: a verb in the third person singular present tense.  
 
-[{{ wiki:morphtut3.png|Fig. 1: Morphological analysis as a black box.}}]
+[Morphologicaanalysis http://foma.googlecode.com/svn/wiki/morphtut3.png]
 
 Naturally, if the word form is ambiguous (as ''runs'' is), the job of the analyzer is to output all tag sequences consistent with the grammar and the input word.  In the above example, the transducer should perhaps also output *run+N+Pl*, or some similar sequence to convey the possibility of a noun reading of *runs*.  Since finite-state transducers are inherently bidirectional devices, i.e. we can run a transducer in the inverse direction as well as the forward direction, the same FST, once we've built it, can serve both as a generator and an analyzer.  The standard practice is to build morphological transducers so that the //input// (or domain) side is the analysis side, and the //output// (or range) side contains the word forms.
 
