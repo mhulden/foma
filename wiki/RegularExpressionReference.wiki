@@ -80,7 +80,7 @@ Restrictions: none
 
 == Optionality (X) ==
 
-Defines the language or relation that contains zero or one iteration of `X`. Equivalent to `[X || 0]`.
+Defines the language or relation that contains zero or one iteration of `X`. Equivalent to `[X | 0]`.
 
 Restrictions: none
 
@@ -136,13 +136,13 @@ Restrictions: not well-defined for transducers.
 
 == Left quotient (X\\\Y) ==
 
-The operation `X\\\Y` is defined as: {w `||` ∃x((x ∈ X) ∧ (xw ∈ Y )}.  Informally: the set of suffixes one can add to strings in X to get strings from Y.
+The operation `X\\\Y` is defined as: {w `|` ∃x((x ∈ X) ∧ (xw ∈ Y )}.  Informally: the set of suffixes one can add to strings in X to get strings from Y.
 
 Restrictions: not well-defined for transducers.
 
 == Right quotient (X///Y) ==
 
-The operation `X``///``Y` is defined as: {w `||` ∃x((x ∈ Y ) ∧ (wx ∈ X)}. Informally, this is the set of prefixes one can add to Y to get strings from X.
+The operation `X``///``Y` is defined as: {w `|` ∃x((x ∈ Y ) ∧ (wx ∈ X)}. Informally, this is the set of prefixes one can add to Y to get strings from X.
 
 Restrictions: not well-defined for transducers.
 
@@ -181,7 +181,7 @@ Restrictions: not well-defined for transducers.
 
 == Priority unions (X .P. Y, X .p. Y) ==
 
-Th upper-side priority union `X .P. Y` denotes the union of relations `X` and `Y`, with relations in Y discarded if a relation in X have the same input (domain).  Equivalent to `[X || [ ̃[X.u] .o. Y]]`.  The lower-side priority union is similar, except a relation in X has precedence over a relation in Y based on the range, not the domain.
+Th upper-side priority union `X .P. Y` denotes the union of relations `X` and `Y`, with relations in Y discarded if a relation in X have the same input (domain).  Equivalent to `[X | [ ̃[X.u] .o. Y]]`.  The lower-side priority union is similar, except a relation in X has precedence over a relation in Y based on the range, not the domain.
 
 Restrictions: none
 
@@ -352,7 +352,7 @@ Returns an FSM containing only those paths in `X` that are unambiguous.  That is
 Example:
 
 {{{
-_unambpart(a:b || a:c || b:c);
+_unambpart(a:b | a:c | b:c);
 }}}
 
 returns a transducer equivalent to 
@@ -370,13 +370,13 @@ Returns an FSM containing only those paths in `X` that are ambiguous.  That is, 
 Example:
 
 {{{
-_ambpart(a:b || a:c || b:c);
+_ambpart(a:b | a:c | b:c);
 }}}
 
 returns a transducer equivalent to 
 
 {{{
-a:b || a:c
+a:b | a:c
 }}}
 
 That is, the path containing `b:c` is removes since it is unambiguous. 
@@ -386,7 +386,7 @@ That is, the path containing `b:c` is removes since it is unambiguous.
 Returns an automaton containing all words in the domain of `X` that yield an ambiguous path through `X`.
 
 {{{
-_ambdom(a:b || a:c || b:c);
+_ambdom(a:b | a:c | b:c);
 }}}
 
 returns a an automaton equivalent to 
@@ -526,7 +526,7 @@ The following table gives the operator precedence of all regular expression oper
 
 = Reserved symbols =
 
-The following is a table of all reserved symbols in _foma_ regular expressions, showing the character, the official Unicode character name, and its [[wp>Code_point]].  These need to be escaped (by `%` or enclosing a string in quotes) for their literal meaning in regular expressions.
+The following is a table of all reserved symbols in _foma_ regular expressions, showing the character, the official Unicode character name, and its [http://en.wikipedia.org/wiki/Code_point Code Point].  These need to be escaped (by `%` or enclosing a string in quotes) for their literal meaning in regular expressions.
 
 || Character  || Character Name  || Code point     ||
 ||`!` || EXCLAMATION MARK            ||U+0021||
