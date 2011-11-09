@@ -174,7 +174,7 @@ regex Lexicon .o. Allrules;
 
 == I need to tokenize some text. I want to use foma, but there is no `tokenize` utility ==
 
-You can write a transducer that inserts newlines (or your preferred token boundary).  Here's a crude tokenizer. It uses a separate stoplist of words like "Dr." in `tokenabbreviations.txt`, one on each line:
+You can create a transducer that inserts newlines (or your preferred token boundary).  Here's a crude tokenizer. It uses a separate stoplist of words like "Dr." in `tokenabbreviations.txt`, one on each line:
 
 {{{
 # tokenizer.script
