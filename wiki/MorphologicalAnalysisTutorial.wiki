@@ -102,9 +102,9 @@ We'll also want to use the following tags for marking the above grammatical info
 
 == The lexc-script ==
 
-The lexc-formalism operates with a simple formalism of continuation classes.  One declares a set of labeled lexicons, the content of those lexicons, and rules which dictate how lexicon entries are to be concatenated.
+The lexc-formalism operates under the simple notion of continuation classes.  One declares a set of labeled lexicons, the content of those lexicons, and rules which dictate how lexicon entries are to be concatenated.
 
-The entire lexc-script is given further below, here, we provide a line-by-line analysis of it.
+The entire lexc-script is given further below; here, we provide a line-by-line analysis of it.
 
 First, in the lexc-formalism, we need to declare those symbols that are to be multicharacter strings:
 
@@ -283,13 +283,13 @@ m a k   ^  i         n g    (after e-deletion)
 
 === e-insertion ===
 
-We also have an *e*-insertion rule: whenever a stem ends in a sibilant and is followed by the plural morpheme `s` (`watch` → `watches`).  Sibilants can be defined orthographically by of `s`, `z`, `x`, `c h`, and `s h`.  The rule then looks like:
+We also have an *e*-insertion rule: whenever a stem ends in a sibilant and is followed by the plural morpheme `s` (`watch` → `watches`).  Sibilants can be defined orthographically by `s`, `z`, `x`, `c h`, and `s h`.  The rule then looks like:
 
 {{{
 define EInsertion [..] -> e || s | z | x | c h | s h _ "^" s ;
 }}}
 
-Note that the above rule will work for the words we've defined in our lexicon.  However, the sibilant representation in English orthography is not entirely consistent.  For example, a word such as `monarch` would trigger the rule and incorrectly yield `*``monarches` in the plural.  One way to handle such exceptions is to rewrite the `c h` sequence in the lexicon component with some symbol that will not trigger *e-insertion* (say `K`), which is then rewritten back to `c h` after all the rules have applied.
+Note that the above rule will work for the words we've defined in our lexicon.  However, the sibilant representation in English orthography is not entirely consistent.  For example, a word such as `monarch` would trigger the rule and incorrectly yield `*monarches` in the plural.  One way to handle such exceptions is to rewrite the `c h` sequence in the lexicon component with some symbol that will not trigger *e-insertion* (say `K`), which is then rewritten back to `c h` after all the rules have applied.
 
 === y-replacement ===
 
@@ -309,7 +309,7 @@ define YReplacement y -> i e || _ "^" s    ,,
                     y -> i   || _ "^" e d  ;
 }}}
 
-Note the `,,` which separates two distinct parallel rules.
+Note the `,,` which separates two distinct parallel rules.  These rules are not joined by composition, rather, they operate simultaneously and independently.  For this particular case it is of no importance whether the two rules apply simultaneously or one after the other, but for other cases the output may well be different.
 
 === k-insertion ===
 
@@ -318,6 +318,8 @@ Verbs that end in a *c* (corresponding to a phonological `k`), add a `k` before 
 {{{
 define KInsertion [..] -> k || C V c _ "^" V;
 }}}
+
+Oo course, this rule relies on us having defined V as our set of vowel symbols.
 
 Note the *`[..]`*-construction on the LHS.  Here, using an epsilon (`0`) as the left hand side will not do.  The rule formalism is such that if a `0` were used on the LHS, we would insert a potentially infinite number of *k*-symbols.  The special construction *`[..]`* forces epsilon insertions to restrict themselves to maximally one insertion per potential insertion site.
 
@@ -341,7 +343,7 @@ define Cleanup "^" -> 0;
 
 == Compiling the grammar ==
 
-In the same script that compiles the replacement rules, we also read in the lexc-file, and label it `Lexicon`, so can use that label is subsequent regular expressions.
+In the same script that compiles the replacement rules, we also read in the lexc-file, and label it `Lexicon`, so we can use that label in subsequent regular expressions.
 
 {{{
 read lexc english.lexc
@@ -536,7 +538,7 @@ $
 
 = Grammar tweaking: Adding exceptions (irregular forms) =
 
-At this point, let's return to the concern about generating the incorrect form `maked` from `make+V+PastPart` and `make+V+Past`.  This is clearly not a phonological/orthographic issue that we would want to mend by adding a rewrite rule.  Such a rule would only target those particular word forms (which are really exceptions), so we might as well treat it as an exception by listing it as such.  There a a couple of options regarding how to model exceptional forms in _foma_.  One straightforward way is to simply list the exceptional forms in the lexicon so that they bypass the replacement rules.  Another way is to write a separate mini-grammar for exception which is joined together with the main grammar by the union or priority union operations.
+At this point, let's return to the concern about generating the incorrect form `maked` from `make+V+PastPart` and `make+V+Past`.  This is clearly not a phonological/orthographic issue that we would want to mend by adding a rewrite rule.  Such a rule would only target those particular word forms (which are really exceptions), so we might as well treat it as an exception by listing it as such.  There are a couple of options regarding how to model exceptional forms in _foma_.  One straightforward way is to simply list the exceptional forms in the lexicon so that they bypass the replacement rules.  Another way is to write a separate mini-grammar for exceptions which is joined together with the main grammar by the union or priority union operations.
 
 == Exceptions in LEXC ==
 
@@ -595,7 +597,7 @@ cactus            Ninf;
 cactus+N+Pl:cacti #;
 }}}
 
-Now, we regular entry `cactus` with the continuation class `Ninf` handles the regular pluralization, while we've also listed an irregular one, which is not followed by any continuation class but by end-of-word (`#`).
+Now, the regular entry `cactus` with the continuation class `Ninf` handles the regular pluralization, while we've also listed an irregular one, which is not followed by any continuation class but by end-of-word (`#`).
 
 
 == Parallel forms with union ==
