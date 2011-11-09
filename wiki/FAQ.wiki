@@ -24,12 +24,13 @@ recode latin1..utf8 myoldlexcgrammar.lexc
 
 You can 
 
- * Pipe words through the _flookup_ utility, or run a bidirectional pipe between it and some other application
+ * Pipe text through the _flookup_ utility, or run a bidirectional pipe between it and some other application
  * Use the foma C API to load/apply transducers 
- * Export the foma transducers in a text format (prolog or AT&T) and roll your own automaton applyer
-
+ * Roll you own automaton applyer after exportin the foma transducers in a text format, the prolog format (`write prolog`) or the AT&T format (`write att`).
 
 ==== Using flookup on its own ====
+
+You can pipe words or text through flookup. Each line is one "word" as far as `flookup` is concerned, but they could consist of sentences or arbitrary text.
 
 {{{
 echo "word" | flookup -i -x mytransducer.foma
@@ -58,7 +59,6 @@ while ((my $returnword = <Reader>) ne "\n") {
 }
 close(Reader); close(Writer);
 }}}
-
 
 
 ==== Through the foma API ====
@@ -111,17 +111,17 @@ For using a custom applyer, the `prolog` format is probably the most convenient 
 {{{
 foma[0]: regex \a b;
 339 bytes. 3 states, 3 arcs, 2 paths.
-foma[1]: wpl
+
+foma[1]: write prolog
 network(41A7).
 symbol(41A7, "a").
 arc(41A7, 0, 1, "?").
 arc(41A7, 0, 1, "b").
 arc(41A7, 1, 2, "b").
 final(41A7, 2).
-foma[1]:
 }}}
 
-Here, the symbol *a*, which never appears on a transition is declared as symbol(), so a matcher can potentially know that, for instance, the *?*-transition from 0 to 1 should _not_ match *a*.
+Here, the symbol *a*, which never appears on a transition is declared as symbol(), so a matcher can potentially know that, for instance, the *?*-transition from 0 to 1 should _not_ match *a*. However, if you're always using closed alphabets (transducers that don't carry the `@` or `?` symbols), this is of no concern.
 
 == My final transducer is HUGE! Isn't there a way to avoid composing all the components? ==
 
@@ -142,7 +142,7 @@ echo "a" | flookup -i -x testchain.foma
 d
 }}}
 
-Doing this is often a good idea if you have a tagger or chunker that consists of multiple phases where each tagger transducer addresses a specific component (say tags dates, names, places) and produces no ambiguous outputs. In this case, composing them all provides little gain in application speed, and much loss in space.
+Doing this is often a good idea if you have a tagger or chunker that consists of multiple phases where each tagger transducer addresses a specific component (say tags dates, names, places) and produces no ambiguous outputs. In this case, composing them all provides little gain in application speed, and much loss in space efficiency, so the above technique is advisable.
 
 
 == How do I deal with reduplication without compile-replace ==
@@ -174,7 +174,7 @@ regex Lexicon .o. Allrules;
 
 == I need to tokenize some text. I want to use foma, but there is no `tokenize` utility ==
 
-You can create a transducer that inserts newlines (or your preferred token boundary).  Here's a crude tokenizer. It uses a separate stoplist of words like "Dr." in `tokenabbreviations.txt`, one on each line:
+You can create a transducer that inserts newlines (or your preferred token boundary).  Here's a crude tokenizer. It uses a separate mandatory stoplist of words like "Dr." in `tokenabbreviations.txt`, one on each line:
 
 {{{
 # tokenizer.script
@@ -239,9 +239,9 @@ _before_ composing the rules together with the lexicon. This will allow the rule
 
 == There's a word path in a transducer which I can see with mine own eyes, but foma won't accept the word in apply down/up ==
 
-Probably a tokenization issue. Foma does a leftmost-longest tokenization on all words before looking them up in a transducer. It's dangerous to use multicharacter symbols where their prefixes overlap. `[`Well, it's dangerous to use multicharacter symbols, period.`]`
+This is probably a symbol tokenization issue. Foma does a leftmost-longest symbol tokenization on all words before looking them up in a transducer. It's dangerous to use multicharacter symbols where their prefixes overlap. `[`Well, it's dangerous to use multicharacter symbols, period.`]`
 
-Consider:
+Example:
 
 {{{
 regex c a t | ca r;
