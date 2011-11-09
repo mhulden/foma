@@ -15,7 +15,7 @@ recode latin1..utf8 myoldlexcgrammar.lexc
 == Foma works fine with ASCII but not with special characters (á,é,í, etc.) ==
 
   * Make sure they are UTF8 encoded.
-  * Some mathematical operators are reserved symbols and need to be escaped by % or enclosing in quotes.  See the [RegularExpressionReference list of reserved symbols]. 
+  * Some mathematical operators are reserved symbols and need to be escaped by % or enclosing in quotes.  See the [RegularExpressionReference#Reserved_symbols list of reserved symbols]. 
 
 
 
@@ -146,7 +146,7 @@ Doing this is often a good idea if you have a tagger or chunker that consists of
 
 == How do I deal with reduplication without compile-replace ==
 
-Use the `_eq()` operator.  See the [RegularExpressionReference regular expression reference] for an example.
+Use the `_eq()` operator.  See the [RegularExpressionReference#_eq(X,L,R) `eq()` definition] in the regular expression reference for an example.
 
 
 == It takes forever to compose all the rewrite rules together in my morphology ==
