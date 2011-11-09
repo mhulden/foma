@@ -1,4 +1,5 @@
-#summary API reference.
+#summary API reference
+
 = API function reference =
 
 == Destructive functions ==
