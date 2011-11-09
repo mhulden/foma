@@ -1,3 +1,4 @@
+#summary Foma interface command reference
 = Foma interface reference =
 
 = System & Help commands =
