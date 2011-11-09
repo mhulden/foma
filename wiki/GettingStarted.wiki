@@ -1,4 +1,5 @@
 #summary Crash course with foma
+#labels Featured
 
 = Foma =
 
