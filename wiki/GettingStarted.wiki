@@ -35,7 +35,7 @@ foma[0]: regex a b*;
 foma[1]:
 }}}
 
-will compile the regular expression `a* b` into a finite-state machine which is added on top of the stack (which is why the prompt now reads [1]: there is one FSM on the stack).  Note that regular expressions must end in a semicolon.
+will compile the regular expression `a* b` into a finite-state machine which is added on top of the stack (which is why the prompt now reads `[1]:` there is one FSM on the stack).  Note that regular expressions must end in a semicolon.
 
 
 == Examining FSMs ==
@@ -84,7 +84,7 @@ foma[0]: regex "%"|%$;
 
 produces an automaton that accepts two words: `%` and `$`.
 
-Outside the Basic Latin Unicode range no escaping needs to be done, with the exception of a few special operators (see the section on [[reservedsymbols|Reserved Symbols in foma]]).
+Outside the Basic Latin Unicode range no escaping needs to be done, with the exception of a few special operators (see the section on [RegularExpressionReference#Reserved_symbols Reserved Symbols in foma]).
 
 
 == Printing the words that a FSM accepts ==
