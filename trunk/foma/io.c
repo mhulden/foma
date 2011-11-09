@@ -701,12 +701,19 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     for (;;) {
         io_gets(iobh, buf);
         if (buf[0] == '#') break;
+        if (buf[0] == '\0') continue;
         new_symbol = strstr(buf, " ");
-        new_symbol[0] = '\0';
-        new_symbol++;
-        sscanf(buf,"%i", &new_symbol_number);
-        sigma_add_number(net->sigma, new_symbol, new_symbol_number);
+	new_symbol[0] = '\0';
+	new_symbol++;
+	if (new_symbol[0] == '\0') {
+	    sscanf(buf,"%i", &new_symbol_number);
+	    sigma_add_number(net->sigma, "\n", new_symbol_number);
+	} else {
+	    sscanf(buf,"%i", &new_symbol_number);
+	    sigma_add_number(net->sigma, new_symbol, new_symbol_number);
+	}
     }
+
     /* States */
     if (strcmp(buf, "##states##") != 0) {
         printf("File format error!\n");
