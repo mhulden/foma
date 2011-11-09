@@ -8,13 +8,13 @@ The following is a brief and basic tutorial on how to construct a *morphological
 
 Since a "morphological analyzer" could mean any number of things, let's first settle on a task description and define what the morphological analyzer is supposed to accomplish.  In this implementation, a morphological analyzer is taken to be a black box (as in Fig. 1), which happens to be implemented as a finite-state transducer, that translates word forms (such as *runs*) into a string that represents its morphological makeup, such as *run+V+3p+Sg*: a verb in the third person singular present tense.  
 
-[Morphologicaanalysis http://foma.googlecode.com/svn/wiki/morphtut3.png]
+[http://foma.googlecode.com/svn/wiki/morphtut3.png http://foma.googlecode.com/svn/wiki/morphtut3.png]
 
-Naturally, if the word form is ambiguous (as ''runs'' is), the job of the analyzer is to output all tag sequences consistent with the grammar and the input word.  In the above example, the transducer should perhaps also output *run+N+Pl*, or some similar sequence to convey the possibility of a noun reading of *runs*.  Since finite-state transducers are inherently bidirectional devices, i.e. we can run a transducer in the inverse direction as well as the forward direction, the same FST, once we've built it, can serve both as a generator and an analyzer.  The standard practice is to build morphological transducers so that the //input// (or domain) side is the analysis side, and the //output// (or range) side contains the word forms.
+Naturally, if the word form is ambiguous (as `runs` is), the job of the analyzer is to output all tag sequences consistent with the grammar and the input word.  In the above example, the transducer should perhaps also output *run+N+Pl*, or some similar sequence to convey the possibility of a noun reading of *runs*.  Since finite-state transducers are inherently bidirectional devices, i.e. we can run a transducer in the inverse direction as well as the forward direction, the same FST, once we've built it, can serve both as a generator and an analyzer.  The standard practice is to build morphological transducers so that the _input_ (or domain) side is the analysis side, and the _output_ (or range) side contains the word forms.
 
 In real life, morphological analyzers tend to provide much more detailed information than this.  Figure 2 shows a more elaborate analyzer's output for Basque with the input work *maiatzaren*, together with an illustration about how a feature matrix can be recovered from the string output of the analyzer.
 
-[{{ wiki:basqueanalysis.png|Fig. 2: A more elaborate real-life analyzer.}}]
+[http://foma.googlecode.com/svn/wiki/basqueanalysis.png http://foma.googlecode.com/svn/wiki/basqueanalysis.png]
 
 The goal is then is build a finite-state transducer that accomplishes this string-to-string mapping of analyses to surface forms and vice versa.
 
@@ -30,7 +30,7 @@ The construction of the final transducer will be broken down into two large comp
 
 The first component, which we call the lexicon component, will be a transducer that:
 
-  * Accepts as input only the valid stems/lemmas of the language, followed by only a legal sequence of //tags//.
+  * Accepts as input only the valid stems/lemmas of the language, followed by only a legal sequence of _tags_.
   * Produces as output from these, an intermediate form, where the tags are replaced by the morphemes that they correspond to.
   * May produce additional symbols in the output, such as special symbols that serve to mark the presence of morpheme boundaries.
 
@@ -41,21 +41,21 @@ c a t +N +Pl      w a t c h +N +Pl      w a t c h +V +3P +Sg     (input side)
 c a t ^  s        w a t c h ^  s        w a t c h ^  s           (output side)
 }}}
 
-There are two things to note here.  The first is that we are using the symbol ''^'' to mark a morpheme boundary.  The second is that while each letter in the stem is represented by its own symbol (''w,a,t,c,h,'' etc.), each complete tag //is// one separate symbol, a //multicharacter symbol// (''+N, +Pl,'' etc.)  The spaces in the above show the symbol boundaries to illustrate this.  Figure 3 shows what a lexicon transducer that only encoded these three words would look like. Naturally, we will have some more features and a larger lexicon in what is described below.
+There are two things to note here.  The first is that we are using the symbol `^` to mark a morpheme boundary.  The second is that while each letter in the stem is represented by its own symbol (`w,a,t,c,h,` etc.), each complete tag _is_ one separate symbol, a _multicharacter symbol_ (`+N, +Pl,` etc.)  The spaces in the above show the symbol boundaries to illustrate this.  Figure 3 shows what a lexicon transducer that only encoded these three words would look like. Naturally, we will have some more features and a larger lexicon in what is described below.
 
-[{{ wiki:minilex.png |Fig. 3: A fragment of a lexicon transducer.}}]
+[http://foma.googlecode.com/svn/wiki/minilex.png http://foma.googlecode.com/svn/wiki/minilex.png]
 
-The part that accomplishes this, the lexicon transducer, will be written in a formalism called //lexc//.  While it is possible to construct the lexicon transducer through regular expressions in //foma//, the //lexc//-formalism is more suited for lexicon construction and expressing morphotactics.
+The part that accomplishes this, the lexicon transducer, will be written in a formalism called _lexc_.  While it is possible to construct the lexicon transducer through regular expressions in _foma_, the _lexc_-formalism is more suited for lexicon construction and expressing morphotactics.
 
 == Alternation rules ==
 
-The role of the alternation rules is to modify the output of the lexicon transducer according to orthographic, phonological, and morphophonological rules and conventions.  So far, for example, we've assumed that English nouns can be pluralized by concatenating the morpheme *s* with the stem (''cat'' → ''cats'').  However, some nouns, those where the stem ends in a sibilant, have the allomorph *es* (''watch'' → ''watches'').  A way to describe the process of forming correct nouns is to //always// represent the plural as the morpheme *s* as we have, and //then// subject these word forms to alternation rules that //insert// an *e* only if the stem ends in a sibilant.  This, among others, is the task of the alternation rules component: to produce the valid surface forms from the intermediate forms output by the lexicon transducer.
+The role of the alternation rules is to modify the output of the lexicon transducer according to orthographic, phonological, and morphophonological rules and conventions.  So far, for example, we've assumed that English nouns can be pluralized by concatenating the morpheme *s* with the stem (`cat` → `cats`).  However, some nouns, those where the stem ends in a sibilant, have the allomorph *es* (`watch` → `watches`).  A way to describe the process of forming correct nouns is to _always_ represent the plural as the morpheme *s* as we have, and _then_ subject these word forms to alternation rules that _insert_ an *e* only if the stem ends in a sibilant.  This, among others, is the task of the alternation rules component: to produce the valid surface forms from the intermediate forms output by the lexicon transducer.
 
-Since alternation rule FSTs that are conditioned by their environment are very difficult to construct by hand, we use the replacement rules formalism in //foma// to compile the necessary rules into FSTs.
+Since alternation rule FSTs that are conditioned by their environment are very difficult to construct by hand, we use the replacement rules formalism in _foma_ to compile the necessary rules into FSTs.
 
 After the necessary replacement rules have been built, we combine the lexicon FST and these various FSTs that encode such alternations as *e*-insertions, into one large transducer that acts like a cascade: a single transducer that has the same effect as would providing an input word to the lexicon transducer, take its output and feed it into the first rule transducer, take it's output, then feed it into the next rule transducer, and so on.  
 
-This is accomplished by the regular expression composition operator (.o.). Suppose we have the lexicon transducer in an FST we've named ''Lexicon'', and the various alternation rules as FSTs named ''Rule1'', ..., ''RuleN'' (in reality we might want to use more perspicuous names).  Now, we can issue the regular expression:
+This is accomplished by the regular expression composition operator (.o.). Suppose we have the lexicon transducer in an FST we've named `Lexicon`, and the various alternation rules as FSTs named `Rule1`, ..., `RuleN` (in reality we might want to use more perspicuous names).  Now, we can issue the regular expression:
 
 {{{
 Lexicon .o. Rule1 .o. Rule2 .o. ... .o. RuleN ;
@@ -65,15 +65,16 @@ and produce a single transducer that is the composite of the different rule tran
 
 This idea is illustrated in figure 4.
 
-[{{ wiki:morphtut4.png|Fig. 4: Basic layout of morphological analysis.}}]
 
-This is indeed one of the main reasons to use finite-state transducers for morphological analysis: the fact that we can describe the word-formation rules in the direction of //generation//, but in fact use the final FST in the other direction.  It would be trivial to write little programs (in one's programming language of choice) to perform the lexicon mapping and the alternation rules mappings, each little program's output being fed as the next program's input, and so provide a model for generation.  But with such a model, we generally have no way to perform analysis.  The fact that we can calculate the composition of each individual transducer, is what makes this possible.
+[http://foma.googlecode.com/svn/wiki/morphtut4.png http://foma.googlecode.com/svn/wiki/morphtut4.png]
+
+This is indeed one of the main reasons to use finite-state transducers for morphological analysis: the fact that we can describe the word-formation rules in the direction of _generation_, but in fact use the final FST in the other direction.  It would be trivial to write little programs (in one's programming language of choice) to perform the lexicon mapping and the alternation rules mappings, each little program's output being fed as the next program's input, and so provide a model for generation.  But with such a model, we generally have no way to perform analysis.  The fact that we can calculate the composition of each individual transducer, is what makes this possible.
 
 Although we write the grammar in the direction of generation, we at the same time produce an analyzer, or parser.  This is because the final product is represented as one single transducer and transducers operate just as easily in the inverse direction.  All the software has to when parsing (applying the transducer in the inverse direction), is to follow the output labels on each transition that correspond to the word to parsed, and output the matching input labels.
  
 == The lexicon script ==
 
-As mentioned, the lexicon script that will be a transducer that maps analysis forms to intermediate forms will be written in the lexc-formalism and stored in a text file, which we call ''english.lexc''.  This file can be compiled into a transducer in the main foma interface.
+As mentioned, the lexicon script that will be a transducer that maps analysis forms to intermediate forms will be written in the lexc-formalism and stored in a text file, which we call `english.lexc`.  This file can be compiled into a transducer in the main foma interface.
 
 == The facts to be modeled ==
 
@@ -89,14 +90,14 @@ We'll want to include the following noun/verb features into the grammar.
 
 We'll also want to use the following tags for marking the above grammatical information.
 
-  * ''+N'' for nouns
-  * ''+V'' for verbs
-  * ''+3P'' for third person
-  * ''+Sg'' for singular forms
-  * ''+Pl'' for plural forms
-  * ''+Past'' for past tense
-  * ''+PastPart'' for past participle 
-  * ''+PresPart'' for present participle
+  * `+N` for nouns
+  * `+V` for verbs
+  * `+3P` for third person
+  * `+Sg` for singular forms
+  * `+Pl` for plural forms
+  * `+Past` for past tense
+  * `+PastPart` for past participle 
+  * `+PresPart` for present participle
 
 == The lexc-script ==
 
@@ -110,7 +111,7 @@ First, in the lexc-formalism, we need to declare those symbols that are to be mu
 Multichar_Symbols +N +V +PastPart +Past +PresPart +3P +Sg +Pl
 }}}
 
-Then, we must declare a ''Root'' lexicon.  The ''Root'' lexicon is where we start building a word:
+Then, we must declare a `Root` lexicon.  The `Root` lexicon is where we start building a word:
 
 {{{
 LEXICON Root
@@ -119,9 +120,9 @@ Noun ;
 Verb ;
 }}}
 
-Here we declared a lexicon called Root, and provided it with two entries. Both entries are empty (there is no left-hand side), and by choosing one of these, we can move to either the ''Noun'' or the ''Verb'' lexicon.
+Here we declared a lexicon called Root, and provided it with two entries. Both entries are empty (there is no left-hand side), and by choosing one of these, we can move to either the `Noun` or the `Verb` lexicon.
 
-The ''Noun'' lexicon looks as follows:
+The `Noun` lexicon looks as follows:
 
 {{{
 LEXICON Noun
@@ -134,7 +135,7 @@ try   Ninf;
 watch Ninf;
 }}}
 
-Here, we have six entries.  All of these entries continue to the "Ninf" lexicon. 
+Here, we have six entries.  All of these entries continue to the `Ninf` lexicon. 
 
 {{{
 LEXICON Verb
@@ -147,7 +148,7 @@ try   Vinf;
 watch Vinf;
 }}}
 
-The Verb lexicon also has six entries, and if their continuation lexicon is the "Vinf"-lexicon for all of them.
+The Verb lexicon also has six entries, and if their continuation lexicon is the `Vinf`-lexicon for all of them.
 
 {{{
 LEXICON Ninf
@@ -156,7 +157,7 @@ LEXICON Ninf
 +N+Pl:^s  #;
 }}}
 
-Now, the Ninf-lexicon has two entries, and unlike in the previous lexicons we've seen, both entries specify the //input// string and //output// string separately.  For example, the entry ''+N+Sg:0'' specifies that the input side contains ''+N+Sg'' and the output side the empty string.  The continuation lexicon for both is ''#'', meaning end-of-word.  So, for example, if we chose from the ''Root'' lexicon to enter the ''Noun'' lexicon, and from there chose the ''cat'' entry, and in this lexicon chose the ''+N+Sg:0'' entry, we would have constructed the input-output pairing:
+Now, the Ninf-lexicon has two entries, and unlike in the previous lexicons we've seen, both entries specify the _input_ string and _output_ string separately.  For example, the entry `+N+Sg:0` specifies that the input side contains `+N+Sg` and the output side the empty string.  The continuation lexicon for both is `#`, meaning end-of-word.  So, for example, if we chose from the `Root` lexicon to enter the `Noun` lexicon, and from there chose the `cat` entry, and in this lexicon chose the `+N+Sg:0` entry, we would have constructed the input-output pairing:
 
 {{{
 c a t +N +Sg
@@ -175,9 +176,9 @@ LEXICON Vinf
 +V+PresPart:^ing #;
 }}}
 
-Here, we have a few more entries, one for each verb form.  We also use the morpheme boundary symbol ''^'', which will be taken advantage of in the triggering contexts by the replacement rules.
+Here, we have a few more entries, one for each verb form.  We also use the morpheme boundary symbol `^`, which will be taken advantage of in the triggering contexts by the replacement rules.
 
-In foma we can compile the ''english.lexc'' script into a transducer by issuing the ''read lexc''-command.
+In foma we can compile the `english.lexc` script into a transducer by issuing the `read lexc`-command.
 
 {{{
 foma[0]: read lexc english.lexc
@@ -197,10 +198,11 @@ foma[0]:
 
 Figure 5 shows what this lexicon transducer actually looks like.
 
-[{{ wiki:englex.png |Fig. 5: The lexicon component transducer.}}]
+[http://foma.googlecode.com/svn/wiki/englex.png http://foma.googlecode.com/svn/wiki/englex.png]
 
 We can also test it against some words to see that it gives the desired intermediate forms:
 
+{{{
   foma[0]: regex Lexicon;
   1.7 kB. 32 states, 46 arcs, 42 paths.
   foma[1]: down
@@ -209,10 +211,13 @@ We can also test it against some words to see that it gives the desired intermed
   apply down> city+N+Pl
   city^s
   apply down>
+}}}
 
 Here is the complete lexc-file in one chunk:
 
 {{{
+!!!english.lexc!!!
+
 Multichar_Symbols +N +V +PastPart +Past +PresPart +3P +Sg +Pl
 
 LEXICON Root
@@ -254,13 +259,13 @@ LEXICON Vinf
 
 = The alternation rules component =
 
-Having accomplished the first part of the grammar construction, we now turn to the alternation rules component.  The idea is to construct a set of ordered rule transducers that modify the intermediate forms output by the lexicon component.  At the very least we will need to remove the ''^''-symbol which is used to separate morpheme boundaries before we produce valid surface forms.  This will in fact be the //last// rule transducer in the cascade.  Before that rule applies, however, there is a number of rules that are needed for orthographic and phonological adjustment.
+Having accomplished the first part of the grammar construction, we now turn to the alternation rules component.  The idea is to construct a set of ordered rule transducers that modify the intermediate forms output by the lexicon component.  At the very least we will need to remove the `^`-symbol which is used to separate morpheme boundaries before we produce valid surface forms.  This will in fact be the _last_ rule transducer in the cascade.  Before that rule applies, however, there is a number of rules that are needed for orthographic and phonological adjustment.
 
 == The facts to be modeled ==
 
 === e-deletion ===
 
-Stems that end in a silent ''e'' drop the ''e'' with certain suffixes (''ing'' and ''ed'' in our case).  For example, ''make'' → ''making''.  This can be captured by:
+Stems that end in a silent `e` drop the `e` with certain suffixes (`ing` and `ed` in our case).  For example, `make` → `making`.  This can be captured by:
 
 {{{
 define EDeletion e -> 0 || _ "^" [ i n g | e d ] ;
@@ -277,17 +282,17 @@ m a k   ^  i         n g    (after e-deletion)
 
 === e-insertion ===
 
-We also have an *e*-insertion rule: whenever a stem ends in a sibilant and is followed by the plural morpheme ''s'' (''watch'' → ''watches'').  Sibilants can be defined orthographically by of ''s'', ''z'', ''x'', ''c h'', and ''s h''.  The rule then looks like:
+We also have an *e*-insertion rule: whenever a stem ends in a sibilant and is followed by the plural morpheme `s` (`watch` → `watches`).  Sibilants can be defined orthographically by of `s`, `z`, `x`, `c h`, and `s h`.  The rule then looks like:
 
 {{{
 define EInsertion [..] -> e || s | z | x | c h | s h _ "^" s ;
 }}}
 
-Note that the above rule will work for the words we've defined in our lexicon.  However, the sibilant representation in English orthography is not entirely consistent.  For example, a word such as ''monarch'' would trigger the rule and incorrectly yield \*''monarches'' in the plural.  One way to handle such exceptions is to rewrite the ''c h'' sequence in the lexicon component with some symbol that will not trigger *e-insertion* (say ''K''), which is then rewritten back to ''c h'' after all the rules have applied.
+Note that the above rule will work for the words we've defined in our lexicon.  However, the sibilant representation in English orthography is not entirely consistent.  For example, a word such as `monarch` would trigger the rule and incorrectly yield `*``monarches` in the plural.  One way to handle such exceptions is to rewrite the `c h` sequence in the lexicon component with some symbol that will not trigger *e-insertion* (say `K`), which is then rewritten back to `c h` after all the rules have applied.
 
 === y-replacement ===
 
-The *y-replacement* rule which acts in constructions such as ''try'' → ''tries'' and ''try'' → ''tried'' is perhaps best broken into two parts.  Consider the corresponding input-intermediate form pairings:
+The *y-replacement* rule which acts in constructions such as `try` → `tries` and `try` → `tried` is perhaps best broken into two parts.  Consider the corresponding input-intermediate form pairings:
 
 {{{
     (1)                   (2)
@@ -303,31 +308,31 @@ define YReplacement y -> i e || _ "^" s    ,,
                     y -> i   || _ "^" e d  ;
 }}}
 
-Note the '',,'' which separates two distinct parallel rules.
+Note the `,,` which separates two distinct parallel rules.
 
 === k-insertion ===
 
-Verbs that end in a *c* (corresponding to a phonological ''k''), add a ''k'' before the morpheme boundary if followed by an affix beginning with a vowel.  For example ''panic'' → ''panicking'', ''panicked''.  We can identify quite accurately when the *k* needs to be inserted as it is preceded by a vowel in those cases (as opposed to, say the verb construction ''arc'' → ''arcing'').  The rule can then be captured by:
+Verbs that end in a *c* (corresponding to a phonological `k`), add a `k` before the morpheme boundary if followed by an affix beginning with a vowel.  For example `panic` → `panicking`, `panicked`.  We can identify quite accurately when the *k* needs to be inserted as it is preceded by a vowel in those cases (as opposed to, say the verb construction `arc` → `arcing`).  The rule can then be captured by:
 
 {{{
 define KInsertion [..] -> k || C V c _ "^" V;
 }}}
 
-Note the ''[..]'' construction on the LHS.  Here, using an epsilon (''0'') as the left hand side will not do.  The rule formalism is such that if a ''0'' were used on the LHS, we would insert a potentially infinite number of *k*s.  The special construction ''[..]'' forces epsilon insertions to restrict themselves to maximally one insertion per potential insertion site.
+Note the *`[..]`*-construction on the LHS.  Here, using an epsilon (`0`) as the left hand side will not do.  The rule formalism is such that if a `0` were used on the LHS, we would insert a potentially infinite number of *k*-symbols.  The special construction *`[..]`* forces epsilon insertions to restrict themselves to maximally one insertion per potential insertion site.
 
 === Consonant doubling (gemination) ===
 
-Consonant doubling is really the same phenomenon as the *k-insertion*.  We double final consonants in the stem in certain environments: ''beg'' → ''begging'', ''run'' → ''runnable'', etc.  Our lexicon contains only one such word (*beg*), so we can make do with a simple rule:
+Consonant doubling is really the same phenomenon as the *k-insertion*.  We double final consonants in the stem in certain environments: `beg` → `begging`, `run` → `runnable`, etc.  Our lexicon contains only one such word (*beg*), so we can make do with a simple rule:
 
 {{{
 define ConsonantDoubling g -> g g || C V _ "^" V;
 }}}
 
-For a more thorough treatment, we'd also need to add rules for the other consonants.  Although, this again is a phenomenon that is not perfectly capturable without additional knowledge as to the pronunciation of the word.  The consonant doubling only happens when the final syllable of the stem is //stressed//.  Compare ''commit'' → ''committing'' and ''edit'' → ''editing''.  The latter word fulfills the structural requirements of the rewrite rule (a ''C V'' sequence before the consonant to be doubled), yet the gemination isn't permitted.
+For a more thorough treatment, we'd also need to add rules for the other consonants.  Although, this again is a phenomenon that is not perfectly capturable without additional knowledge as to the pronunciation of the word.  The consonant doubling only happens when the final syllable of the stem is _stressed_.  Compare `commit` → `committing` and `edit` → `editing`.  The latter word fulfills the structural requirements of the rewrite rule (a `C V` sequence before the consonant to be doubled), yet the gemination isn't permitted.
 
 === Auxiliary symbol removal ===
 
-Naturally, as the last rule, we need to remove the auxiliary ''^'', whose presence has been necessary for the correct definition of the alternation rules.  The last rule removes these, after which we've produced valid surface forms:
+Naturally, as the last rule, we need to remove the auxiliary `^`, whose presence has been necessary for the correct definition of the alternation rules.  The last rule removes these, after which we've produced valid surface forms:
 
 {{{
 define Cleanup "^" -> 0;
@@ -335,7 +340,7 @@ define Cleanup "^" -> 0;
 
 == Compiling the grammar ==
 
-In the same script that compiles the replacement rules, we also read in the lexc-file, and label it ''Lexicon'', so can use that label is subsequent regular expressions.
+In the same script that compiles the replacement rules, we also read in the lexc-file, and label it `Lexicon`, so can use that label is subsequent regular expressions.
 
 {{{
 read lexc english.lexc
@@ -356,7 +361,7 @@ regex Lexicon           .o.
 
 == Testing the grammar ==
 
-Having at our disposal the two files ''english.lexc'' and ''english.foma'', we can simply run the ''.foma''-file from the interface which will compile the lexicon and the replacement rules and join them all by composition.
+Having at our disposal the two files `english.lexc` and `english.foma`, we can simply run the `.foma`-file from the interface which will compile the lexicon and the replacement rules and join them all by composition.
 
 {{{
 foma[0]: source english.foma
@@ -399,7 +404,7 @@ watches
 apply down>
 }}}
 
-Here is the complete ''english.foma''-file:
+Here is the complete `english.foma`-file:
 
 {{{
 ### english.foma ###
@@ -446,7 +451,7 @@ regex Grammar;
 
 === Additional testing ===
 
-We can also list all the surface forms of the words with the ''lower-words''-command:
+We can also list all the surface forms of the words with the `lower-words`-command:
 
 {{{
 foma[1]: lower-words
@@ -499,7 +504,7 @@ Here, eyeballing the results, we see that we've made a slight overgeneralization
  
 === Saving the resulting transducer ===
 
-Having compiled the analyzer/generator transducer, we can also save it into a file with the ''save stack''-command:
+Having compiled the analyzer/generator transducer, we can also save it into a file with the `save stack`-command:
 
 {{{
 foma[1]: save stack english.bin
@@ -507,11 +512,11 @@ Writing to file english.bin.
 foma[1]:
 }}}
 
-For large grammars, loading the ''binary'' file format will in general be much faster than recompiling the grammar.  However, if we need to make changes to the grammar, recompilation becomes necessary.  The binary tranducer format is also necessary to use the analyser/generator with the external utility ''flookup''.  This is a simple way (outside of the //foma// API) to connect a morphological analyzer to other applications.
+For large grammars, loading the `binary` file format will in general be much faster than recompiling the grammar.  However, if we need to make changes to the grammar, recompilation becomes necessary.  The binary tranducer format is also necessary to use the analyser/generator with the external utility `flookup`.  This is a simple way (outside of the _foma_ API) to connect a morphological analyzer to other applications.
 
 === Running the transducer with the flookup utility ===
 
-Assuming we've stored the transducer in ''english.bin'', we can also use the generic ''flookup'' utility to use the transducer.  The ''flookup'' utility reads a transducer from a given file, and the reads words from stdin, yielding the transducer output to stdout:
+Assuming we've stored the transducer in `english.bin`, we can also use the generic `flookup` utility to use the transducer.  The `flookup` utility reads a transducer from a given file, and the reads words from stdin, yielding the transducer output to stdout:
 
 {{{
 $ echo "begging" | flookup english.bin
@@ -519,7 +524,7 @@ begging	beg+V+PresPart
 $
 }}}
 
-By default the ''flookup'' applies words in the inverse (analysis) direction of the transducer (as apply up in the ''foma'' interface).  If we want to generate, we can run ''flookup'' with the ''-i'' flag.
+By default the `flookup` applies words in the inverse (analysis) direction of the transducer (as apply up in the `foma` interface).  If we want to generate, we can run `flookup` with the `-i` flag.
 
 {{{
 $ echo "beg+V+PresPart" | flookup -i english.bin
@@ -530,17 +535,17 @@ $
 
 = Grammar tweaking: Adding exceptions (irregular forms) =
 
-At this point, let's return to the concern about generating the incorrect form ''maked'' from ''make+V+PastPart'' and ''make+V+Past''.  This is clearly not a phonological/orthographic issue that we would want to mend by adding a rewrite rule.  Such a rule would only target those particular word forms (which are really exceptions), so we might as well treat it as an exception by listing it as such.  There a a couple of options regarding how to model exceptional forms in //foma//.  One straightforward way is to simply list the exceptional forms in the lexicon so that they bypass the replacement rules.  Another way is to write a separate mini-grammar for exception which is joined together with the main grammar by the union or priority union operations.
+At this point, let's return to the concern about generating the incorrect form `maked` from `make+V+PastPart` and `make+V+Past`.  This is clearly not a phonological/orthographic issue that we would want to mend by adding a rewrite rule.  Such a rule would only target those particular word forms (which are really exceptions), so we might as well treat it as an exception by listing it as such.  There a a couple of options regarding how to model exceptional forms in _foma_.  One straightforward way is to simply list the exceptional forms in the lexicon so that they bypass the replacement rules.  Another way is to write a separate mini-grammar for exception which is joined together with the main grammar by the union or priority union operations.
 
 == Exceptions in LEXC ==
 
-The way to go about this in lexc is to bypass word formation at a certain point.  For example, ''make'' is listed as:
+The way to go about this in lexc is to bypass word formation at a certain point.  For example, `make` is listed as:
 
 {{{
 make  Vinf;
 }}}
 
-where ''Vinf'' is the continuation class that handles all the verb inflection.  Now, we could replace this line by:
+where `Vinf` is the continuation class that handles all the verb inflection.  Now, we could replace this line by:
 
 {{{
 make+V:make            #;
@@ -549,15 +554,15 @@ make+V+Past:made       #;
 make+V+PastPart:made   #;
 }}}
 
-In effect, this lists all the pairings of ''make'' and its analysis to its surface form separately.  Note the the continuation lexicon is now ''#'' for all these forms, since we need to bypass ''Vinf'' altogether as these words no longer need to be affixed with inflectional affixes.
+In effect, this lists all the pairings of `make` and its analysis to its surface form separately.  Note the the continuation lexicon is now `#` for all these forms, since we need to bypass `Vinf` altogether as these words no longer need to be affixed with inflectional affixes.
 
 For single words, or a few entries, this method will work fine.  For larger projects, it is advisable to write small subgrammars that are combined with the regular grammars through priority union, as is explained below.
 
 == Exceptions by priority union ==
 
-Priority union (.P.) is a special operation that works exactly like regular union (|) in most cases.  That is, if we have two mappings ''A'' and ''B'', ''A .P. B'' will perform the mapping that either ''A'' or ''B'' would.  However, the priority union of ''A'' and ''B'', as opposed to regular union, additionally discards those relations from ''B'' that have a corresponding input in ''A''.  This idea can be used to combine two grammars, an 'exception' grammar and a 'regular' grammar.  Fig. 6 illustrates the approach.
+Priority union (.P.) is a special operation that works exactly like regular union (|) in most cases.  That is, if we have two mappings `A` and `B`, `A .P. B` will perform the mapping that either `A` or `B` would.  However, the priority union of `A` and `B`, as opposed to regular union, additionally discards those relations from `B` that have a corresponding input in `A`.  This idea can be used to combine two grammars, an 'exception' grammar and a 'regular' grammar.  Fig. 6 illustrates the approach.
 
-[{{ wiki:priorityunionengl.png |Fig. 6: Effect of priority union on two transducers/mappings.}}]
+[http://foma.googlecode.com/svn/wiki/priorityunionengl.png http://foma.googlecode.com/svn/wiki/priorityunionengl.png]
 
 In other words, if we had an 'exceptions' transducer that only contained the irregular form mappings, we could combine this with the regular transducer as follows. 
 
@@ -573,7 +578,7 @@ Although the grammar above does not include words that have parallel or alternat
 
 == Parallel forms in LEXC ==
 
-If we had an entry for ''cactus'' in the above ''Noun'' lexicon, the regular form would of course be produced correctly by the grammar as-is:
+If we had an entry for `cactus` in the above `Noun` lexicon, the regular form would of course be produced correctly by the grammar as-is:
 
 {{{
 ...
@@ -581,7 +586,7 @@ cactus            Ninf;
 ...
 }}}
 
-To also produce the alternate form *cacti*, we can again hard-wire this into the //lexc// definition; however, this time without removing the regular entry:
+To also produce the alternate form *cacti*, we can again hard-wire this into the _lexc_ definition; however, this time without removing the regular entry:
 
 {{{
 ...
@@ -589,24 +594,24 @@ cactus            Ninf;
 cactus+N+Pl:cacti #;
 }}}
 
-Now, we regular entry ''cactus'' with the continuation class ''Ninf'' handles the regular pluralization, while we've also listed an irregular one, which is not followed by any continuation class but by end-of-word (''#'').
+Now, we regular entry `cactus` with the continuation class `Ninf` handles the regular pluralization, while we've also listed an irregular one, which is not followed by any continuation class but by end-of-word (`#`).
 
 
 == Parallel forms with union ==
 
-Similar to the exceptional forms, we can also construct a separate grammar containing alternate forms, and then union in this grammar with the main, regular, grammar.  Assuming we've defined our irregular mappings in ''ParallelForms'', we can easily produce the union by ''ParallelForms | Grammar''.  For the simple example above of including *cacti* as a parallel form, we could issue:
+Similar to the exceptional forms, we can also construct a separate grammar containing alternate forms, and then union in this grammar with the main, regular, grammar.  Assuming we've defined our irregular mappings in ``ParallelForms``, we can easily produce the union by `ParallelForms | Grammar`.  For the simple example above of including *cacti* as a parallel form, we could issue:
 
 {{{
 define ParallelForms [c a c t u s %+N %+Pl .x. c a c t i ];
 regex ParallelForms | Grammar ;
 }}}
 
-assuming of course we've already defined ''Grammar'' (as is done in ''english.foma'').
+assuming of course we've already defined `Grammar` (as is done in `english.foma`).
 
 
 == Including both parallel and exceptional forms ==
 
-In many cases, we will build separate subgrammars for the exceptional forms and the parallel forms.  These can be combined with the main grammar using both union and priority union.  Assume we've defined the ''Grammar'', ''ParallelForms'' and ''Exceptions''.  In the example below, we will provide simple definitions of these for the sake of illustration, but these subgrammars themselves can in actual applications be fairly elaborate and contain their own //lexc//-code and replacement rules, just like the main grammar:
+In many cases, we will build separate subgrammars for the exceptional forms and the parallel forms.  These can be combined with the main grammar using both union and priority union.  Assume we've defined the `Grammar`, `ParallelForms` and `Exceptions`.  In the example below, we will provide simple definitions of these for the sake of illustration, but these subgrammars themselves can in actual applications be fairly elaborate and contain their own _lexc_-code and replacement rules, just like the main grammar:
 
 {{{
 define ParallelForms [c a c t u s %+N %+Pl .x. c a c t i ];
