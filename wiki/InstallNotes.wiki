@@ -1,5 +1,5 @@
 #summary Notes on installing
-#labels Phase-Deploy
+#labels Phase-Deploy,Featured
 
 = Notes on installing foma =
 
