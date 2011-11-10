@@ -4,7 +4,7 @@ libdir = $(exec_prefix)/lib
 bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
 
-VERSION = 0.9.14
+VERSION = 0.9.15
 CC = gcc
 RANLIB = ranlib
 YACC = bison -d -t -v
