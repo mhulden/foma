@@ -1,3 +1,17 @@
+0.9.15alpha (20111110)
+
+- adds cgflookup utility to facilitate piping with Constraint Grammar parsers
+- flookup now applies in chain (a virtual compose) if there are several transducers in a file, except if the [-a] flag is given, in which case flookup looks for an output in each transducer until it finds one (simulating priority union .P.)
+- changes and bug fixes in application code/flag diacritic handling
+- lexc now accepts forced alignments with zeroes and info strings
+- \r (carriage return) awarness added 
+- adds support for the construct regex @re"regexfile.txt" (assumes file has one regular expression on one line)
+- fixes argument order of interface commands compose net and concatenate net
+- adds functions in API to read in multiple nets from one file through an iterator fsm_read_binary_file_multiple_init(infilename)/fsm_read_binary_file_multiple(rh))
+- improved error messages
+- adds "test sequential" ("tseq" for short) and assert stack commands
+- fixes bugs with loading/saving nets that have newlines in transitions
+
 0.9.14alpha (20110203)
 
 - Changed tokenization in apply_up() and apply_down() to always choose the leftmost longest tokenization in case of multicharacter symbols sharing the same prefix.  Previously, all possible tokenizations were given.  For example, earlier regex [a a|aa] would match the input string "aa" in two ways, yielding two outputs, whereas only one tokenization is given now, the leftmost-longest one.  This also speeds up the apply functions.
