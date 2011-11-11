@@ -100,48 +100,6 @@ foma[1]: down
   j250
 
 }}}
------
-
-
-== The 8-queens problem ==
-
-
-{{{
-# To solve the 8-queens problem we define an 8x8 board 
-# that contains three types of symbols:
-
-# Q = queen, E = empty square, M = row separator
-
-define Boardwith8Queens [Q^8 <> E^56 <> M^16] & [M ?^8 M]*;
-
-# This will contain 4,426,165,368 strings, such as:
-
-# MQEEEEEEEM
-# MEEEEQEEEM
-# MEEEEEEEQM
-# MEEEEEQEEM
-# MEEQEEEEEM
-# MEEEEEEQEM
-# MEQEEEEEEM
-# MEEEQEEEEM
-
-# (the newlines are added here for clarity)
-
-# Then we filter out the illegal configurations
-# to end up with only the correct solutions
-
-# No two queens on the same row
-
-define Attack1 $[Q \M* Q]; 
-
-# No two queens on columns or diagonals
-
-define Attack2 $[Q [[?^9  & $.{MM}] - ?* M]*  [[?^8]  & $.{MM}] Q];
-define Attack3 $[Q [[?^10 & $.{MM}] - ?* M]*  [[?^9]  & $.{MM}] Q];
-define Attack4 $[Q [[?^11 & $.{MM}] - ?* M]*  [[?^10] & $.{MM}] Q];
-
-define Solution `[[Boardwith8Queens & ~Attack1 & ~Attack2 & ~Attack3 & ~Attack4],M,0];
-}}}
 
 -----
 
@@ -149,9 +107,11 @@ define Solution `[[Boardwith8Queens & ~Attack1 & ~Attack2 & ~Attack3 & ~Attack4]
 
  * The [http://en.wikipedia.org/wiki/Longest_common_substring_problem longest common substring problem] is to find the longest string (or strings) that is a substring (or are substrings) of two or more strings.
 
- * The [http://en.wikipedia.org/wiki/Longest_common_subsequence_problem longest common subsequence problem], by contrast, is to find the longest subsequence common to all sequences. The difference with the substring problem is that the definition of "sequence" implies possible discontinuity.
+ * The [http://en.wikipedia.org/wiki/Longest_common_subsequence_problem longest common subsequence problem], by contrast, is to find the longest subsequence common to all sequences. It differs from the substring problem in that the definition of "sequence" implies possible discontinuity.
 
-For example, the longest common substring of `S = abcaa` and `T = dbcadaa` is: `bca` while the longest common subsequence is `bcaa`. Note that in neither case is the answer necessarily unique as the longest common subsequence for `S = abc` and `T = acb` is `ab` and `ac`. Likewise, the longest common substring for  `S = abc` and `T = cba` are `a`, `b`, and `c`.
+For example, the longest common substring of `S = abcaa` and `T = dbcadaa` is: `bca` while the longest common subsequence is `bcaa`. 
+
+Note that in neither case is the answer necessarily unique.  The longest common subsequence for `S = abc` and `T = acb` is `ab` and `ac` (both 2 symbols long). Likewise, the longest common substring for  `S = abc` and `T = cba` are `a`, `b`, and `c`.
 
 The following script illustrates the calculation of the longest common substrings and subsequences by declaring functions for that purpose.
 
@@ -186,7 +146,7 @@ bcaa
 
 == Numbers to numerals ==
 
-Lauri Karttunen's script maps numbers (between 0 and 100) to numerals.
+Lauri Karttunen's script produces a transducer that maps numbers (between 0 and 100) to numerals and vice versa.
 
 {{{
 # NumbersToNumerals.script
@@ -197,10 +157,6 @@ Lauri Karttunen's script maps numbers (between 0 and 100) to numerals.
 # it under the terms of GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
 
 # This script constructs a transducer that maps the English numerals
 # "one", "two", "three", ..., "ninety-nine", to the corresponding numbers
@@ -247,7 +203,7 @@ apply up seventy-nine
 
 == Reduplication (example from Warlpiri) ==
 
-The following toy grammar of Warlpiri reduplication shows how the [RegularExpressionReference#_eq(X,L,R) `_eq()`] can be used to capture such phenomena. The description of the reduplication comes from Nash(1980), pp. 142-144 and Sproat (1992), p. 58.
+The following toy grammar of Warlpiri reduplication shows how the [RegularExpressionReference#_eq(X,L,R) `_eq()`] can be used to capture such phenomena. The description of the reduplication comes from Nash(1980), pp. 142-144 and Sproat (1992), p. 58, and the method from Hulden (2009).
 
 Warlpiri reduplication is an examle of "partial reduplication" where the reduplication process operates on the base form of a word and copies only a "prosodic foot" or "reduplication skeleton" from the base. The prosodic foot is of the shape C V (C) (C) V. This reduplication process yields, for example:
 
@@ -304,7 +260,7 @@ apply up>
 
 == Date parsing and markup ==
 
-The following example script, kindly provided by Lauri Karttunen, illustrates a markup application that parses valid dates and tags them.
+The following example script, provided by Lauri Karttunen, illustrates a markup application that parses valid dates and tags them.
 
 {{{
 # DateParser.script
@@ -315,12 +271,7 @@ The following example script, kindly provided by Lauri Karttunen, illustrates a 
 # it under the terms of GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
 
-# date.script
 # define date expressions from "Monday, January 1, 1" to "Sunday,
 # December 31, 9999" and build a shallow parser to mark them
 
@@ -395,10 +346,442 @@ down but February 29, 1900 was not a leap day.
 down Next leap day is on February 29, 2008
 }}}
 
+-----
+
+== Constraint satisfaction problems ==
+
+Many discrete-valued constraint satisfaction problems (CSPs) can easily be solved with automata and transducers. Below are a few examples.
+
+=== Harry Potter problem 1 ===
+
+A classical constraint satisfaction problem appears in the book "Harry Potter and the Philosopher's Stone" (Rowling, 1997):
+
+Hogwarts students Harry and Hermione are in a room with two doors. One door leads forward to the chamber where the Philosopher's Stone is kept and the other leads back to where they have just come from, but both doorways are blocked by flames. In the room, they find seven bottles in a row, and a note that says:
+
+{{{
+#1.           Danger lies before you, while safety lies behind,
+##            Two of us will help you, whichever you would find.
+##            One among us seven will let you move ahead,
+##            Another will transport the drinker back instead.
+##            Two among our number hold only nettle wine,
+##            Three of us are killers, waiting hidden in line.
+##            Choose, unless you wish to stay here forevermore,
+##            To help you in your choice, we give you these clues four:
+##            First, however slyly the poison tries to hide
+#2.           You will always find some on nettle wine's left side;
+
+#3.           Second, different are those who stand at either end,
+#4.           But if you would move forward, neither is your friend;
+##            Third, as you see clearly, all are different size,
+#5.           Neither dwarf nor giant holds death in their insides;
+#6.           Fourth, the second left and second on the right
+##            Are twins once you taste them, though different at first sight.
+}}}
+
+Question 1:
+
+ * Is it possible to figure out which bottles are which from the contents of the note?
+
+We can solve this by representing the row of bottles as a seven-symbol string containing characters that represent the different types of bottles (B=back, F=forward, P=poison, W=wine). We then proceed to intersect the set of possible seven-symbol strings automata that represent the clues (i.e. constraints) given in the note:
+
+{{{
+# harrypotter1.script #
+define Clue1  [W W] <> [F] <> [B] <> [P P P];
+define Clue2  W => P _ ;
+define Clue3  ~[W ?* W|P ?* P];
+define Clue4  ~[F ?*|?* F];
+define Clue5  ?*;
+define Clue6  [? W ?* W ?|? P ?* P ?];
+regex  [Clue1 & Clue2 & Clue3 & Clue4 & Clue5 & Clue6];
+}}}
+
+The clue numbers correspond to the numbering of the lines in the not above. For example, `Clue1` defines the set of strings (using the shuffle operator) that contains exactly three Ps, two Ws, one F, and one B. `Clue2` encodes the idea that there's always some poison to the left of the wine. `Clue5` doesn't constrain anything at all, and is only used for illustrative purposes, since it's hard to make anything out of it without seeing the bottles.
+
+Running the script yields:
+
+{{{
+...
+791 bytes. 22 states, 28 arcs, 8 paths.
+}}}
+
+So there are 8 possible solutions:
+
+{{{
+foma[1]: words
+BPWFPPW
+BPWPFPW
+BPFPWPW
+BPPWFPW
+PWFPPWB
+PWPFPWB
+PPWFBPW
+PPWBFPW
+}}}
+
+Hence, we conclude that the note in itself does not impart sufficient information to figure out the ordering of the bottles.
+
+=== Harry Potter problem 2 ===
+
+However, a more interesting problem is this: in the book, Hermione does, without any doubt, work out where the bottles are.  In other words, she must have gotten an additional clue from seeing the sizes of the bottles (`Clue5`) — infomation which the reader doesn't have access to. Now, this leads to the following question, which is indeed solvable:
+
+ * Question 2: in which position is the bottle that allows them to move back?
+
+To solve this question, we must first find, (1) from all the possible orderings of the sizes of bottles, only those orders that allow one to unambiguously solve the problem (since this is what Hermione did). Further, we need to (2) see if the position of the `B` coincides in all these solutions.
+
+To solve (1), we do as follows: we construct a transducer that maps the set of permutations of strings that contain one instance of each number, to the set of solutions. We call this transducer `NumToSolutions`. It maps, for example, `1234567` to four different strings:
+
+{{{
+apply down> 1234567
+BPFPWPW
+BPPWFPW
+BPWFPPW
+BPWPFPW
+}}}
+
+since that particular ordering of bottle sizes has four possible solutions.
+
+Next, we then extract from that transducer only the unambiguous paths; i.e. that part of the transducer `NumToSolutions` where for some input word, there is only path to a final state.  We do so with `foma`'s `_unambpart()`-function.
+ 
+This resulting transducer `NumToUnambiguousSolutions` only contains words such as `2137654` on its input side, since that bottle ordering gives the unique solution
+
+{{{
+apply down> 2137654
+PWPFPWB
+}}}
+
+Given the transducer `NumToUnambiguousSolutions`, we simply compose it with a transducer that changes all other symbols to `X`, except the `B` symbol, which we are interested in. Now, the output side of this transducer will contain only strings of `X`s and `B`s, where the `B` is in the position we are looking for. Compiling the script produces the following output:
+
+{{{
+706 bytes. 8 states, 7 arcs, 1 path.
+}}}
+
+Hence, the answer is unique:
+
+{{{
+foma[1]: words
+XXXXXXB
+}}}
+
+Therefore, the bottle that leads back must be in position 7.
+
+Here is the script:
+
+{{{
+# harrypotter2.script #
+define NUM [1|2|3|4|5|6|7];
+define Input [1 <> 2 <> 3 <> 4 <> 5 <> 6 <> 7];
+define Clue1   [W W] <> [F] <> [B] <> [P P P];
+define Clue2   W => P NUM _ ;
+define Clue3 ~[NUM W ?* W|NUM P ?* P];
+define Clue4  ~[NUM F ?*|?* F];
+define Clue5  ~$[1 P|7 P];
+define Clue6  [NUM ? NUM W ?* NUM W NUM ?|NUM ? NUM P ?* P NUM ?];
+define NumSolutions Input .o. [? 0:?]^7 .o. Clue1/NUM .o. Clue2 .o. Clue3 .o. Clue4 .o. Clue5 .o. Clue6;
+define NumToSolutions NumSolutions .o. NUM -> 0;
+define NumToUnambiguousSolutions _unambpart(NumToSolutions);
+regex [NumToUnambiguousSolutions .o. ?:X* B ?:X*].l;
+}}}
+
+A technical detail in the script is that we change the intermediate representation a little bit: the inputs to the transducer are always seven-digit numbers (with every number occurring once), but we then interleave `B`,`F`,`P`, and `W` symbols after each number. This is done by the part:
+
+{{{
+define NumSolutions Input .o. [? 0:?]^7 .o. Clue1/NUM 
+}}} 
+
+We then proceed as before, but the constraints have been changed to account for the fact that we now have 14 symbol strings with digits and letters interleaved. This allows us to express the crucial extra clue that Hermione could have received:
+
+{{{
+#5.  Neither dwarf nor giant holds death in their insides;
+}}}
+
+which we encode as:
+
+{{{
+define Clue5  ~$[1 P|7 P];
+}}}
+
+Once we're done with producing all the solutions, we simply remove the numbers by composition with:
+
+{{{
+NUM -> 0;
+}}}
+
+=== The 8-queens problem ===
+
+The 8-queens problem asks how to place 8 queens on a chessboard without any of the queens attacking each other. We solve this by representing the chessboard as a string of letters (`E`=empty square, `Q`=queen, `M`=column separator), and intersect the set of possible queen configurations with constraints to the effect that no queen attack another one.
+
+{{{
+# 8queens.script #
+
+define Boardwith8Queens [Q^8 <> E^56 <> M^16] & [M ?^8 M]*;
+
+# This will contain 4,426,165,368 strings, such as:
+
+# MQEEEEEEEM
+# MEEEEQEEEM
+# MEEEEEEEQM
+# MEEEEEQEEM
+# MEEQEEEEEM
+# MEEEEEEQEM
+# MEQEEEEEEM
+# MEEEQEEEEM
+
+# (the newlines are added here for clarity)
+
+# Then we filter out the illegal configurations
+# to end up with only the correct solutions
+
+# No two queens on the same row
+
+define Attack1 $[Q \M* Q]; 
+
+# No two queens on columns or diagonals
+
+define Attack2 $[Q [[?^9  & $.{MM}] - ?* M]*  [[?^8]  & $.{MM}] Q];
+define Attack3 $[Q [[?^10 & $.{MM}] - ?* M]*  [[?^9]  & $.{MM}] Q];
+define Attack4 $[Q [[?^11 & $.{MM}] - ?* M]*  [[?^10] & $.{MM}] Q];
+
+define Solution [Boardwith8Queens & ~Attack1 & ~Attack2 & ~Attack3 & ~Attack4];
+}}}
+
+Compiling the script yields:
+
+{{{
+...
+defined Solution: 49.0 kB. 3026 states, 3116 arcs, 92 paths.
+}}}
+
+That is, there are 92 solutions to the problem. We can then print out all of them with the command `words`.
+
+=== Zebra/Einstein puzzles ===
+
+Here is a method by Lauri Karttunen (Beesley and Karttunen, 2003) to solve the famous [http://en.wikipedia.org/wiki/Zebra_Puzzle Zebra/Einstein puzzles].
+
+"Let us assume that there are five houses of different colors next to each other on the same road. In each house lives a man of a different nationality. Every man has his favorite drink, his favorite brand of cigarettes, and keeps pets of a particular kind.
+
+ # The Englishman lives in the red house.
+ # The Swede keeps dogs.
+ # The Dane drinks tea.
+ # The green house is just to the left of the white one.
+ # The owner of the green house drinks coffee.
+ # The Pall Mall smoker keeps birds.
+ # The owner of the yellow house smokes Dunhills.
+ # The man in the center house drinks milk.
+ # The Norwegian lives in the first house.
+ # The Blend smoker has a neighbor who keeps cats.
+ # The man who smokes Blue Masters drinks beer.
+ # The man who keeps horses lives next to the Dunhill smoker.
+ # The German smokes Prince.
+ # The Norwegian lives next to the blue house.
+ # The Blend smoker has a neighbor who drinks water.
+
+The question to be answered is: Who keeps fish?"
+
+Apart from solving the problem, the script also produces pretty-printed output:
+
+{{{
+In the yellow house the Norwegian drinks water, smokes Dunhills, and keeps cats.
+In the blue house the Dane drinks tea, smokes Blends, and keeps horses.
+In the red house the Englishman drinks milk, smokes PallMalls, and keeps birds.
+In the green house the German drinks coffee, smokes Princes, and keeps fish.
+In the white house the Swede drinks beer, smokes BlueMasters, and keeps dogs.
+}}}
+
+{{{
+# Copyright (C) 2004  Lauri Karttunen
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+define Color [blue | green | red | white | yellow];
+define Nationality [Dane | Englishman | German | Swede | Norwegian];
+define Drink [beer | coffee | milk |tea | water];
+define Cigarette [Blend | BlueMaster | Dunhill | PallMall | Prince];
+define Pet [birds | cats | dogs | fish | horses];
+
+define          House   [Color Nationality Drink Cigarette Pet]; 
+
+define  C1       $[red Englishman];
+# The Englishman lives in the red house.
+define  C2      $[Swede ~$Pet dogs];
+# The Swede keeps dogs.
+define  C3      $[Dane tea];
+# The Dane drinks tea.
+define  C4      $[green ~$Color white];
+# The green house is just to the left of the white one.
+define  C5      $[green ~$Drink coffee];
+# The owner of the green house drinks coffee.
+define  C6      $[PallMall birds];
+# The Pall Mall smoker keeps birds.
+define  C7      $[yellow ~$Cigarette Dunhill];
+# The owner of the yellow house smokes Dunhills.
+define  C8      [House^2 ~$Drink milk ~$Drink House^2];
+# The man in the center house drinks milk.
+define  C9      [? Norwegian ?*];
+# The Norwegian lives in the first house.
+define  C10     $[Blend ? ~$Pet cats | cats ~$Cigarette Blend];
+# The Blend smoker has a neighbor who keeps cats.
+define  C11     $[horses ~$Cigarette Dunhill | Dunhill ? ~$Pet horses];
+# The man who keeps horses lives next to the Dunhill smoker.
+define  C12     $[beer BlueMaster];
+# The man who smokes Blue Masters drinks beer.
+define  C13     $[German ~$Cigarette Prince];
+# The German smokes Prince.
+define  C14     $[Norwegian ~$Color blue | blue ? ~$Nationality Norwegian];
+# The Norwegian lives next to the blue house.
+define  C15     $[Blend ~$Drink water | water ? ~$Cigarette Blend];
+# The Blend smoker has a neighbor who drinks water. 
+
+define           C16    $fish;
+
+define           Solution [House^5 & C1 & C2 & C3 & C4 & C5 &
+                 C6 & C7 & C8 & C9 & C10 &
+                 C11 & C12 & C13 & C14 & C15 & C16]; 
+
+
+# There is someone who keeps fish. 
+
+define          Describe        [House -> "In the "... .o.
+       Color -> ... " house " .o.
+       Nationality -> "the " ... " " .o.
+       Drink -> "drinks " ... ", " .o.
+       Cigarette -> "smokes "... "s, and " .o.
+       Pet -> "keeps " ... "." "\u000a"];
+
+regex [Solution .o. Describe];
+
+print lower-words
+}}}
+
+-----
+
+== Counting combinations ==
+
+In some cases the ability to quickly count the number of paths in acyclic automata can be used to count combinations easily.
+
+=== Powerball ===
+
+To win the jackpot in U.S. powerball one must choose 5 numbers out of 59 correctly, and also separately the powerball, one out of 39.  What are the odds of winning?
+
+We can count the number of combinations simply by representing all the possible combinations as a single string of `a`s and `b`s (each symbol representing non-drawn and drawn numbers):
+
+{{{
+regex [a^54 <> b^5] [a^38 <> b];
+}}}
+
+We use the shuffle operator to produce all strings containing 54 `a`s and 5 `b`s, followed by the powerball part: all strings containing 38 `a`s and one `b`.
+ 
+The answer is then given in the number of paths in the automaton:
+
+{{{
+11.4 kB. 407 states, 714 arcs, 195249054 paths.
+}}}
+
+The odds are 1 in 195,249,054.
+
+
+== Statement logic ==
+
+Interestingly enough, theorems in statement logic can be proved using any regular expression compiler. The idea is as follows:  a regular expression is compiled out of the statement, where every variable `P` is replaced with the language `[?* P ?*]` (the language that contains P), or in `foma` shorthand: `$P`.  The Boolean operations are left as they are.
+
+The statement is a [http://en.wikipedia.org/wiki/Tautology_%28logic%29 tautology] if the resulting language is the universal language `?*`, a [http://en.wikipedia.org/wiki/Contradiction contradiction] if the result is the empty language, and neither of the two if the the statement is a [http://en.wikipedia.org/wiki/Contingency_%28philosophy%29 contingency].
+
+For example. We want to prove that:
+
+{{{
+(P ∨ ¬P)
+}}}
+
+is a tautology. To do this, we compile
+
+{{{
+regex [$P ∨ ¬$P];
+}}}
+
+(note that `foma` provides the variants ∨ = `|` for union and ¬ = `~` for complement).
+
+The result is:
+
+{{{
+foma[1]: regex [$P ∨ ¬$P];
+281 bytes. 1 states, 2 arcs, Cyclic.
+}}}
+
+And now we can test if it's the universal language with the `tuu` command (test if input projection is the universal language):
+
+{{{
+foma[6]: tuu
+1 (1 = TRUE, 0 = FALSE)
+}}}
+
+Since `foma` also understands implications and converts them to unions and negations, we can write statements almost as they are.  For example, to test if [http://en.wikipedia.org/wiki/Peirce%27s_law Peirce's Law] is a tautology, i.e.:
+
+{{{
+((P → Q) → P) → P
+}}}
+
+we compile:
+
+{{{
+foma[0]: regex [[$P → $Q] → $P] → $P;
+323 bytes. 1 states, 3 arcs, Cyclic.
+foma[1]: tuu
+1 (1 = TRUE, 0 = FALSE)
+}}}
+
+We can also use the same method to provide counterexamples to statements that are contingencies. Concider the fallacy of [http://en.wikipedia.org/wiki/Affirming_the_consequent affirming the consequent]:
+
+{{{
+(P → Q) → (Q → P)
+}}}
+
+We can now compile:
+
+{{{
+regex [$P → $Q] → [$Q → $P];
+}}}
+
+First we observe that it is not a tautology, since the result is not the universal language. A counterexample can be provided by negating (`negate`) the result, and printing out a string from the language (for example the shortest string in the language with `pss`):
+
+{{{
+foma[1]: negate
+339 bytes. 2 states, 4 arcs, Cyclic.
+foma[1]: pss
+Q
+}}}
+
+We conclude that setting `P = false` and `Q = true` is a counterexample to the reasoning.
+
+Here's a final example showing that [http://en.wikipedia.org/wiki/Proof_by_contradiction reductio ad absurdum] is a valid form of reasoning by reducing it to a tautology:
+
+{{{
+(¬P → Q) ∧ (¬P → ¬Q)) → P
+}}}
+
+{{{
+regex [[¬$P → $Q] ∧ [¬$P → ¬$Q]] → $P;
+323 bytes. 1 states, 3 arcs, Cyclic.
+foma[11]: tuu
+1 (1 = TRUE, 0 = FALSE)
+}}}
+
+
 == References ==
+
+Beesley, K. R. and Karttunen, L. (2003). _Finite State Morphology._ CSLI Publications, Stanford, CA.
+
+Hulden, M. (2009) Finite-State Machine Construction Methods and Algorithms for Phonology and Morphology. PhD Thesis. University of Arizona.
 
 Knuth, D. E. (1998). _The Art of Computer Programming: Sorting and Searching, volume 3._ Addison-Wesley.
 
 Nash, D. G. (1980). _Topics in Warlpiri Grammar._ PhD thesis, MIT.
+
+Rowling, J. K. (1997). _Harry Potter and the Philosopher's Stone_. Bloomsbury.
 
 Sproat, R. (1992). _Computational Morphology._ MIT Press.
