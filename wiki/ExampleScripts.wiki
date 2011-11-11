@@ -1,0 +1,404 @@
+#summary Short example scripts in various domains
+#labels Featured
+
+= Example scripts =
+
+Here is a collection of short scripts intended to illustrate various uses of FSTs and how to compile/design them with `foma`.
+
+== The Soundex algorithm ==
+
+The following is an implementation of the Soundex algorithm in `foma`. Its purpose is to map phonetically similar names to the same letter+number sequence. See for example [http://www.archives.gov/research/census/soundex.html The National Archives] for details.
+
+Here's an alternative description of the algorithm in 4 steps (following Don Knuth in [http://www-cs-faculty.stanford.edu/~uno/taocp.html TAOCP Volume 3] (Knuth, 1998, p.394):
+
+ * Retain the first letter of the name and drop all other occurrences of a, e, h, i, o, u, w, y.
+
+ * Replace consonants after the first letter with numbers, as follows:
+
+{{{
+    b, f, p, v => 1
+    c, g, j, k, q, s, x, z => 2
+    d, t => 3
+    l => 4
+    m, n => 5
+    r => 6
+}}}
+
+  * If two or more letters with the same number were adjacent in the original name (before step 1), or adjacent except for intervening h's and w's, omit all but the first.
+
+ * Force the format into letter-number-number-number by padding with zeroes if necessary, or deleting extra numbers to the right.
+
+Here's the code:
+
+{{{
+# soundex.script #
+define s0 [a|e|h|i|o|u|w|y] ;
+define s1 [b|f|p|v] ;
+define s2 [c|g|j|k|q|s|x|z] ;
+define s3 [d|t] ;
+define s4 l ;
+define s5 [m|n] ;
+define s6 r ;
+
+# Remove all but the first of identical sounds if they are adjacent
+define Step1 [s1+ @-> 0 || s1 _ ,, 
+              s2+ @-> 0 || s2 _ ,, 
+              s3+ @-> 0 || s3 _ ,, 
+              s4+ @-> 0 || s4 _ ,, 
+              s5+ @-> 0 || s5 _ ,, 
+              s6+ @-> 0 || s6 _ ];
+
+# h,w rule
+define Step2 s0 -> 0 || s0 [h|w] _ ,, 
+             s1 -> 0 || s1 [h|w] _ ,, 
+             s2 -> 0 || s2 [h|w] _ ,, 
+             s3 -> 0 || s3 [h|w] _ ,, 
+             s4 -> 0 || s4 [h|w] _ ,, 
+             s5 -> 0 || s5 [h|w] _ ,, 
+             s6 -> 0 || s5 [h|w] _ ;
+
+define Del s0 -> 0 || .#. ?+ _ ;
+
+# Map to numbers
+define Step3 [s1 -> 1 , s2 -> 2, s3 -> 3, s4 -> 4 , s5 -> 5 , s6 -> 6 || ?+ _ ];
+
+# Pad with zeroes, or shorten
+define Step4 [..] -> %0^3 || _ .#. .o. [? -> 0 || ?^4 _ ];
+
+regex Step1 .o. Step2 .o. Del .o. Step3 .o. Step4;
+}}}
+
+The implementation models the Soundex algorithm in an apparently circuitous way (although arguably more suitable for the formalism we're working in).
+
+We first (Step1) remove all but the first of all adjacent sounds belonging to the same group, we then (Step2) remove the latter of two sounds belonging to the same group, disregarding intervening `h` or `w` after which we remove all sounds belonging to group 0 (`[a|e|h|i|o|u|w|y]`) (Del), and finally we convert the letters to numbers (Step3) and pad or delete (Step4).
+
+Some things to note: 
+
+ * We use the left-to-right longest unconditional replacement `@->` in Step1 to capture the collapsing of an unbounded sequence of sounds belonging to the same group.
+
+ * The padding/deletion is done by first adding three zeroes (always), and then removing all but the first four symbols.
+
+Testing:
+
+{{{
+foma[1]: down
+  apply down> ashcraft
+  a261
+  apply down> koskenniemi
+  k255
+  apply down> knuth
+  k530
+  apply down> karttunen
+  k635
+  apply down> pfister
+  p236
+  apply down> gutierrez
+  g362
+  apply down> tymczak
+  t522
+  apply down> jackson
+  j250
+
+}}}
+-----
+
+
+== The 8-queens problem ==
+
+
+{{{
+# To solve the 8-queens problem we define an 8x8 board 
+# that contains three types of symbols:
+
+# Q = queen, E = empty square, M = row separator
+
+define Boardwith8Queens [Q^8 <> E^56 <> M^16] & [M ?^8 M]*;
+
+# This will contain 4,426,165,368 strings, such as:
+
+# MQEEEEEEEM
+# MEEEEQEEEM
+# MEEEEEEEQM
+# MEEEEEQEEM
+# MEEQEEEEEM
+# MEEEEEEQEM
+# MEQEEEEEEM
+# MEEEQEEEEM
+
+# (the newlines are added here for clarity)
+
+# Then we filter out the illegal configurations
+# to end up with only the correct solutions
+
+# No two queens on the same row
+
+define Attack1 $[Q \M* Q]; 
+
+# No two queens on columns or diagonals
+
+define Attack2 $[Q [[?^9  & $.{MM}] - ?* M]*  [[?^8]  & $.{MM}] Q];
+define Attack3 $[Q [[?^10 & $.{MM}] - ?* M]*  [[?^9]  & $.{MM}] Q];
+define Attack4 $[Q [[?^11 & $.{MM}] - ?* M]*  [[?^10] & $.{MM}] Q];
+
+define Solution `[[Boardwith8Queens & ~Attack1 & ~Attack2 & ~Attack3 & ~Attack4],M,0];
+}}}
+
+-----
+
+== Longest common subsequence/substring ==
+
+ * The [http://en.wikipedia.org/wiki/Longest_common_substring_problem longest common substring problem] is to find the longest string (or strings) that is a substring (or are substrings) of two or more strings.
+
+ * The [http://en.wikipedia.org/wiki/Longest_common_subsequence_problem longest common subsequence problem], by contrast, is to find the longest subsequence common to all sequences. The difference with the substring problem is that the definition of "sequence" implies possible discontinuity.
+
+For example, the longest common substring of `S = abcaa` and `T = dbcadaa` is: `bca` while the longest common subsequence is `bcaa`. Note that in neither case is the answer necessarily unique as the longest common subsequence for `S = abc` and `T = acb` is `ab` and `ac`. Likewise, the longest common substring for  `S = abc` and `T = cba` are `a`, `b`, and `c`.
+
+The following script illustrates the calculation of the longest common substrings and subsequences by declaring functions for that purpose.
+
+{{{
+# lcs.script #
+define Substring(X) [X .o. ?:0* ?* ?:0*].l;
+define Subsequence(X) [X .o. [?|?:0]*].l;
+define Longest(X) X - [[X .o. ?:a* ?:0+].l .o. a:?*].l;
+define LCSubstr(X,Y) [Longest(Substring(X) & Substring(Y))];
+define LCSubseq(X,Y) [Longest(Subsequence(X) & Subsequence(Y))];
+}}}
+
+After running the script, we can solve such problems by:
+
+{{{
+foma[0]: regex LCSubstr({abcaa},{dbcadaa});
+434 bytes. 4 states, 3 arcs, 1 path.
+foma[1]: words
+bca
+}}}
+
+and
+
+{{{
+foma[0]: regex LCSubseq({abcaa},{dbcadaa});
+450 bytes. 5 states, 4 arcs, 1 path.
+foma[1]: words
+bcaa
+}}}
+
+-----
+
+== Numbers to numerals ==
+
+Lauri Karttunen's script maps numbers (between 0 and 100) to numerals.
+
+{{{
+# NumbersToNumerals.script
+
+# Copyright (C) 2004  Lauri Karttunen
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+# This script constructs a transducer that maps the English numerals
+# "one", "two", "three", ..., "ninety-nine", to the corresponding numbers
+#  "1", "2", "3", ... "99".
+
+
+define OneToNine [1:{one} | 2:{two} | 3:{three} | 4:{four}  |5:{five} |
+                  6:{six} | 7:{seven} | 8:{eight} | 9:{nine}];
+
+define TeenTen [3:{thir} | 5:{fif} | 6:{six}|
+                7:{seven} | 8:{eigh} | 9:{nine}];
+
+define Teens [1:0 [{0}:{ten} | 1:{eleven} | 2:{twelve}|
+                  [TeenTen | 4:{four}] 0:{teen}]];
+
+define TenStem [2:{twen} | TeenTen | 4:{for}];
+
+# TenStem is followed either by "ty" paired with a zero
+# or by "ty-" mapped to an epsilon and folowed by a one
+# number. Note that {0} means zero and not epsilon
+
+define Tens [TenStem [{0}:{ty} | 0:{ty-} OneToNine]];
+
+define OneToNinetyNine [ OneToNine | Teens | Tens ];
+
+# Let's put the result on the stack for testing.
+
+push OneToNinetyNine
+
+echo
+echo Print random numbers
+print random-upper 5
+echo
+echo Print random numerals
+print random-lower 5
+echo
+echo Map numeral to number
+echo Input: seventy-nine
+apply up seventy-nine
+}}}
+
+-----
+
+
+== Reduplication (example from Warlpiri) ==
+
+The following toy grammar of Warlpiri reduplication shows how the [RegularExpressionReference#_eq(X,L,R) `_eq()`] can be used to capture such phenomena. The description of the reduplication comes from Nash(1980), pp. 142-144 and Sproat (1992), p. 58.
+
+Warlpiri reduplication is an examle of "partial reduplication" where the reduplication process operates on the base form of a word and copies only a "prosodic foot" or "reduplication skeleton" from the base. The prosodic foot is of the shape C V (C) (C) V. This reduplication process yields, for example:
+
+
+|| *Base form* ||   *Reduplicated form* ||
+|| pakarni     ||   pakapakarni         ||
+|| pangurnu    ||   pangupangurnu       ||
+|| wantimi     ||   wantiwantimi        ||
+
+The script has a base lexicon. All words in the lexicon may be followed by the tag `+Redup`.
+
+We first mark the prosodic template with `< ... >` and, if the tag `+Redup` is present, prefix a `< [C|V]* >` sequence  (i.e., anything surrounded by < and > ) after which we apply `_eq()` which filters out all substrings ... `< X >` ... `< Y >` ... where X is not equal to Y in content.
+
+The idea is to get strings in the composition sequence such as:
+
+{{{
+# 1. pangurnu+Redup          <- Lexicon
+# 2. <pangu>rnu+Redup        <- enclose initial prosodic foot in brackets
+# 3. <...><pangu>rnu+Redup   <- insert a prefix of "anything" in brackets
+#                               if +Redup is present
+# 4. <pangu><pangu>rnu       <- after _eq()
+# 5. pangupangurnu           <- after auxiliary symbol removal
+}}}
+
+
+{{{
+# warlpiri.script #
+define C p|{ng}|{rn}|{rl}|k|j|w|n|t|m;
+define V a|e|i|o|u;
+define Lexicon {pangurnu}|{tiirlparnkaja}|{wantimi}|{pakarni};
+define Morphology Lexicon ("+Redup");
+define MarkTemplate C V (C) (C) V -> "<" ... ">" || .#. _ ;
+define InsertPrefix [..] ->  "<" [C|V]* ">" || .#. _ ?* "<" ?* "+Redup";
+define RemoveTags "+Redup" -> 0;
+define RemoveBrackets "<"|">" -> 0;
+define PreEq Morphology .o. MarkTemplate .o. InsertPrefix .o. RemoveTags;
+regex _eq(PreEq, "<" , ">") .o. RemoveBrackets;
+}}}
+
+Testing:
+
+{{{
+foma[1]: up
+apply up> pakarni
+pakarni
+apply up> pakapakarni
+pakarni+Redup
+apply up> tiitiirlparnkaja
+tiirlparnkaja+Redup
+apply up>
+}}}
+
+-----
+
+== Date parsing and markup ==
+
+The following example script, kindly provided by Lauri Karttunen, illustrates a markup application that parses valid dates and tags them.
+
+{{{
+# DateParser.script
+
+# Copyright (C) 2004  Lauri Karttunen
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+# date.script
+# define date expressions from "Monday, January 1, 1" to "Sunday,
+# December 31, 9999" and build a shallow parser to mark them
+
+# This script constructs a parser that marks up expressions such
+# "Friday", "October 15", "October 15, 2004", and
+# "Friday, October 15, 2005" by wrapping then inside HTML
+# tags "<DATE>Friday</DATE>", "<DATE>February 29, 2004</DATE>", etc.
+# See the end of the script usage examples.
+
+define OneToNine [1|2|3|4|5|6|7|8|9];
+define ZeroToNine ["0"|OneToNine];
+define Even [{0} | 2 | 4 | 6 | 8] ;
+define Odd [1 | 3 | 5 | 7 | 9] ;
+define N [Even | Odd];
+
+define Day     [{Monday} | {Tuesday} | {Wednesday} | {Thursday} |
+                {Friday} | {Saturday} | {Sunday}] ;
+
+define Month29 {February};
+define Month30 [{April} | {June} | {September} | {December}];
+define Month31 [{January} | {March} | {May} | {July} | {August} |
+                {October} | {December}] ;
+
+define Month   [Month29 | Month30 | Month31];
+
+# Numbers from 1 to 31
+define Date    [OneToNine | [1 | 2] ZeroToNine | 3 [%0 | 1]] ;
+
+# Numbers from 1 to 9999
+define Year [OneToNine ZeroToNine^<4];
+
+# Day or [Month and Date] with optional Day and Year
+define AllDates [Day | (Day {, }) Month { } Date ({, } Year)];
+
+# Constraints on dates 30 and 31
+
+define MaxDays30 ~$[Month29 { 30}];
+define MaxDays31 ~$[[Month29 | Month30] { 31}];
+
+# Combining constraints on dates 30 and 31
+define MaxDays  [MaxDays30 & MaxDays31];
+
+# Divisible by 4
+# Of single digit numbers, 4 and 8 are divisible by 4.
+# In larger numbers divisible with 4, if the penultimate
+# is even, the last number is 0, 4, or 8. If the penultimate
+# is odd, the last number is 2 or 6.
+define Div4  [4 | 8 | N* [Even [%0 | 4 | 8] | Odd [2 | 6]]];
+
+# Leap years are divisible by 4 but we subtract centuries
+# that are not divisible by 400. Note the double
+# subtraction. [[N+ - Div4] {00}] includes 1900 but not 2000.
+define LeapYear [Div4 - [[N+ - Div4] {00}]] ;
+
+# Note the [.#. | \N] at the end of the right context.
+# 2405 is not a leap year although the year 240 was (in principle).
+define LeapDates {February 29, } => _ LeapYear [.#. | \N];
+
+define ValidDates [AllDates & MaxDays & LeapDates];
+
+define DateParser [ValidDates @-> "<DATE>" ... "</DATE>"];
+
+echo
+echo Testing DateParser
+
+push DateParser
+
+down Today is Wednesday, October 5, 2004.
+down Yesterday was Tuesday.
+down February 29, 2000 was a leap day.
+down but February 29, 1900 was not a leap day.
+down Next leap day is on February 29, 2008
+}}}
+
+== References ==
+
+Knuth, D. E. (1998). _The Art of Computer Programming: Sorting and Searching, volume 3._ Addison-Wesley.
+
+Nash, D. G. (1980). _Topics in Warlpiri Grammar._ PhD thesis, MIT.
+
+Sproat, R. (1992). _Computational Morphology._ MIT Press.
