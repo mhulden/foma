@@ -395,7 +395,7 @@ define Clue6  [? W ?* W ?|? P ?* P ?];
 regex  [Clue1 & Clue2 & Clue3 & Clue4 & Clue5 & Clue6];
 }}}
 
-The clue numbers correspond to the numbering of the lines in the not above. For example, `Clue1` defines the set of strings (using the shuffle operator) that contains exactly three Ps, two Ws, one F, and one B. `Clue2` encodes the idea that there's always some poison to the left of the wine. `Clue5` doesn't constrain anything at all, and is only used for illustrative purposes, since it's hard to make anything out of it without seeing the bottles.
+The clue numbers correspond to the numbering of the lines in the note above. For example, `Clue1` defines the set of strings (using the shuffle operator) that contains exactly three `P`s, two `W`s, one `F`, and one `B`. `Clue2` encodes the idea that there's always some poison to the left of the wine. `Clue5` doesn't constrain anything at all, and is only used for illustrative purposes, since it's hard to make anything out of it without seeing the bottles (which presumably the protagonists in the story do).
 
 Running the script yields:
 
@@ -735,7 +735,7 @@ foma[1]: tuu
 1 (1 = TRUE, 0 = FALSE)
 }}}
 
-We can also use the same method to provide counterexamples to statements that are contingencies. Concider the fallacy of [http://en.wikipedia.org/wiki/Affirming_the_consequent affirming the consequent]:
+We can also use the same method to produce counterexamples to statements that are contingencies. Consider the fallacy of [http://en.wikipedia.org/wiki/Affirming_the_consequent affirming the consequent]:
 
 {{{
 (P → Q) → (Q → P)
