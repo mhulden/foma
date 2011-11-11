@@ -440,9 +440,9 @@ BPWPFPW
 
 since that particular ordering of bottle sizes has four possible solutions.
 
-Next, we then extract from that transducer only the unambiguous paths; i.e. that part of the transducer `NumToSolutions` where for some input word, there is only path to a final state.  We do so with `foma`'s `_unambpart()`-function.
+Next, we extract from that transducer only the unambiguous paths; i.e. that part of the transducer `NumToSolutions` where for some input word there is only one path to a final state.  We do so with `foma`'s `_unambpart()`-function.
  
-This resulting transducer `NumToUnambiguousSolutions` only contains words such as `2137654` on its input side, since that bottle ordering gives the unique solution
+This resulting transducer (`NumToUnambiguousSolutions`) only contains words such as `2137654` on its input side, since that particular bottle ordering gives a unique solution to the problem:
 
 {{{
 apply down> 2137654
@@ -485,7 +485,7 @@ regex [NumToUnambiguousSolutions .o. ?:X* B ?:X*].l;
 A technical detail in the script is that we change the intermediate representation a little bit: the inputs to the transducer are always seven-digit numbers (with every number occurring once), but we then interleave `B`,`F`,`P`, and `W` symbols after each number. This is done by the part:
 
 {{{
-define NumSolutions Input .o. [? 0:?]^7 .o. Clue1/NUM 
+define NumSolutions Input .o. [? 0:?]^7 .o. Clue1/NUM ...
 }}} 
 
 We then proceed as before, but the constraints have been changed to account for the fact that we now have 14 symbol strings with digits and letters interleaved. This allows us to express the crucial extra clue that Hermione could have received:
@@ -713,7 +713,7 @@ foma[1]: regex [$P ∨ ¬$P];
 281 bytes. 1 states, 2 arcs, Cyclic.
 }}}
 
-And now we can test if it's the universal language with the `tuu` command (test if input projection is the universal language):
+And now we can test if it's the universal language with the `tuu` command (if the input projection is the universal language):
 
 {{{
 foma[6]: tuu
