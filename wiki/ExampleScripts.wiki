@@ -5,6 +5,11 @@
 
 Here is a collection of short scripts intended to illustrate various uses of FSTs and how to compile/design them with `foma`.
 
+== Syllabification ==
+
+
+[Sonority hierarchy http://en.wikipedia.org/wiki/Sonority_hierarchy]
+
 == The Soundex algorithm ==
 
 The following is an implementation of the Soundex algorithm in `foma`. Its purpose is to map phonetically similar names to the same letter+number sequence. See for example [http://www.archives.gov/research/census/soundex.html The National Archives] for details.
@@ -688,11 +693,11 @@ The odds are 1 in 195,249,054.
 
 == Statement logic ==
 
-Interestingly enough, theorems in statement logic can be proved using any regular expression compiler. The idea is as follows:  a regular expression is compiled out of the statement, where every variable `P` is replaced with the language `[?* P ?*]` (the language that contains P), or in `foma` shorthand: `$P`.  The Boolean operations are left as they are.
+Interestingly enough, truth value of expressions in statement logic can be tested using any regular expression compiler. The idea is as follows:  a regular expression is compiled out of the statement, where every variable `P` is replaced with the language `[?* P ?*]` (the language that contains P), or in `foma` shorthand: `$P`.  The Boolean operations are left as they are.
 
 The statement is a [http://en.wikipedia.org/wiki/Tautology_%28logic%29 tautology] if the resulting language is the universal language `?*`, a [http://en.wikipedia.org/wiki/Contradiction contradiction] if the result is the empty language, and neither of the two if the the statement is a [http://en.wikipedia.org/wiki/Contingency_%28philosophy%29 contingency].
 
-For example. We want to prove that:
+For example. We want to see if:
 
 {{{
 (P ∨ ¬P)
