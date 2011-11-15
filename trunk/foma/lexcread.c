@@ -237,8 +237,6 @@ void lexc_add_network() {
     net = current_regex_network;
     fsm = net->states;
     maxsigma = sigma_max(net->sigma);
-    if (maxsigma == -1)
-        return;
 
     sigreplace = xxcalloc(sigma_max(net->sigma)+1,sizeof(int));
 
