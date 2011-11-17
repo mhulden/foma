@@ -5,10 +5,6 @@
 
 Here is a collection of short scripts intended to illustrate various uses of FSTs and how to compile/design them with `foma`.
 
-== Syllabification ==
-
-
-[Sonority hierarchy http://en.wikipedia.org/wiki/Sonority_hierarchy]
 
 == The Soundex algorithm ==
 
