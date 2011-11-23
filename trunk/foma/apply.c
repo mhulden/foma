@@ -134,6 +134,7 @@ void apply_clear(struct apply_handle *h) {
 	sta = sta->next;
 	xxfree(stap);
     }
+    h->sigma_trie_arrays = NULL;
     if (h->statemap != NULL) {
         xxfree(h->statemap);
         h->statemap = NULL;
@@ -295,7 +296,7 @@ void apply_reset_enumerator(struct apply_handle *h) {
 char *apply_net(struct apply_handle *h) {
 
     char *fname, *fvalue;
-    int eatupi, eatupo, symin, symout, f, fneg; 
+    int eatupi, eatupo, symin, symout, f, fneg;
     int vcount, msource, mtarget;
     
 /*     We perform a basic DFS on the graph, with two minor complications:       */
@@ -348,18 +349,19 @@ char *apply_net(struct apply_handle *h) {
 	for (f=0,h->curr_ptr = h->ptr; (h->gstates+h->curr_ptr)->state_no == (h->gstates+h->ptr)->state_no && (h->gstates+h->curr_ptr)-> in != -1; (h->curr_ptr)++) {
 	    f = 0;
 
+
 	    /* Select one random arc to follow out of all outgoing arcs */
 
 	    if ((h->mode & RANDOM) == RANDOM) {
-		vcount = 0;
-		for (h->curr_ptr = h->ptr;  (h->gstates+h->curr_ptr)->state_no == (h->gstates+h->ptr)->state_no && (h->gstates+h->curr_ptr)-> in != -1; (h->curr_ptr)++) {
-		    vcount++;
-		}
-		if (vcount > 0) {
-		  h->curr_ptr = h->ptr + (rand() % vcount) ;
-		} else {
-		  h->curr_ptr = h->ptr;
-		}
+	    	vcount = 0;
+	    	for (h->curr_ptr = h->ptr;  (h->gstates+h->curr_ptr)->state_no == (h->gstates+h->ptr)->state_no && (h->gstates+h->curr_ptr)-> in != -1; (h->curr_ptr)++) {
+	    	    vcount++;
+	    	}
+	    	if (vcount > 0) {
+	    	  h->curr_ptr = h->ptr + (rand() % vcount) ;
+	    	} else {
+	    	  h->curr_ptr = h->ptr;
+	    	}
 	    }
 
 	    symin  = (((h->mode)&DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->in  : (h->gstates+h->curr_ptr)->out;
@@ -443,7 +445,7 @@ char *apply_net(struct apply_handle *h) {
 int apply_append (struct apply_handle *h, int cptr, int sym) {
 
     char *astring, *bstring, *pstring;
-    int symin, symout, len, alen, blen;
+    int symin, symout, len, alen, blen, idlen;
 
     symin = (h->gstates+cptr)->in;
     symout = (h->gstates+cptr)->out;
@@ -530,9 +532,10 @@ int apply_append (struct apply_handle *h, int cptr, int sym) {
 
 	else if (sym == IDENTITY) {
 	    /* Apply up/down */
-	    strncpy(h->outstring+h->opos, h->instring+h->ipos, 1);
-	    strncpy(h->outstring+h->opos+1,"", 1);
-	    len = 1;
+	    idlen = utf8skip(h->instring+h->ipos)+1;
+	    strncpy(h->outstring+h->opos, h->instring+h->ipos, idlen);
+	    strncpy(h->outstring+h->opos+idlen,"", 1);
+	    len = idlen;
 	} else if (sym == EPSILON) {
 	    return(0);
 	} else {
@@ -571,6 +574,7 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 	}
 	return(0);
     }
+
     if (symbol == EPSILON) {
 	return 0;
     }
@@ -595,7 +599,7 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
     }
     if ((symbol == IDENTITY) || (symbol == UNKNOWN)) {
 	if ((h->sigmatch_array+position)->signumber == IDENTITY) {
-	    return 1;
+	    return((h->sigmatch_array+position)->consumes);
 	}
     }
     return -1;
@@ -726,7 +730,7 @@ void apply_create_sigmatch(struct apply_handle *h) {
 	h->sigmatch_array = xxmalloc(sizeof(struct sigmatch_array)*(inlen));
 	h->sigmatch_array_size = inlen;
     }
-    for (i=0; i < inlen;  ) {
+    for (i=0; i < inlen; i += consumes ) {
 	st = h->sigma_trie;
 	for (j=0, lastmatch = 0; ; j++) {
 	    if (*(symbol+i+j) == '\0') {
@@ -748,12 +752,11 @@ void apply_create_sigmatch(struct apply_handle *h) {
 	    (h->sigmatch_array+i)->signumber = lastmatch;
 	    consumes = strlen(*(h->sigs+lastmatch));
 	    (h->sigmatch_array+i)->consumes = consumes;
-	    i = i + consumes;
 	} else {
 	    /* Not found */
 	    (h->sigmatch_array+i)->signumber = IDENTITY;
-	    (h->sigmatch_array+i)->consumes = 1;
-	    i++;
+	    consumes = utf8skip(symbol+i)+1;
+	    (h->sigmatch_array+i)->consumes = consumes;
 	}
     }
 }
