@@ -1,11 +1,11 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -49,6 +49,7 @@ void declare_function_name(char *s) {
         exit(1);
     }
     fname[frec] = xxstrdup(s);
+    xxfree(s);
 }
 
 struct fsm *function_apply(void) {
@@ -82,7 +83,9 @@ struct fsm *function_apply(void) {
         remove_defined(repstr);
         mygsym++;
     }
+    xxfree(fname[frec]);
     frec--;
+    xxfree(regex);
     return(current_parse);
 }
 
@@ -189,7 +192,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
 }
 
 %pure-parser
-%expect 507
+%expect 644
 %parse-param {void     *scanner } /* Assume yyparse is called with this argument */
 %lex-param   {yyscan_t *scanner } /* Call flex functions with this argument      */
 %locations
@@ -219,7 +222,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
 */
 
 %token <net> NET
-%token <string> END LBRACKET RBRACKET LPAREN RPAREN ENDM ENDD CRESTRICT CONTAINS CONTAINS_OPT_ONE CONTAINS_ONE XUPPER XLOWER FLAG_ELIMINATE IGNORE_ALL IGNORE_INTERNAL CONTEXT NCONCAT MNCONCAT MORENCONCAT LESSNCONCAT DOUBLE_COMMA COMMA SHUFFLE PRECEDES FOLLOWS RIGHT_QUOTIENT LEFT_QUOTIENT INTERLEAVE_QUOTIENT UQUANT EQUANT VAR IN IMPLIES BICOND EQUALS NEQ SUBSTITUTE SUCCESSOR_OF PRIORITY_UNION_U PRIORITY_UNION_L LENIENT_COMPOSE TRIPLE_DOT LDOT RDOT FUNCTION SUBVAL ISUNAMBIGUOUS ISIDENTITY ISFUNCTIONAL NOTID LOWERUNIQ LOWERUNIQEPS ALLFINAL UNAMBIGUOUSPART AMBIGUOUSPART AMBIGUOUSDOMAIN EQSUBSTRINGS LETTERMACHINE
+%token <string> END LBRACKET RBRACKET LPAREN RPAREN ENDM ENDD CRESTRICT CONTAINS CONTAINS_OPT_ONE CONTAINS_ONE XUPPER XLOWER FLAG_ELIMINATE IGNORE_ALL IGNORE_INTERNAL CONTEXT NCONCAT MNCONCAT MORENCONCAT LESSNCONCAT DOUBLE_COMMA COMMA SHUFFLE PRECEDES FOLLOWS RIGHT_QUOTIENT LEFT_QUOTIENT INTERLEAVE_QUOTIENT UQUANT EQUANT VAR IN IMPLIES BICOND EQUALS NEQ SUBSTITUTE SUCCESSOR_OF PRIORITY_UNION_U PRIORITY_UNION_L LENIENT_COMPOSE TRIPLE_DOT LDOT RDOT FUNCTION SUBVAL ISUNAMBIGUOUS ISIDENTITY ISFUNCTIONAL NOTID LOWERUNIQ LOWERUNIQEPS ALLFINAL UNAMBIGUOUSPART AMBIGUOUSPART AMBIGUOUSDOMAIN EQSUBSTRINGS LETTERMACHINE MARKFSMTAIL MARKFSMTAILLOOP MARKFSMMIDLOOP MARKFSMLOOP ADDSINK LEFTREWR FLATTEN
 
 %token <type> ARROW DIRECTION
 
@@ -259,7 +262,8 @@ n0: network1 { }
 | CONTEXT n0 COMMA n0    { add_context_pair(fsm_empty_string(),$2); }
 | n0 CONTEXT n0 COMMA n0 { add_context_pair($1,$3); }
 | n0 CRESTRICT n0        { $$ = fsm_context_restrict($1,contexts); fsm_clear_contexts(contexts);}
-| n0 ARROW n0            { add_rule($1,$3,NULL,$2);if ($3 == NULL) { YYERROR;}}
+| n0 ARROW n0            { add_rule($1,$3,NULL,$2); if ($1->arity == 2) { printf("Error: LHS is transducer\n"); YYERROR;}}
+| n0 ARROW               { add_rule($1,NULL,NULL,$2); }
 
 | LDOT n0 RDOT ARROW n0  { add_rule($2,$5,NULL,$4|ARROW_DOTTED); if ($5 == NULL) { YYERROR;}}
 | LDOT RDOT ARROW n0  { add_rule(fsm_empty_string(),$4,NULL,$3|ARROW_DOTTED); if ($4 == NULL) { YYERROR;}}
@@ -268,7 +272,9 @@ n0: network1 { }
 | LDOT n0 RDOT ARROW n0 DIRECTION n0 { add_rule($2,$5,NULL,$4|ARROW_DOTTED); rule_direction = $6;}
 | LDOT RDOT ARROW n0 DIRECTION n0 { add_rule(fsm_empty_string(),$4,NULL,$3|ARROW_DOTTED); rule_direction = $5;}
 | n0 ARROW n0 COMMA n0 { add_rule($1,$3,NULL,$2);}
+| n0 ARROW COMMA n0 { add_rule($1,NULL,NULL,$2);}
 | n0 ARROW n0 DIRECTION n0 { add_rule($1,$3,NULL,$2); rule_direction = $4;}
+| n0 ARROW DIRECTION n0 { add_rule($1,NULL,NULL,$2); rule_direction = $3;}
 
 | n0 DOUBLE_COMMA n0  { add_rewrite_rule();}
 
@@ -305,9 +311,7 @@ network4: network5 { }
 | network4 BICOND network5           { $$ = fsm_intersect(fsm_union(fsm_complement(fsm_copy($1)),fsm_copy($3)), fsm_union(fsm_complement(fsm_copy($3)),fsm_copy($1))); fsm_destroy($1); fsm_destroy($3);}
 
 network5: network6  { }
-| network5 network6 { $$ = fsm_concat($1,$2); 
-/* printf("Concating: [%s] [%s]\n",yyvsp[(1) - (2)].string, yyvsp[(2) - (2)].string);  */
-}
+| network5 network6 { $$ = fsm_concat($1,$2); }
 | VAR IN network5   { $$ = fsm_ignore(fsm_contains(fsm_concat(fsm_symbol($1),fsm_concat($3,fsm_symbol($1)))),union_quantifiers(),OP_IGNORE_ALL); }
 
 | VAR EQUALS VAR    { $$ = fsm_logical_eq($1,$3); }
@@ -341,7 +345,7 @@ network9: network10 { }
 | network9 HIGH_CROSS_PRODUCT network10 { $$ = fsm_cross_product($1,$3); }
 
 | network9 NCONCAT        { $$ = fsm_concat_n($1,atoi($2)); }
-| network9 MORENCONCAT    { $$ = fsm_concat(fsm_concat_n($1, atoi($2)),fsm_kleene_plus($1)); }
+| network9 MORENCONCAT    { $$ = fsm_concat(fsm_concat_n(fsm_copy($1), atoi($2)),fsm_kleene_plus(fsm_copy($1))); fsm_destroy($1); }
 | network9 LESSNCONCAT    { $$ = fsm_concat_m_n($1,0,atoi($2)-1); }
 | network9 MNCONCAT       { $$ = fsm_concat_m_n($1,atoi($2),atoi(strstr($2,",")+1)); }
 
@@ -360,7 +364,7 @@ network11: NET { $$ = $1;}
 | sub1 sub2 {$$ = fsm_substitute_symbol($1,subval1,subval2); substituting = 0; xxfree(subval1); xxfree(subval2); subval1 = subval2 = NULL;}
 
 sub1: SUBSTITUTE LBRACKET network COMMA { $$ = $3; substituting = 1;                      }
-sub2: SUBVAL COMMA SUBVAL RBRACKET      { subval1 = xxstrdup($2); subval2 = xxstrdup($4); }
+sub2: SUBVAL COMMA SUBVAL RBRACKET      { subval1 = $2; subval2 = $4; }
 
 network12: fend    { $$ = $1 } |
          ISIDENTITY   network RPAREN    { $$ = fsm_boolean(fsm_isidentity($2));   } |
@@ -373,9 +377,16 @@ network12: fend    { $$ = $1 } |
          UNAMBIGUOUSPART network RPAREN { $$ = fsm_extract_unambiguous(fsm_copy($2));      } |
          AMBIGUOUSPART network RPAREN   { $$ = fsm_extract_ambiguous(fsm_copy($2));        } |
          AMBIGUOUSDOMAIN network RPAREN { $$ = fsm_extract_ambiguous_domain(fsm_copy($2)); } |
-         LETTERMACHINE network RPAREN   { $$ = fsm_letter_machine(fsm_copy($2)); } |
-         EQSUBSTRINGS network COMMA network COMMA network RPAREN { $$ = fsm_equal_substrings($2,$4,$6); }
-
+         LETTERMACHINE network RPAREN   { $$ = fsm_letter_machine(fsm_copy($2)); }   |
+         MARKFSMTAIL network COMMA network RPAREN { $$ = fsm_mark_fsm_tail($2,$4); } |
+         MARKFSMTAILLOOP network COMMA network RPAREN { $$ = fsm_add_loop($2,$4,1); } |
+         MARKFSMMIDLOOP network COMMA network RPAREN { $$ = fsm_add_loop($2,$4,0); } |
+         MARKFSMLOOP network COMMA network RPAREN { $$ = fsm_add_loop($2,$4,2); } |
+         ADDSINK network RPAREN { $$ = fsm_add_sink($2,1); } |
+         LEFTREWR network COMMA network RPAREN { $$ = fsm_left_rewr($2,$4); } |
+         FLATTEN network COMMA network RPAREN { $$ = fsm_flatten($2,$4); } |
+         EQSUBSTRINGS network COMMA network COMMA network RPAREN { $$ = fsm_equal_substrings($2,$4,$6); } 
+      
 fstart: FUNCTION network COMMA
 { frec++; fargptr[frec] = 0 ;declare_function_name($1) ; add_function_argument($2); }
 |       FUNCTION network       
