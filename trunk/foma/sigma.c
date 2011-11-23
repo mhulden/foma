@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -162,6 +162,7 @@ void sigma_cleanup (struct fsm *net, int force) {
     }
 
     maxsigma = sigma_max(net->sigma);
+    if (maxsigma < 0) { return; }
     attested = xxmalloc(sizeof(int)*(maxsigma+1));
     for (i=0; i<=maxsigma; i++)
         *(attested+i) = 0;
@@ -306,9 +307,7 @@ struct sigma *sigma_copy(struct sigma *sigma) {
     int f = 0;
     struct sigma *copy_sigma, *copy_sigma_s;
 
-    if (sigma == NULL) {
-      return NULL;
-    }
+    if (sigma == NULL) { return NULL; }
     copy_sigma_s = xxmalloc(sizeof(struct sigma));
 
     for (copy_sigma = copy_sigma_s; sigma != NULL; sigma=sigma->next) {
@@ -338,6 +337,7 @@ int sigma_sort(struct fsm *net) {
   struct fsm_state *fsm_state;
   
   size = sigma_max(net->sigma);
+  if (size < 0) { return 1; }
   ssort = xxmalloc(sizeof(struct ssort)*size);
 
   for (i=0, sigma=net->sigma; sigma != NULL; sigma=sigma->next) {
