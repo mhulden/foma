@@ -473,15 +473,23 @@ struct fsm *fsm_construct_done(struct fsm_construct_handle *handle) {
     xxfree(handle->fsm_state_list);
     xxfree(handle);
     sigma_sort(net);
-    return(net);   
+    return(net);
 }
 
 /* Reading functions */
 
+int fsm_read_is_final(struct fsm_read_handle *h, int state) {
+    return (*((h->lookuptable)+state) & 2);
+}
+
+int fsm_read_is_initial(struct fsm_read_handle *h, int state) {
+    return (*((h->lookuptable)+state) & 1);
+}
+
 struct fsm_read_handle *fsm_read_init(struct fsm *net) {
     struct fsm_read_handle *handle;
-    struct fsm_state *fsm;
-    int i, j, k, num_states, num_initials, num_finals, sno, *finals_head, *initials_head, *states_head;
+    struct fsm_state *fsm, **states_head;
+    int i, j, k, num_states, num_initials, num_finals, sno, *finals_head, *initials_head, laststate;
 
     unsigned char *lookuptable;
     if (net == NULL) {return (NULL);}
@@ -491,6 +499,10 @@ struct fsm_read_handle *fsm_read_init(struct fsm *net) {
     
     num_initials = num_finals = 0;
 
+    handle = xxcalloc(1,sizeof(struct fsm_read_handle));
+    states_head = xxcalloc(num_states+1,sizeof(struct fsm **));
+
+    laststate = -1;
     for (i=0, fsm=net->states; (fsm+i)->state_no != -1; i++) {
         sno = (fsm+i)->state_no;
         if ((fsm+i)->start_state) {
@@ -506,11 +518,18 @@ struct fsm_read_handle *fsm_read_init(struct fsm *net) {
                 num_finals++;
             }
         }
+	if ((fsm+i)->in == UNKNOWN || (fsm+i)->out == UNKNOWN || (fsm+i)->in == IDENTITY || (fsm+i)->out == IDENTITY) {
+	    handle->has_unknowns = 1;
+	}
+	if ((fsm+i)->state_no != laststate) {
+	    *(states_head+(fsm+i)->state_no) = fsm+i;
+	}
+	laststate = (fsm+i)->state_no;
     }
     
     finals_head = xxcalloc(num_finals+1,sizeof(int));
     initials_head = xxcalloc(num_initials+1,sizeof(int));
-    states_head = xxcalloc(num_states+1,sizeof(int));
+
 
     for (i=j=k=0; i < num_states; i++) {
         if (*(lookuptable+i) & 1) {
@@ -521,14 +540,10 @@ struct fsm_read_handle *fsm_read_init(struct fsm *net) {
             *(finals_head+k) = i;
             k++;
         }
-        *(states_head+i) = i;
     }
-    *(initials_head+j) = -1;    
+    *(initials_head+j) = -1;
     *(finals_head+k) = -1;
-    *(states_head+i) = -1;
-
-    xxfree(lookuptable);
-    handle = xxcalloc(1,sizeof(struct fsm_read_handle));
+    
     handle->finals_head = finals_head;
     handle->initials_head = initials_head;
     handle->states_head = states_head;
@@ -536,6 +551,8 @@ struct fsm_read_handle *fsm_read_init(struct fsm *net) {
     handle->fsm_sigma_list = sigma_to_list(net->sigma);
     handle->sigma_list_size = sigma_max(net->sigma)+1;
     handle->arcs_head = fsm;
+    handle->lookuptable = lookuptable;
+    handle->net = net;
     return(handle);
 }
 
@@ -546,6 +563,16 @@ void fsm_read_reset(struct fsm_read_handle *handle) {
     handle->initials_cursor = NULL;
     handle->finals_cursor = NULL;
     handle->states_cursor = NULL;
+}
+
+int fsm_get_next_state_arc(struct fsm_read_handle *handle) {
+    int currstate;
+    handle->arcs_cursor++;
+    if ((handle->arcs_cursor->state_no != handle->current_state) || (handle->arcs_cursor->target == -1)) {
+	handle->arcs_cursor--;
+	return 0;
+    }
+    return 1;
 }
 
 int fsm_get_next_arc(struct fsm_read_handle *handle) {
@@ -572,7 +599,7 @@ int fsm_get_next_arc(struct fsm_read_handle *handle) {
 }
 
 int fsm_get_arc_source(struct fsm_read_handle *handle) {
-    if (handle->arcs_cursor == NULL) { return -1;}    
+    if (handle->arcs_cursor == NULL) { return -1;}
     return(handle->arcs_cursor->state_no);
 }
 
@@ -608,7 +635,7 @@ int fsm_get_arc_num_in(struct fsm_read_handle *handle) {
 }
 
 int fsm_get_arc_num_out(struct fsm_read_handle *handle) {
-    if (handle->arcs_cursor == NULL) { return -1;}    
+    if (handle->arcs_cursor == NULL) { return -1;}
     return(handle->arcs_cursor->out);
 }
 
@@ -645,19 +672,33 @@ int fsm_get_next_final(struct fsm_read_handle *handle) {
     return *(handle->finals_cursor);
 }
 
+int fsm_get_num_states(struct fsm_read_handle *handle) {
+    return(handle->net->statecount);
+}
+
+int fsm_get_has_unknowns(struct fsm_read_handle *handle) {
+    return(handle->has_unknowns);
+}
+
 int fsm_get_next_state(struct fsm_read_handle *handle) {
+    int stateno;
     if (handle->states_cursor == NULL) {
         handle->states_cursor = handle->states_head;
     } else {
-        if (*(handle->states_cursor) == -1) {
-            return -1;
-        }
-        handle->states_cursor++;
+	handle->states_cursor++;
     }
-    return *(handle->states_cursor);
+    if (handle->states_cursor - handle->states_head >= fsm_get_num_states(handle)) {
+	return -1;
+    }
+    handle->arcs_cursor = *(handle->states_cursor);
+    stateno = (*(handle->states_cursor))->state_no;
+    handle->arcs_cursor--;
+    handle->current_state = stateno;
+    return (stateno);
 }
 
 void fsm_read_done(struct fsm_read_handle *handle) {
+    xxfree(handle->lookuptable);
     xxfree(handle->fsm_sigma_list);
     xxfree(handle->finals_head);
     xxfree(handle->initials_head);
