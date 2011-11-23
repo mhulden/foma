@@ -56,6 +56,7 @@ int stack_add(struct fsm *fsm) {
   stack_ptr->next = xxmalloc(sizeof(struct stack_entry));
   stack_ptr->fsm = fsm;
   stack_ptr->ah = NULL;
+  stack_ptr->amedh = NULL;
   stack_ptr->number = i;
   stack_ptr->previous = stack_ptr_previous;
   (stack_ptr->next)->number = -1;
@@ -65,6 +66,19 @@ int stack_add(struct fsm *fsm) {
   if (!quiet_mode)
       print_stats(fsm);
   return(stack_ptr->number);
+}
+
+struct apply_med_handle *stack_get_med_ah() {
+    struct stack_entry *se;
+    se = stack_find_top();
+    if (se == NULL) {
+	return(NULL);
+    }
+    if (se->amedh == NULL) {
+	se->amedh = apply_med_init(se->fsm);
+	apply_med_set_align_symbol(se->amedh, "-");
+    }
+    return(se->amedh);
 }
 
 struct apply_handle *stack_get_ah() {
@@ -97,7 +111,12 @@ struct fsm *stack_pop(void) {
       apply_clear(stack_ptr->ah);
       stack_ptr->ah = NULL;
   }
-  xxfree(stack_ptr);
+  if (stack_ptr->amedh != NULL) {
+      apply_med_clear(stack_ptr->amedh);
+      stack_ptr->amedh = NULL;
+  }
+  stack_ptr->fsm = NULL;
+  xxfree(stack_ptr);  
   return(fsm);
 }
 
@@ -165,7 +184,9 @@ int stack_clear(void) {
   struct stack_entry *stack_ptr;
   for (stack_ptr = main_stack ; stack_ptr->next != NULL; stack_ptr = main_stack) {
     if (stack_ptr->ah != NULL)
-      apply_clear(stack_ptr->ah);
+	apply_clear(stack_ptr->ah);
+    if (stack_ptr->amedh != NULL)
+	apply_med_clear(stack_ptr->amedh);
 
     main_stack = stack_ptr->next;
     fsm_destroy(stack_ptr->fsm);
