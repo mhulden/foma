@@ -506,6 +506,16 @@ struct fsm *fsm_read_text_file(char *filename) {
     return(fsm_trie_done(th));
 }
 
+int fsm_write_binary_file(struct fsm *net, char *filename) {
+    gzFile *outfile;
+    if ((outfile = gzopen(filename,"wb")) == NULL) {
+	return(1);
+    }
+    foma_net_print(net, outfile);
+    gzclose(outfile);
+    return(0);
+}
+
 struct fsm *fsm_read_binary_file_multiple(fsm_read_binary_handle fsrh) {
     char *net_name;
     struct fsm *net;
@@ -677,12 +687,14 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     net = fsm_create("");
 
     if (strcmp(buf, "##foma-net 1.0##") != 0) {
-        printf("File format error foma!\n");
+	fsm_destroy(net);
+        perror("File format error foma!\n");
         return NULL;
     }
     io_gets(iobh, buf);
     if (strcmp(buf, "##props##") != 0) {
-        printf("File format error props!\n");
+        perror("File format error props!\n");
+	fsm_destroy(net);
         return NULL;
     }
     /* Properties */
@@ -695,9 +707,10 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     /* Sigma */
     if (strcmp(buf, "##sigma##") != 0) {
         printf("File format error sigma!\n");
+	fsm_destroy(net);
         return NULL;
     }
-    net->sigma = sigma_create();
+    //    net->sigma = sigma_create();
     for (;;) {
         io_gets(iobh, buf);
         if (buf[0] == '#') break;
