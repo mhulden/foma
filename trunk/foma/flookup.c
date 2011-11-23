@@ -23,8 +23,8 @@
 
 #define LINE_LIMIT 262144
 
-char *usagestring = "Usage: flookup [-h] [-i] [-s \"separator\"] [-w \"wordseparator\"] [-v] [-x] <binary foma file>\n";
-char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file.\nIf the file contains several nets, inputs will be passed through all of them (simulating composition).\nOptions:\n-h\t\tprint help\n-i\t\tinverse application (apply down instead of up)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-w \"separator\"\tchange words separator symbol (default is newline)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
+char *usagestring = "Usage: flookup [-h] [-a] [-i] [-s \"separator\"] [-w \"wordseparator\"] [-v] [-x] <binary foma file>\n";
+char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file.\nIf the file contains several nets, inputs will be passed through all of them (simulating composition) or applied as alternates if the -a flag is specified (simulating priority union: the first net is tried first, if that fails to produce an output, then the second is tried, etc.).\nOptions:\n-h\t\tprint help\n-a\t\ttry alternatives (in order of nets loaded)\n-i\t\tinverse application (apply down instead of up)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-w \"separator\"\tchange words separator symbol (default is newline)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
 
 struct lookup_chain {
     struct fsm *net;
@@ -52,7 +52,7 @@ void app_print(int echo, char *line, char *separator, char *result) {
 
 int main(int argc, char *argv[]) {
     
-    int opt, echo = 1, apply_in_chain = 0, numnets = 0, direction = DIR_UP, results;
+    int opt, echo = 1, apply_alternates = 0, numnets = 0, direction = DIR_UP, results;
     char *infilename, line[LINE_LIMIT], *result, *tempstr, *separator = "\t", *wordseparator = "\n";
     struct fsm *net;
     FILE *INFILE;   
@@ -61,10 +61,10 @@ int main(int argc, char *argv[]) {
 
     char *(*applyer)() = &apply_up; /* Default apply direction */
 
-    while ((opt = getopt(argc, argv, "chis:w:vx")) != -1) {
+    while ((opt = getopt(argc, argv, "ahis:w:vx")) != -1) {
         switch(opt) {
-        case 'c':
-	    apply_in_chain = 1;
+        case 'a':
+	    apply_alternates = 1;
 	    break;
         case 'h':
 	    printf("%s%s\n", usagestring,helpstring);
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 	chain_new->prev = NULL;
 	if (chain_tail == NULL) {
 	    chain_tail = chain_head = chain_new;
-	} else if (direction == DIR_DOWN) {
+	} else if (direction == DIR_DOWN || apply_alternates == 1) {
 	    chain_tail->next = chain_new;
 	    chain_new->prev = chain_tail;
 	    chain_tail = chain_new;
@@ -133,42 +133,63 @@ int main(int argc, char *argv[]) {
     while (fgets(line, LINE_LIMIT, INFILE) != NULL) {	
 	line[strcspn(line, "\n")] = '\0'; /* chomp */
 	results = 0;
-	/* Get result from chain */
 
-	for (chain_pos = chain_head, tempstr = line;  ; chain_pos = chain_pos->next) {
-
-	    result = applyer(chain_pos->ah, tempstr);
-
-	    if (result != NULL && chain_pos != chain_tail) {
-		tempstr = result;
-		continue;
-	    }
-	    if (result != NULL && chain_pos == chain_tail) {
-		do {
+	/* Apply alternative */
+	if (apply_alternates == 1) {
+	    for (chain_pos = chain_head, tempstr = line;   ; chain_pos = chain_pos->next) {
+		result = applyer(chain_pos->ah, tempstr);
+		if (result != NULL) {
 		    results++;
 		    app_print(echo, line, separator, result);
-		} while ((result = applyer(chain_pos->ah, NULL)) != NULL);
-	    }
-	    if (result == NULL) {
-		/* Move up */
-		for (chain_pos = chain_pos->prev; chain_pos != NULL; chain_pos = chain_pos->prev) {
-		    result = applyer(chain_pos->ah, NULL);
-		    if (result != NULL) {
-			tempstr = result;
-			break;
+		    while ((result = applyer(chain_pos->ah, NULL)) != NULL) {
+			results++;
+			app_print(echo, line, separator, result);
 		    }
+		    break;
+		}
+		if (chain_pos == chain_tail) {
+		    break;
 		}
 	    }
-	    if (chain_pos == NULL) {
-		break;
+	} else {
+	    
+	    /* Get result from chain */
+	    for (chain_pos = chain_head, tempstr = line;  ; chain_pos = chain_pos->next) {
+		
+		result = applyer(chain_pos->ah, tempstr);
+		
+		if (result != NULL && chain_pos != chain_tail) {
+		    tempstr = result;
+		    continue;
+		}
+		if (result != NULL && chain_pos == chain_tail) {
+		    do {
+			results++;
+			app_print(echo, line, separator, result);
+		    } while ((result = applyer(chain_pos->ah, NULL)) != NULL);
+		}
+		if (result == NULL) {
+		    /* Move up */
+		    for (chain_pos = chain_pos->prev; chain_pos != NULL; chain_pos = chain_pos->prev) {
+			result = applyer(chain_pos->ah, NULL);
+			if (result != NULL) {
+			    tempstr = result;
+			    break;
+			}
+		    }
+		}
+		if (chain_pos == NULL) {
+		    break;
+		}
 	    }
 	}
 	if (results == 0) {
 	    app_print(echo, line, separator, NULL);
 	}
 	printf("%s", wordseparator);
+	fflush(stdout);
     }
-
+	
     /* Cleanup */
     for (chain_pos = chain_head; chain_pos != NULL; chain_pos = chain_head) {
 	chain_head = chain_pos->next;
