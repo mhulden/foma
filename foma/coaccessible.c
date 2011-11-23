@@ -5,7 +5,7 @@
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -148,6 +148,7 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
       /* We're dealing with the empty language */
       xxfree(fsm);
       net->states = fsm_empty();
+      fsm_sigma_destroy(net->sigma);
       net->sigma = sigma_create();
     }
     net->linecount = new_linecount;
