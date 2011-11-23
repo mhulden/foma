@@ -2699,61 +2699,6 @@ struct fsm *fsm_sequentialize(struct fsm *net) {
   return(net);
 }
 
-struct fsm *fsm_mark_ambiguous(struct fsm *net) {
-    /* Marks ambiguous sequences (on the input side) in a transducer by brackets */
-    struct fsm *G, *T, *Result;
-    struct fsm_read_handle *inh;
-    struct fsm_construct_handle *outh;
-    int i, *translation, source, target, in, out, addstate;
-    struct state_arr *sp;
-
-    T = fsm_copy(net);
-    G = fsm_upper(fsm_copy(T));
-    G = fsm_find_ambiguous(G, &translation);
-       
-    fsm_count(G);
-    addstate = G->statecount-1;
-    sp = init_state_pointers(G->states);
-
-    if (sigma_find_number(EPSILON, G->sigma) == -1) {
-	sigma_add_special(EPSILON, G->sigma);
-    }
-
-    inh = fsm_read_init(G);
-    outh = fsm_construct_init(G->name);
-    fsm_construct_copy_sigma(outh, G->sigma);
-
-    while (fsm_get_next_arc(inh)) {
-	source = fsm_get_arc_source(inh);
-	target = fsm_get_arc_target(inh);
-	in = fsm_get_arc_num_in(inh);
-	out = fsm_get_arc_num_out(inh);
-
-	if ((sp+target)->final && !((sp+source)->final)) {
-	    /* Splice in [ */
-	    addstate++;
-	    fsm_construct_add_arc(outh, source, addstate, "@_EPSILON_SYMBOL_@", "[[");
-	    fsm_construct_add_arc_nums(outh, addstate, target, in, out);	    
-	} else if (!((sp+target)->final) && (sp+source)->final) {
-	    /* Splice in ] */
-	    addstate++;
-	    fsm_construct_add_arc_nums(outh, source, addstate, in, out);
-	    fsm_construct_add_arc(outh, addstate, target, "@_EPSILON_SYMBOL_@", "]]");
-	} else {
-	    fsm_construct_add_arc_nums(outh, source, target, in, out);
-	}
-    }
-    while ((i = fsm_get_next_initial(inh)) != -1) {
-	fsm_construct_set_initial(outh, i);
-    }
-    while ((i = fsm_get_next_final(inh)) != -1) {
-	fsm_construct_set_final(outh, i);
-    }
-    fsm_read_done(inh);
-    Result = fsm_construct_done(outh);    
-    xxfree(sp);
-    return(fsm_markallfinal(Result));
-}
 
 struct fsm *fsm_bimachine(struct fsm *net) {
     printf("implementation pending\n");
