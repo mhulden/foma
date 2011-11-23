@@ -29,6 +29,7 @@ struct definedf *get_defines_f() {
 
 int remove_defined (char *string) {
   struct defined *defined, *defined_prev;
+  struct definedf *df, *dfprev;
   int exists = 0;
   defined_prev = NULL;
   /* Undefine all */
@@ -41,7 +42,17 @@ int remove_defined (char *string) {
           xxfree(defined_prev);
           defines = NULL;
       }
-      return(0);
+      for (df = defines_f; df != NULL; df = dfprev) {
+	  dfprev = df->next;
+	  if (df->name != NULL)
+	      xxfree(df->name);
+	  if (df->regex != NULL)
+	      xxfree(df->regex);
+	  xxfree(df);
+      }
+
+ 
+     return(0);
   }
   for (defined = defines; defined != NULL; defined = defined->next) {
       if (strcmp(defined->name, string) == 0) {
@@ -90,6 +101,7 @@ int add_defined_function(char *name, char *regex, int numargs) {
     } else {
         for (df = defines_f; df != NULL; df = df->next) {
             if (strcmp(df->name, name) == 0 && df->numargs == numargs) {
+		xxfree(df->regex);
                 df->regex = xxstrdup(regex);
                 printf("redefined %s@%i)\n", name, numargs);
                 break;
