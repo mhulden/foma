@@ -193,20 +193,24 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 }
 
 (\^[0-9]+) {
-  yylval_param->string = xxstrdup(yytext+1);
+  //yylval_param->string = xxstrdup(yytext+1);
+  yylval_param->string = yytext+1;
   return NCONCAT;
 }
 
 (\^\{[0-9]+[ ]*,[ ]*[0-9]+\}) {
-  yylval_param->string = xxstrdup(yytext+2);
+  //yylval_param->string = xxstrdup(yytext+2);
+  yylval_param->string = yytext+2;
   return MNCONCAT;
 }
 (\^\>[0-9]+) {
-  yylval_param->string = xxstrdup(yytext+2);
+  yylval_param->string = yytext+2;
+//  yylval_param->string = xxstrdup(yytext+2);
   return MORENCONCAT;
 }
 (\^\<[0-9]+) {
-  yylval_param->string = xxstrdup(yytext+2);
+  //  yylval_param->string = xxstrdup(yytext+2);
+ yylval_param->string = yytext+2;
   return LESSNCONCAT;
 }
 
@@ -228,7 +232,8 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 <UQ>(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+/[\051] {
  /* Add quantifier to quantifier symbol table */
 
- yylval_param->string = xxstrdup(yytext);
+ //yylval_param->string = xxstrdup(yytext);
+ yylval_param->string = yytext;
  add_quantifier(yytext);
  BEGIN(ENDQ);
  return(UQUANT);
@@ -236,7 +241,8 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 
 <EQ>(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+/[\051] {
  /* Add quantifier to quantifier symbol table */
- yylval_param->string = xxstrdup(yytext);
+ //yylval_param->string = xxstrdup(yytext);
+ yylval_param->string = yytext;
  add_quantifier(yytext);
  BEGIN(ENDQ);
  return(EQUANT);
@@ -280,21 +286,29 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
  /*  Need to resolve this somehow. */
 (_S\() { return SUCCESSOR_OF; }
 
-(_isunambiguous\()  { return ISUNAMBIGUOUS;   }
-(_isidentity\()     { return ISIDENTITY;      } 
-(_isfunctional\()   { return ISFUNCTIONAL;    }
-(_notid\()          { return NOTID;           }
-(_lm\()             { return LETTERMACHINE;   }
-(_loweruniq\()      { return LOWERUNIQ;       }
-(_loweruniqeps\()   { return LOWERUNIQEPS;    }
-(_allfinal\()       { return ALLFINAL;        }
-(_unambpart\()      { return UNAMBIGUOUSPART; }
-(_ambpart\()        { return AMBIGUOUSPART;   }
-(_ambdom\()         { return AMBIGUOUSDOMAIN; }
-(_eq\()             { return EQSUBSTRINGS;    }
+(_isunambiguous\()   { return ISUNAMBIGUOUS;   }
+(_isidentity\()      { return ISIDENTITY;      } 
+(_isfunctional\()    { return ISFUNCTIONAL;    }
+(_notid\()           { return NOTID;           }
+(_lm\()              { return LETTERMACHINE;   }
+(_loweruniq\()       { return LOWERUNIQ;       }
+(_loweruniqeps\()    { return LOWERUNIQEPS;    }
+(_allfinal\()        { return ALLFINAL;        }
+(_unambpart\()       { return UNAMBIGUOUSPART; }
+(_ambpart\()         { return AMBIGUOUSPART;   }
+(_ambdom\()          { return AMBIGUOUSDOMAIN; }
+(_eq\()              { return EQSUBSTRINGS;    }
+(_marktail\()        { return MARKFSMTAIL;     }
+(_addfinalloop\()    { return MARKFSMTAILLOOP; }
+(_addnonfinalloop\() { return MARKFSMMIDLOOP;  }
+(_addloop\()         { return MARKFSMLOOP;     }
+(_addsink\()         { return ADDSINK;         }
+(_leftrewr\()        { return LEFTREWR;        }
+(_flatten\()         { return FLATTEN;         }
 
 ({NONRESERVED}+\() {
    yylval_param->string = xxstrdup(yytext);
+   //yylval_param->string = yytext;
    return FUNCTION;
 }
 
@@ -326,9 +340,11 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   *(yytext+j) = *(yytext+i);
   if (substituting) {
     yylval_param->string = xxstrdup(yytext);
+    //yylval_param->string = yytext;
     return SUBVAL;
   }
-  yylval_param->string = xxstrdup(yytext);
+  //  yylval_param->string = xxstrdup(yytext);
+  yylval_param->string = yytext;
   if(find_defined(yytext) != NULL) {
     yylval_param->net = fsm_copy(find_defined(yytext));
   } else if (find_quantifier(yytext) != NULL) {
