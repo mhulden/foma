@@ -43,6 +43,56 @@ struct fsm_construct_handle {
     char *name;
 };
 
+struct apply_med_handle {
+    struct astarnode {
+	short int wordpos;
+	int fsmstate;
+	short int f;
+	short int g;
+	short int h;
+	int in;
+	int out;
+	int parent;
+    } *agenda;
+    int bytes_per_letter_array;
+    uint8_t *letterbits;
+    uint8_t *nletterbits;
+    int astarcount;
+    int heapcount;
+    int heap_size;  
+    int agenda_size;
+    int maxdepth; 
+    int maxsigma;
+    int wordlen;
+    int utf8len;
+    int cost;
+    int nummatches;
+    int curr_state;
+    int curr_g;
+    int curr_pos;
+    int lines;
+    int curr_agenda_offset;
+    int curr_node_has_match;
+    int med_limit;
+    int med_cutoff;
+    int med_max_heap_size;
+    int nodes_expanded;
+    int *cm;
+    char *word;
+    char *instring;
+    int instring_length;
+    char *outstring;
+    int outstring_length;
+    char *align_symbol;
+    int *heap;
+    int *intword;
+    struct sh_handle *sigmahash;
+    struct state_array *state_array;
+    struct fsm *net;
+    struct fsm_state *curr_ptr;
+    _Bool hascm;
+};
+
 struct apply_handle {
 
     int ptr;

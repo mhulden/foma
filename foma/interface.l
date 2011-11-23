@@ -20,7 +20,7 @@
 %option noinput
 %option yylineno
 %top{
-#define YY_BUF_SIZE 16777216
+#define YY_BUF_SIZE 1048576
 }
 %{
 #include <stdio.h>
@@ -28,7 +28,7 @@
 #define RE 0 /* regex  */
 #define DE 1 /* define */
 
-char funcdef[500];
+char funcdef[16384];
 
 struct func_args {
    char *arg; 
@@ -37,14 +37,12 @@ struct func_args {
 };
 
 struct func_args *func_args = NULL;
-struct apply_handle *ah;
 
 static char *func_name;
-static char *tempstr;
-static char *result;
+static char *tempstr = NULL;
 static char *lexcfilein;
 static char *cmatrixfilein;
-static int pmode, i;
+static int pmode;
 static int func_arg_no;
 static int olddef;
 static int applydir;
@@ -90,15 +88,15 @@ void add_func_arg(char *s) {
 
 char *rep_func_arg(char *s) {
   struct func_args *fa;  
-  char *argstr; 
+  char *argstr;
   for (fa = func_args; fa != NULL; fa = fa->next) {
     if (strcmp(fa->arg,s) == 0) {      
         argstr = xxmalloc(sizeof(char)*20);
         sprintf(argstr, "@ARGUMENT%02i@", fa->argno);
         return(argstr);
     }
-  }
-  return(s);
+  }  
+  return(strdup(s));
 }
 
 void my_interfaceparse(char *my_string) {
@@ -139,12 +137,12 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 
 ^{SP}*(ambiguous{SP}+upper|ambiguous){SP}* { iface_ambiguous_upper(); }
 ^{SP}*(apply{SP}+)?down{SP}*/[^ \t<] { BEGIN(APPLY_DOWN);}
-^{SP}*(apply{SP}+)?down{SP}* { if (iface_stack_check(1)) {promptmode = PROMPT_A; apply_direction = AP_D; ah = stack_get_ah(); BEGIN(APPLY_P);}}
+^{SP}*(apply{SP}+)?down{SP}* { if (iface_stack_check(1)) {promptmode = PROMPT_A; apply_direction = AP_D; BEGIN(APPLY_P);}}
 ^{SP}*(apply{SP}+)?down{SP}*[ \t]*<[ ]* { applydir = AP_D; BEGIN(APPLY_FILE_IN);}
 ^{SP}*(apply{SP}+)?med{SP}* { if (iface_stack_check(1)) {promptmode = PROMPT_A; apply_direction = AP_M; BEGIN(APPLY_P);}}
 ^{SP}*(apply{SP}+)?med{SP}*/[^ \t] { BEGIN(APPLY_MED);}
 ^{SP}*(apply{SP}+)?up{SP}*/[^ \t] { BEGIN(APPLY_UP);}
-		  ^{SP}*(apply{SP}+)?up{SP}* { if (iface_stack_check(1)) {promptmode = PROMPT_A; apply_direction = AP_U; ah = stack_get_ah(); BEGIN(APPLY_P);}}
+^{SP}*(apply{SP}+)?up{SP}* { if (iface_stack_check(1)) {promptmode = PROMPT_A; apply_direction = AP_U; BEGIN(APPLY_P);}}
 ^{SP}*(apply{SP}+)?up{SP}*[ \t]*<[ ]* { applydir = AP_U; BEGIN(APPLY_FILE_IN);}
 ^{SP}*apr(o(p(os?)?)?)?{SP}+/[^ ] {BEGIN(APROPOS); }
 ^{SP}*assert-stack{SP} {BEGIN(ASSERT_STACK);}
@@ -165,6 +163,8 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 ^{SP}*export{SP}+cmatrix{SP}*>?{SP}*/[^ \t] { BEGIN(EXCMATRIX);          }
 ^{SP}*(extract{SP}+ambiguous|examb){SP}* { iface_extract_ambiguous(); }
 ^{SP}*(extract{SP}+unambiguous|exunamb){SP}* { iface_extract_unambiguous(); }
+^{SP}*(fac|factorize){SP}* { iface_factorize(); }
+^{SP}*(seq|sequentialize){SP}* { iface_sequentialize(); }
 ^{SP}*(h(e(l(p{SP}+)?)?)?)?(licen(c|s)e|warranty) { iface_warranty(); }
 ^{SP}*help{SP}* { iface_help(); }
 ^{SP}*help{SP}+/[^ ] { BEGIN(HELP); }
@@ -269,6 +269,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 <APPLY_FILE_OUT>{NONL}+ {
   iface_apply_file(tempstr, trim(interfacetext), applydir);
   xxfree(tempstr);
+  tempstr = NULL;
   BEGIN(INITIAL);
 }
 
@@ -315,41 +316,14 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
     promptmode = PROMPT_MAIN;
     BEGIN(INITIAL);
   } else {
-     if (apply_direction == AP_D) {
-
-       result = apply_down(ah, interfacetext);
-       if (result == NULL) {
-         printf("???\n");
-       } else {
-          printf("%s\n",result);
-       }
-       for (i = g_list_limit; i > 0; i--) {
-	 result = apply_down(ah, NULL);
-         if (result == NULL)
-           break;
-         printf("%s\n",result);
-       }
-     }
+     if (apply_direction == AP_D)
+       iface_apply_down(interfacetext);
 
      if (apply_direction == AP_M)
-       apply_med(stack_find_top()->fsm, interfacetext);
+       iface_apply_med(interfacetext);
 
-     if (apply_direction == AP_U) {
-
-       result = apply_up(ah, interfacetext);
-       if (result == NULL) {
-         printf("???\n");
-       } else {
-          printf("%s\n",result);
-       }
-       for (i = g_list_limit; i > 0; i--) {
-	 result = apply_up(ah, NULL);
-         if (result == NULL)
-           break;
-         printf("%s\n",result);
-       }
-
-     }
+     if (apply_direction == AP_U)
+       iface_apply_up(interfacetext);
   }
 }
 
@@ -371,7 +345,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
     if (my_yyparse(interfacetext, interfacelineno) == 0) {
       /* regex xxx line */
       if (pmode == RE) {
-        stack_add(fsm_topsort(fsm_minimize(current_parse)));
+         stack_add(fsm_topsort(fsm_minimize(current_parse)));
       /* define XXX xxx line */
       } else if (pmode == DE) {
         tempnet = fsm_topsort(fsm_minimize(current_parse));
@@ -383,6 +357,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
         }
         print_stats(tempnet);
         xxfree(tempstr);
+        tempstr = NULL;
       }
     }
     BEGIN(INITIAL);
@@ -431,11 +406,11 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 }
 
 <FUNC_3>\)[ \t]*+             { funcdef[0] = '\0'; BEGIN(FUNC_4); }
-<FUNC_4>{NONRESERVED}+ { strcat(funcdef, rep_func_arg(interfacetext)); }
+<FUNC_4>{NONRESERVED}+ { tempstr = rep_func_arg(interfacetext); strcat(funcdef, tempstr); xxfree(tempstr); tempstr = NULL;}
 <FUNC_4>{BRACED}       { strcat(funcdef, interfacetext); }
 <FUNC_4>%{ANY}         { strcat(funcdef, interfacetext); }
 <FUNC_4>{QUOTED}       { strcat(funcdef, interfacetext); }
-<FUNC_4>;              { strcat(funcdef, interfacetext); add_defined_function(func_name, funcdef, (func_arg_no-1)); clear_func_args(); BEGIN(INITIAL); }
+<FUNC_4>;              { strcat(funcdef, interfacetext); add_defined_function(func_name, funcdef, (func_arg_no-1));clear_func_args(); xxfree(func_name); BEGIN(INITIAL); }
 <FUNC_4>.|\.#\.        { strcat(funcdef, interfacetext); }
 
 
@@ -520,6 +495,7 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 <SET_VALUE>[^ \n]+ {
   iface_set_variable(tempstr,interfacetext);
   xxfree(tempstr);
+  tempstr = NULL;
   BEGIN(INITIAL);
 }
 <*>[ ] { }

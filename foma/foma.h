@@ -50,6 +50,7 @@ struct defined_quantifiers {
 struct stack_entry {
   int number;
   struct apply_handle *ah;
+  struct apply_med_handle *amedh;
   struct fsm *fsm;
   struct stack_entry *next;
   struct stack_entry *previous;    
@@ -86,6 +87,7 @@ int stack_clear();
 int stack_rotate();
 int stack_print();
 struct apply_handle *stack_get_ah();
+struct apply_med_handle *stack_get_med_ah();
 
 /* Iface */
 void iface_ambiguous_upper(void);
@@ -105,6 +107,7 @@ void iface_eliminate_flag(char *name);
 int  iface_extract_number(char *s);
 void iface_extract_ambiguous(void);
 void iface_extract_unambiguous(void);
+void iface_factorize(void);
 void iface_help_search(char *s);
 void iface_help(void);
 void iface_ignore(void);
@@ -149,6 +152,7 @@ void iface_reverse(void);
 void iface_rotate(void);
 void iface_save_defined(char *filename);
 void iface_save_stack(char *filename);
+void iface_sequentialize(void);
 void iface_set_variable(char *name, char *value);
 void iface_show_variables(void);
 void iface_show_variable(char *name);
@@ -159,7 +163,7 @@ void iface_test_equivalent(void);
 void iface_test_functional(void);
 void iface_test_identity(void);
 void iface_test_lower_universal(void);
-void iface_test_star_free(void);
+void iface_test_sequential(void);
 void iface_test_unambiguous(void);
 void iface_test_upper_universal(void);
 void iface_test_nonnull(void);

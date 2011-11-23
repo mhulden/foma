@@ -101,9 +101,6 @@ struct fsm {
 /* Minimum edit distance structure */
 
 struct medlookup {
-    int bytes_per_letter_array; /* How many bytes we need to store fut. symbols */
-    uint8_t *letterbits;        /* Future symbols of length inf */
-    uint8_t *nletterbits;       /* Future symbols of length n   */
     int *confusion_matrix;      /* Confusion matrix */
 };
 
@@ -163,7 +160,7 @@ FEXPORT char *fsm_get_library_version_string();
 
 FEXPORT struct fsm *fsm_determinize(struct fsm *net);
 FEXPORT struct fsm *fsm_epsilon_remove(struct fsm *net);
-    FEXPORT struct fsm *fsm_find_ambiguous(struct fsm *net, int **extras);
+FEXPORT struct fsm *fsm_find_ambiguous(struct fsm *net, int **extras);
 FEXPORT struct fsm *fsm_minimize(struct fsm *net);
 FEXPORT struct fsm *fsm_coaccessible(struct fsm *net);
 FEXPORT struct fsm *fsm_topsort(struct fsm *net);
@@ -230,6 +227,12 @@ FEXPORT struct fsm *fsm_sigma_net(struct fsm *net);
 FEXPORT struct fsm *fsm_sigma_pairs_net(struct fsm *net);
 FEXPORT struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *right);
 FEXPORT struct fsm *fsm_letter_machine(struct fsm *net);
+FEXPORT struct fsm *fsm_mark_fsm_tail(struct fsm *net, struct fsm *marker);
+FEXPORT struct fsm *fsm_add_loop(struct fsm *net, struct fsm *marker, int finals);
+FEXPORT struct fsm *fsm_add_sink(struct fsm *net, int final);
+FEXPORT struct fsm *fsm_left_rewr(struct fsm *net, struct fsm *rewr);
+
+FEXPORT struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon);
 
 /* Remove those symbols from sigma that have the same distribution as IDENTITY */
 FEXPORT void fsm_compact(struct fsm *net);
@@ -285,6 +288,7 @@ FEXPORT struct fsm *fsm_read_binary_file_multiple(fsm_read_binary_handle fsrh);
 FEXPORT fsm_read_binary_handle fsm_read_binary_file_multiple_init(char *filename);
 FEXPORT struct fsm *fsm_read_text_file(char *filename);
 FEXPORT struct fsm *fsm_read_spaced_text_file(char *filename);
+FEXPORT int fsm_write_binary_file(struct fsm *net, char *filename);
 FEXPORT int load_defined(char *filename);
 FEXPORT int save_defined();
 FEXPORT int save_stack_att();
@@ -297,10 +301,20 @@ FEXPORT int foma_net_print(struct fsm *net, gzFile *outfile);
 FEXPORT void apply_clear(struct apply_handle *h);
 /* To be called before applying words */
 FEXPORT struct apply_handle *apply_init(struct fsm *net);
+FEXPORT struct apply_med_handle *apply_med_init(struct fsm *net);
+FEXPORT void apply_med_clear(struct apply_med_handle *h);
+
+FEXPORT void apply_med_set_heap_max(struct apply_med_handle *medh, int max);
+FEXPORT void apply_med_set_med_limit(struct apply_med_handle *medh, int max);
+FEXPORT void apply_med_set_med_cutoff(struct apply_med_handle *medh, int max);
+FEXPORT int apply_med_get_cost(struct apply_med_handle *medh);
+FEXPORT void apply_med_set_align_symbol(struct apply_med_handle *medh, char *align);
+FEXPORT char *apply_med_get_instring(struct apply_med_handle *medh);
+FEXPORT char *apply_med_get_outstring(struct apply_med_handle *medh);
 
 FEXPORT char *apply_down(struct apply_handle *h, char *word);
 FEXPORT char *apply_up(struct apply_handle *h, char *word);
-FEXPORT int   apply_med(struct fsm *net, char *word);
+FEXPORT char *apply_med(struct apply_med_handle *medh, char *word);
 FEXPORT char *apply_upper_words(struct apply_handle *h);
 FEXPORT char *apply_lower_words(struct apply_handle *h);
 FEXPORT char *apply_words(struct apply_handle *h);
@@ -310,7 +324,7 @@ FEXPORT char *apply_random_words(struct apply_handle *h);
 /* Reset the iterator to start anew with enumerating functions */
 FEXPORT void apply_reset_enumerator(struct apply_handle *h);
 /* Minimum edit distance & spelling correction */
-FEXPORT void fsm_create_letter_lookup(struct fsm *net);
+FEXPORT void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net);
 FEXPORT void cmatrix_init(struct fsm *net);
 FEXPORT void cmatrix_default_substitute(struct fsm *net, int cost);
 FEXPORT void cmatrix_default_insert(struct fsm *net, int cost);
@@ -344,18 +358,21 @@ FEXPORT struct fsm *fsm_construct_done(struct fsm_construct_handle *handle);
 
 struct sh_handle {
     struct sh_hashtable *hash;
+    int lastvalue;
 };
 
 struct sh_hashtable {
     char *string;
+    int value;
     struct sh_hashtable *next;
 };
 
 struct sh_handle *sh_init();
 void sh_done(struct sh_handle *sh);
 char *sh_find_string(struct sh_handle *sh, char *string);
-char *sh_find_add_string(struct sh_handle *sh, char *string);
-char *sh_add_string(struct sh_handle *sh, char *string);
+char *sh_find_add_string(struct sh_handle *sh, char *string, int value);
+char *sh_add_string(struct sh_handle *sh, char *string, int value);
+int sh_get_value(struct sh_handle *sh);
 
 /*********************/
 /* Trie construction */
@@ -395,20 +412,27 @@ FEXPORT void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outs
 
 struct fsm_read_handle {
     struct fsm_state *arcs_head;
+    struct fsm_state **states_head;
     struct fsm_state *arcs_cursor;
     int *finals_head;
     int *finals_cursor;
-    int *states_head;
-    int *states_cursor;
+    struct fsm_state **states_cursor;
     int *initials_head;
     int *initials_cursor;
+    int current_state;
     struct fsm_sigma_list *fsm_sigma_list;
     int sigma_list_size;
+    struct fsm *net;
+    char *lookuptable;
+    _Bool has_unknowns;
 };
-
 
 FEXPORT struct fsm_read_handle *fsm_read_init(struct fsm *net);
 FEXPORT void fsm_read_reset(struct fsm_read_handle *handle);
+FEXPORT int fsm_read_is_final(struct fsm_read_handle *h, int state);
+FEXPORT int fsm_read_is_initial(struct fsm_read_handle *h, int state);
+FEXPORT int fsm_get_num_states(struct fsm_read_handle *handle);
+FEXPORT int fsm_get_has_unknowns(struct fsm_read_handle *handle);
 /* Move iterator one arc forward. Returns 0 on no more arcs */
 FEXPORT int fsm_get_next_arc(struct fsm_read_handle *handle);
 FEXPORT int fsm_get_arc_source(struct fsm_read_handle *handle);
@@ -423,6 +447,8 @@ FEXPORT int fsm_get_symbol_number(struct fsm_read_handle *handle, char *symbol);
 FEXPORT int fsm_get_next_initial(struct fsm_read_handle *handle);
 FEXPORT int fsm_get_next_final(struct fsm_read_handle *handle);
 FEXPORT int fsm_get_next_state(struct fsm_read_handle *handle);
+FEXPORT int fsm_get_next_state_arc(struct fsm_read_handle *handle);
+
 /* Frees memory associated with a read handle */
 FEXPORT void fsm_read_done(struct fsm_read_handle *handle);
 

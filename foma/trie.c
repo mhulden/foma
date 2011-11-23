@@ -115,15 +115,15 @@ void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outsym) {
     th->used_states++;
     thash = th->trie_hash+h;
     if (thash->insym == NULL) {
-	thash->insym = sh_find_add_string(th->sh_hash, insym);
-	thash->outsym = sh_find_add_string(th->sh_hash, outsym);
+	thash->insym = sh_find_add_string(th->sh_hash, insym,1);
+	thash->outsym = sh_find_add_string(th->sh_hash, outsym,1);
 	thash->sourcestate = th->trie_cursor;
 	thash->targetstate = th->used_states;
     } else {
 	newthash = xxcalloc(1, sizeof(struct trie_hash));
 	newthash->next = thash->next;
-	newthash->insym = sh_find_add_string(th->sh_hash, insym);
-	newthash->outsym = sh_find_add_string(th->sh_hash, outsym);
+	newthash->insym = sh_find_add_string(th->sh_hash, insym,1);
+	newthash->outsym = sh_find_add_string(th->sh_hash, outsym,1);
 	newthash->sourcestate = th->trie_cursor;
 	newthash->targetstate = th->used_states;
 	thash->next = newthash;

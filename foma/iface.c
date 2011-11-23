@@ -219,7 +219,7 @@ struct global_help {
     {"re operator: .O. ","`lenient' composition","Lenient composition as defined in Karttunen(1998)  A .O. B = [A ∘ B] .P. B\n"},
     {"re operator: ∥ (or <>) ","shuffle (asynchronous product)","A ∥ B yields the asynchronous (or shuffle) product of FSM A and B.\n" },
     {"re operator: => ","context restriction, e.g. A => B _ C, D _ E","A => B _ C yields the language where every instance of a substring drawn from A is surrounded by B and C.  Multiple contexts can be specified if separated by commas, e.g.: A => B _ C, D _ E"},
-    {"re operator: ->, <-, <->, etc.","replacement operators",""},
+    {"re operator: ->, <-, <->, etc.","replacement operators","If LHS is a transducer, no RHS is needed in rule."},
     {"re operator: @->, @>, etc.","directed replacement operators",""},
     {"re operator: (->), (@->), etc. ","optional replacements","Optional replacement operators variants.  Note that the directional modes leftmost/rightmost/longest/shortest are not affected by optionality, i.e. only replacement is optional, not mode.  Hence A (@->) B is not in general equivalent to the parallel rule A @-> B, A -> ... "},
     {"re operator: ||,\\/,\\\\,// ","replacement direction specifiers","Rewrite rules direction specifier meaning is:\nA -> B || C _ D (replace if C and D match on upper side)\nA -> B // C _ D (replace if C matches of lower side and D matches on upper side)\nA -> B \\\\ C _ D (replace if C matches on upper side and D matches on lower side)\nA -> B \\/ C _ D (replace if C and D match on lower side)\n"},
@@ -329,8 +329,34 @@ void iface_warranty() {
 }
 
 void iface_apply_med(char *word) {
-    if (iface_stack_check(1))
-        apply_med(stack_find_top()->fsm, word);
+    int i;
+    char *result;
+    struct apply_med_handle *amedh;
+    struct fsm *net;
+    if (!iface_stack_check(1)) {
+        return;
+    }
+    net = stack_find_top()->fsm;
+    amedh = stack_get_med_ah();
+
+    apply_med_set_heap_max(amedh,4194304+1);
+    apply_med_set_med_limit(amedh,g_med_limit);
+    apply_med_set_med_cutoff(amedh,g_med_cutoff);
+
+    result = apply_med(amedh, word);
+    if (result == NULL) {
+        printf("???\n");
+        return;
+    } else {
+        printf("%s\n",result);
+	printf("%s\n", apply_med_get_instring(amedh));
+	printf("Cost[f]: %i\n\n", apply_med_get_cost(amedh));
+    }
+    while ((result = apply_med(amedh,NULL)) != NULL) {
+        printf("%s\n",result);
+	printf("%s\n", apply_med_get_instring(amedh));
+	printf("Cost[f]: %i\n\n", apply_med_get_cost(amedh));
+    }
 }
 
 int iface_apply_file(char *infilename, char *outfilename, int direction) {
@@ -524,6 +550,16 @@ int iface_extract_number(char *s) {
 void iface_eliminate_flag(char *name) {
     if (iface_stack_check(1))
         stack_add(flag_eliminate(stack_pop(), name));
+}
+
+void iface_factorize() {
+    if (iface_stack_check(1))
+        stack_add(fsm_bimachine(stack_pop()));
+}
+
+void iface_sequentialize() {
+    if (iface_stack_check(1))
+        stack_add(fsm_sequentialize(stack_pop()));
 }
 
 void iface_ignore() {
@@ -1316,7 +1352,8 @@ void print_mem_size(struct fsm *net) {
 
 int print_stats(struct fsm *net) {
     print_mem_size(net);
-    printf("%i states, %i arcs, ", net->statecount, net->arccount);
+    if (net->statecount == 1) { printf("1 state, "); } else { printf("%i states, ",net->statecount); }
+    if (net->arccount == 1)   { printf("1 arc, "); } else { printf("%i arcs, ",net->arccount); }
     if (net->pathcount == 1)
         printf("1 path");
     else if (net->pathcount == -1)
@@ -1327,7 +1364,7 @@ int print_stats(struct fsm *net) {
         printf("unknown number of paths");
     else
         printf("%lld paths",net->pathcount);
-    printf(".\n");    
+    printf(".\n");
     return 0;
 }
 
@@ -1448,7 +1485,7 @@ static int view_net(struct fsm *net) {
   sprintf(tmpstr,"dot -Tpng %s > %s ",dotname,pngname);
   if (system(tmpstr) == -1)
       printf("Error writing tempfile.\n");
-  sprintf(tmpstr,"geeqie -t %s 2>/dev/null &",pngname);
+  sprintf(tmpstr,"/usr/bin/xdg-open %s 2>/dev/null &",pngname);
   if (system(tmpstr) == -1)
       printf("Error opening viewer.\n");
   xxfree(pngname);

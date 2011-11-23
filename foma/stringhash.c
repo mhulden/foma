@@ -46,36 +46,44 @@ void sh_done(struct sh_handle *sh) {
     xxfree(sh);
 }
 
+int sh_get_value(struct sh_handle *sh) {
+    return(sh->lastvalue);
+}
+
 char *sh_find_string(struct sh_handle *sh, char *string) {
     struct sh_hashtable *hash;
     for (hash = sh->hash + sh_hashf(string) ; hash != NULL; hash = hash->next) {
 	if (hash->string == NULL)
 	    return NULL;
-	if (strcmp(hash->string, string) == 0)
+	if (strcmp(hash->string, string) == 0) {
+	    sh->lastvalue = hash->value;
 	    return(hash->string);
+	}
     }
     return NULL;
 }
 
-char *sh_find_add_string(struct sh_handle *sh, char *string) {
+char *sh_find_add_string(struct sh_handle *sh, char *string, int value) {
     char *s;
     s = sh_find_string(sh, string);
     if (s == NULL)
-	return (sh_add_string(sh, string));
+	return (sh_add_string(sh, string, value));
     else
 	return(s);
 }
 
-char *sh_add_string(struct sh_handle *sh, char *string) {
+char *sh_add_string(struct sh_handle *sh, char *string, int value) {
     struct sh_hashtable *hash, *newhash;
     
     hash = sh->hash + sh_hashf(string);
     if (hash->string == NULL) {
 	hash->string = xxstrdup(string);
+	hash->value = value;
 	return(hash->string);
     } else {
 	newhash = xxmalloc(sizeof(struct sh_hashtable));
 	newhash->string = xxstrdup(string);
+	newhash->value = value;
 	newhash->next = hash->next;
 	hash->next = newhash;
 	return(newhash->string);

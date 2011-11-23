@@ -128,13 +128,14 @@ struct fsm *fsm_sigma_pairs_net(struct fsm *net) {
 }
 
 int fsm_sigma_destroy(struct sigma *sigma) {
-    struct sigma *sigma_prev;
-    for (sigma_prev = NULL; sigma != NULL ; ) {
-        sigma_prev = sigma;
-        sigma = sigma->next;
-        if (sigma_prev->symbol != NULL)
-            xxfree(sigma_prev->symbol);        
-        xxfree(sigma_prev);
+    struct sigma *sig, *sigp;
+    for (sig = sigma, sigp = NULL; sig != NULL; sig = sigp) {
+	sigp = sig->next;
+	if (sig->symbol != NULL) {
+	    xxfree(sig->symbol);
+	    sig->symbol = NULL;
+	}
+	xxfree(sig);
     }
     return 1;
 }
@@ -145,17 +146,18 @@ int fsm_destroy(struct fsm *net) {
     }
     if (net->medlookup != NULL && net->medlookup->confusion_matrix != NULL) {
         xxfree(net->medlookup->confusion_matrix);
+	net->medlookup->confusion_matrix = NULL;
     }
     if (net->medlookup != NULL) {
-        if (net->medlookup->letterbits != NULL)
-            xxfree(net->medlookup->letterbits);
-        if (net->medlookup->nletterbits != NULL)
-            xxfree(net->medlookup->nletterbits);
         xxfree(net->medlookup);
+	net->medlookup = NULL;
     }
     fsm_sigma_destroy(net->sigma);
-    if (net->states != NULL)
+    net->sigma = NULL;
+    if (net->states != NULL) {
         xxfree(net->states);
+	net->states = NULL;
+    }
     xxfree(net);
     return(1);
 }
