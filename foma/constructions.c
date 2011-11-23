@@ -1,11 +1,11 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -301,7 +301,7 @@ void tri_avl_init(int a, int b, int sizea, int sizeb) {
  tri_avl_b = xxmalloc(sizeof(_Bool)*sizeb);
  for (i = 0; i < sizea; i++) {
      *(tri_avl_a+i) = 0;
- } 
+ }
  for (i = 0; i < sizeb; i++) {
      *(tri_avl_b+i) = 0;
  }
@@ -532,7 +532,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
 
     sigma2size = sigma_max(net2->sigma)+1;
     array = xxcalloc(sigma2size*sigma2size, sizeof(struct blookup));
-    mainloop = 0;    
+    mainloop = 0;
 
     /* Intersect two networks by the running-in-parallel method */
     /* new state 0 = {0,0} */
@@ -594,7 +594,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
         fsm_state_end_state();
     }
     new_net = fsm_create("");
-    xxfree(new_net->sigma);
+    fsm_sigma_destroy(new_net->sigma);
     new_net->sigma = net1->sigma;
     net1->sigma = NULL;
     fsm_destroy(net2);
@@ -1385,6 +1385,7 @@ struct fsm *fsm_concat_m_n(struct fsm *net1, int m, int n) {
         else
             acc = fsm_concat(acc, fsm_copy(net1));
     }
+    fsm_destroy(net1);
     return(acc);
 }
 
@@ -2200,7 +2201,7 @@ struct fsm *fsm_universal() {
 struct fsm *fsm_contains_one(struct fsm *net) {
   /* $A - $[[?+ A ?* & A ?*] | [A ?+ & A]] */
     struct fsm *ret;
-    ret = fsm_minus(fsm_contains(fsm_copy(net)),fsm_contains(fsm_union(fsm_intersect(fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_concat(fsm_copy(net),fsm_universal())) , fsm_concat(fsm_copy(net),fsm_universal())),fsm_intersect(fsm_concat(fsm_copy(net),fsm_kleene_plus(fsm_identity())) , fsm_copy(net))))) ;
+    ret = fsm_minus(fsm_contains(fsm_copy(net)),fsm_contains(fsm_union(fsm_intersect(fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_concat(fsm_copy(net),fsm_universal())) , fsm_concat(fsm_copy(net),fsm_universal())),fsm_intersect(fsm_concat(fsm_copy(net),fsm_kleene_plus(fsm_identity())), fsm_copy(net)))));
     fsm_destroy(net);
     return(ret);
 }
@@ -2309,8 +2310,10 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
   if (operation == OP_IGNORE_INTERNAL) {
     Result = fsm_lower(fsm_compose(fsm_ignore(fsm_copy(net1),fsm_symbol("@i<@"),OP_IGNORE_ALL),fsm_compose(fsm_complement(fsm_union(fsm_concat(fsm_symbol("@i<@"),fsm_universal()),fsm_concat(fsm_universal(),fsm_symbol("@i<@")))),fsm_simple_replace(fsm_symbol("@i<@"),fsm_copy(net2)))));
     Result->sigma = sigma_remove("@i<@",Result->sigma);
+    fsm_destroy(net1);
+    fsm_destroy(net2);
     return(Result);
-  } 
+  }
 
   malloc_size = lines1 + (states1 * (lines2 + net2->finalcount + 1));
   new_fsm = xxmalloc(sizeof(struct fsm_state)*(malloc_size+1));
@@ -2406,6 +2409,14 @@ void fsm_compact(struct fsm *net) {
         *(potential+i) =  1;
         (checktable+i)->state_no = -1;
         (checktable+i)->target = -1;
+    }
+    /* For consistency reasons, can't remove symbols longer than 1 */
+    /* since @ and ? only match utf8 symbols of length 1           */
+
+    for (sig = net->sigma; sig != NULL && sig->number != -1; sig = sig->next) {
+	if (utf8strlen(sig->symbol) > 1) {
+	    *(potential+sig->number) = 0;
+	}
     }
 
     prevstate = 0;
@@ -2629,7 +2640,6 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
     Move = fsm_empty_string();
 
     syms = 0;
-    //    stack_add(fsm_copy(Labels));
     for (sig = Labels->sigma; sig != NULL; sig = sig->next) {
         /* Unclear which is faster: the first or the second version */
         /* ThisMove = [\LB* LB:X X:LB]* \LB*       */
@@ -2682,4 +2692,341 @@ struct fsm *fsm_invert(struct fsm *net) {
     (fsm+i)->out = temp;
   }  
   return (net);
+}
+
+struct fsm *fsm_sequentialize(struct fsm *net) {
+  printf("Implementation pending\n");
+  return(net);
+}
+
+struct fsm *fsm_mark_ambiguous(struct fsm *net) {
+    /* Marks ambiguous sequences (on the input side) in a transducer by brackets */
+    struct fsm *G, *T, *Result;
+    struct fsm_read_handle *inh;
+    struct fsm_construct_handle *outh;
+    int i, *translation, source, target, in, out, addstate;
+    struct state_arr *sp;
+
+    T = fsm_copy(net);
+    G = fsm_upper(fsm_copy(T));
+    G = fsm_find_ambiguous(G, &translation);
+       
+    fsm_count(G);
+    addstate = G->statecount-1;
+    sp = init_state_pointers(G->states);
+
+    if (sigma_find_number(EPSILON, G->sigma) == -1) {
+	sigma_add_special(EPSILON, G->sigma);
+    }
+
+    inh = fsm_read_init(G);
+    outh = fsm_construct_init(G->name);
+    fsm_construct_copy_sigma(outh, G->sigma);
+
+    while (fsm_get_next_arc(inh)) {
+	source = fsm_get_arc_source(inh);
+	target = fsm_get_arc_target(inh);
+	in = fsm_get_arc_num_in(inh);
+	out = fsm_get_arc_num_out(inh);
+
+	if ((sp+target)->final && !((sp+source)->final)) {
+	    /* Splice in [ */
+	    addstate++;
+	    fsm_construct_add_arc(outh, source, addstate, "@_EPSILON_SYMBOL_@", "[[");
+	    fsm_construct_add_arc_nums(outh, addstate, target, in, out);	    
+	} else if (!((sp+target)->final) && (sp+source)->final) {
+	    /* Splice in ] */
+	    addstate++;
+	    fsm_construct_add_arc_nums(outh, source, addstate, in, out);
+	    fsm_construct_add_arc(outh, addstate, target, "@_EPSILON_SYMBOL_@", "]]");
+	} else {
+	    fsm_construct_add_arc_nums(outh, source, target, in, out);
+	}
+    }
+    while ((i = fsm_get_next_initial(inh)) != -1) {
+	fsm_construct_set_initial(outh, i);
+    }
+    while ((i = fsm_get_next_final(inh)) != -1) {
+	fsm_construct_set_final(outh, i);
+    }
+    fsm_read_done(inh);
+    Result = fsm_construct_done(outh);    
+    xxfree(sp);
+    return(fsm_markallfinal(Result));
+}
+
+struct fsm *fsm_bimachine(struct fsm *net) {
+    printf("implementation pending\n");
+    return(net);
+}
+
+/* _leftrewr(L, a:b) does a -> b || .#. L _    */
+/* _leftrewr(?* L, a:b) does a -> b || L _     */
+/* works only with single symbols, but is fast */
+
+struct fsm *fsm_left_rewr(struct fsm *net, struct fsm *rewr) {
+    struct fsm_construct_handle *outh;
+    struct fsm_read_handle *inh;
+    struct fsm *newnet;
+    int i, maxsigma, *sigmatable, currstate, sinkstate, seensource, innum, outnum, relabelin, relabelout, addedsink;
+
+    fsm_merge_sigma(net, rewr);
+    relabelin = rewr->states->in;
+    relabelout = rewr->states->out;
+
+    inh = fsm_read_init(net);
+    sinkstate = fsm_get_num_states(inh);
+    outh = fsm_construct_init(net->name);
+    fsm_construct_copy_sigma(outh, net->sigma);
+    maxsigma = sigma_max(net->sigma);
+    maxsigma++;
+    sigmatable = xxmalloc(maxsigma * sizeof(int));
+    for (i = 0; i < maxsigma; i++) {
+	*(sigmatable+i) = -1;
+    }
+    addedsink = 0;
+    while ((currstate = fsm_get_next_state(inh)) != -1) {
+	seensource = 0;
+	fsm_construct_set_final(outh, currstate);
+
+	while (fsm_get_next_state_arc(inh)) {
+	    innum = fsm_get_arc_num_in(inh);
+	    outnum = fsm_get_arc_num_out(inh);
+	    *(sigmatable+innum) = currstate;
+	    if (innum == relabelin) {
+		    seensource = 1;
+		    if (fsm_read_is_final(inh, currstate)) {
+			outnum = relabelout;		    
+		    }
+	    }
+	    fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), innum, outnum);
+	}
+	for (i = 2; i < maxsigma; i++) {
+	    if (*(sigmatable+i) != currstate && i != relabelin) {
+		fsm_construct_add_arc_nums(outh, currstate, sinkstate, i, i);
+		addedsink = 1;
+	    }
+	}
+	if (seensource == 0) {
+	    addedsink = 1;
+	    if (fsm_read_is_final(inh, currstate)) {
+		fsm_construct_add_arc_nums(outh, currstate, sinkstate, relabelin, relabelout);
+	    } else {
+		fsm_construct_add_arc_nums(outh, currstate, sinkstate, relabelin, relabelin);
+	    }
+	}
+    }
+    if (addedsink) {
+	for (i = 2; i < maxsigma; i++) {
+	    fsm_construct_add_arc_nums(outh, sinkstate, sinkstate, i, i);
+	}
+	fsm_construct_set_final(outh, sinkstate);
+    }
+    fsm_construct_set_initial(outh, 0);
+    fsm_read_done(inh);
+    newnet = fsm_construct_done(outh);
+    xxfree(sigmatable);
+    fsm_destroy(net);
+    fsm_destroy(rewr);
+    return(newnet);
+}
+
+struct fsm *fsm_add_sink(struct fsm *net, int final) {
+    struct fsm_construct_handle *outh;
+    struct fsm_read_handle *inh;
+    struct fsm *newnet;
+    int i, maxsigma, *sigmatable, currstate, sinkstate;
+
+    inh = fsm_read_init(net);
+    sinkstate = fsm_get_num_states(inh);
+    outh = fsm_construct_init(net->name);
+    fsm_construct_copy_sigma(outh, net->sigma);
+    maxsigma = sigma_max(net->sigma);
+    maxsigma++;
+    sigmatable = xxmalloc(maxsigma * sizeof(int));
+    for (i = 0; i < maxsigma; i++) {
+	*(sigmatable+i) = -1;
+    }
+    while ((currstate = fsm_get_next_state(inh)) != -1) {
+	while (fsm_get_next_state_arc(inh)) {
+	    fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
+	    *(sigmatable+fsm_get_arc_num_in(inh)) = currstate;
+	}
+	for (i = 2; i < maxsigma; i++) {
+	    if (*(sigmatable+i) != currstate) {
+		fsm_construct_add_arc_nums(outh, currstate, sinkstate, i, i);
+	    }
+	}
+    }
+    for (i = 2; i < maxsigma; i++) {
+	fsm_construct_add_arc_nums(outh, sinkstate, sinkstate, i, i);
+    }
+
+    while ((i = fsm_get_next_final(inh)) != -1) {
+	fsm_construct_set_final(outh, i);
+    }
+    if (final == 1) {
+	fsm_construct_set_final(outh, sinkstate);
+    }
+    fsm_construct_set_initial(outh, 0);
+    fsm_read_done(inh);
+    newnet = fsm_construct_done(outh);
+    fsm_destroy(net);
+    return(newnet);
+}
+
+/* _addfinalloop(L, "#":0) adds "#":0 at all final states */
+/* _addnonfinalloop(L, "#":0) adds "#":0 at all nonfinal states */
+/* _addloop(L, "#":0) adds "#":0 at all states */
+
+/* Adds loops at finals = 0 nonfinals, finals = 1 finals, finals = 2, all */
+
+struct fsm *fsm_add_loop(struct fsm *net, struct fsm *marker, int finals) {
+    struct fsm *newnet;
+    struct fsm_construct_handle *outh;
+    struct fsm_read_handle *inh, *minh;
+    int i;
+
+    inh = fsm_read_init(net);
+    minh = fsm_read_init(marker);
+
+    outh = fsm_construct_init(net->name);
+    fsm_construct_copy_sigma(outh, net->sigma);
+    
+    while (fsm_get_next_arc(inh)) {
+	fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
+    }
+    /* Where to put the loops */
+    if (finals == 1) {
+	while ((i = fsm_get_next_final(inh)) != -1) {
+	    fsm_construct_set_final(outh, i);
+	    fsm_read_reset(minh);
+	    while (fsm_get_next_arc(minh)) {
+		fsm_construct_add_arc(outh, i, i, fsm_get_arc_in(minh), fsm_get_arc_out(minh));
+	    }
+	}
+    } else if (finals == 0 || finals == 2) {
+	for (i=0; i < net->statecount; i++) {
+	    if (finals == 2 || !fsm_read_is_final(inh, i)) {
+		fsm_read_reset(minh);
+		while (fsm_get_next_arc(minh)) {
+		    fsm_construct_add_arc(outh, i, i, fsm_get_arc_in(minh), fsm_get_arc_out(minh));
+		}
+	    }
+	}
+    }
+    while ((i = fsm_get_next_final(inh)) != -1) {
+	fsm_construct_set_final(outh, i);
+    }
+    fsm_construct_set_initial(outh, 0);
+    fsm_read_done(inh);
+    fsm_read_done(minh);
+    newnet = fsm_construct_done(outh);
+    fsm_destroy(net);
+    return(newnet);
+}
+
+/* _marktail(?* L, 0:x) does ~$x .o. [..] -> x || L _ ;   */
+/* _marktail(?* R.r, 0:x).r does ~$x .o. [..] -> x || _ R */
+
+struct fsm *fsm_mark_fsm_tail(struct fsm *net, struct fsm *marker) {
+    struct fsm *newnet;
+    struct fsm_construct_handle *outh;
+    struct fsm_read_handle *inh, *minh;
+    int i, *mappings, maxstate, target, newtarget;
+
+    inh = fsm_read_init(net);
+    minh = fsm_read_init(marker);
+
+    outh = fsm_construct_init(net->name);
+    fsm_construct_copy_sigma(outh, net->sigma);
+
+    mappings = xxcalloc(net->statecount, sizeof(int));
+    maxstate = net->statecount;
+    
+    while (fsm_get_next_arc(inh)) {
+	target = fsm_get_arc_target(inh);
+	if (fsm_read_is_final(inh, target)) {
+	    if (!*(mappings+target)) {
+		newtarget = maxstate;
+		*(mappings+target) = newtarget;
+		fsm_read_reset(minh);
+		while (fsm_get_next_arc(minh)) {
+		    fsm_construct_add_arc(outh, newtarget, target, fsm_get_arc_in(minh), fsm_get_arc_out(minh));
+		}
+		maxstate++;
+	    } else {
+		newtarget = *(mappings+target);
+	    }
+	    fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), newtarget, fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
+	} else {
+	    fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), target, fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
+	}
+    }
+    for (i=0; i < net->statecount; i++) {
+	fsm_construct_set_final(outh,i);
+    }
+
+    fsm_construct_set_initial(outh, 0);
+    fsm_read_done(inh);
+    fsm_read_done(minh);
+    newnet = fsm_construct_done(outh);
+    fsm_destroy(net);
+    xxfree(mappings);
+    return(newnet);
+}
+
+struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
+    struct fsm *newnet;
+    struct fsm_construct_handle *outh;
+    struct fsm_read_handle *inh, *eps;
+    int i, maxstate, in, out, target;
+    char *epssym, *instring, *outstring, *epsstring;
+    
+    inh = fsm_read_init(net);
+    eps = fsm_read_init(epsilon);
+    if (fsm_get_next_arc(eps) == -1) {
+	fsm_destroy(net);
+	fsm_destroy(eps);
+	return NULL;
+    }
+    epssym = strdup(fsm_get_arc_in(eps));
+    fsm_read_done(eps);
+
+    outh = fsm_construct_init(net->name);
+    maxstate = net->statecount;
+
+    fsm_construct_copy_sigma(outh, net->sigma);
+
+    while (fsm_get_next_arc(inh)) {
+	target = fsm_get_arc_target(inh);	
+	in = fsm_get_arc_num_in(inh);
+	out = fsm_get_arc_num_out(inh);
+	if (in == EPSILON || out == EPSILON)  { 
+	    instring = fsm_get_arc_in(inh);
+	    outstring = fsm_get_arc_out(inh);
+	    if (in == EPSILON)  { instring = epssym; }
+	    if (out == EPSILON) { outstring = epssym; }	    
+
+	    fsm_construct_add_arc(outh, fsm_get_arc_source(inh), maxstate, instring, instring);
+	    fsm_construct_add_arc(outh, maxstate, target, outstring, outstring);
+	} else {
+	    fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), maxstate, in, in);
+	    fsm_construct_add_arc_nums(outh, maxstate, target, out, out);
+	}
+	maxstate++;
+    }
+    while ((i = fsm_get_next_final(inh)) != -1) {
+	fsm_construct_set_final(outh, i);
+    }
+    while ((i = fsm_get_next_initial(inh)) != -1) {
+	fsm_construct_set_initial(outh, i);
+    }
+
+    fsm_read_done(inh);
+    newnet = fsm_construct_done(outh);
+    fsm_destroy(net);
+    fsm_destroy(epsilon);
+    xxfree(epssym);
+    return(newnet);
 }
