@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -160,6 +160,7 @@
 
 struct fsm *rewrite_nospecial();
 struct fsm *rewr_context_restrict(struct fsm *X, struct fsmcontexts *LR);
+struct fsm *rewrite_pad(struct fsm *net);
 
 void rewrite_add_special_syms(struct fsm *net) {
     if (net == NULL)
@@ -236,7 +237,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
         num_parallel_rules++;
         for (rules = ruleset->rewrite_rules; rules != NULL; rules = rules->next) {
             rewrite_add_special_syms(rules->left);
-            rewrite_add_special_syms(rules->right);
+	    rewrite_add_special_syms(rules->right);
             rewrite_add_special_syms(rules->right2);
         }
         for (contexts = ruleset->rewrite_contexts; contexts != NULL; contexts = contexts->next) {
@@ -254,10 +255,20 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
 
     for (ruleset = all_rules; ruleset != NULL; ruleset = ruleset->next) {
         for (rules = ruleset->rewrite_rules; rules != NULL; rules = rules->next) {
-            if (rules->right2 == NULL) {
-                rules->cross_product = rewrite_cp(fsm_copy(rules->left),fsm_copy(rules->right));
+	    /* insert transducer instead of cross-product */
+            if (rules->right == NULL) {
+		/* Make rules->left upper side of T */
+		/* Convert transducer to single-tape format */
+		rules->cross_product = rewrite_pad(fsm_flatten(fsm_copy(rules->left), fsm_symbol("@Z@")));
+		rules->right = fsm_minimize(fsm_lower(fsm_copy(rules->left)));
+		rules->left = fsm_minimize(fsm_upper(rules->left));
+		rewrite_add_special_syms(rules->right);
+	    }
+            else if (rules->right2 == NULL) {
+		/* Regular rewrite rule */
+		rules->cross_product = rewrite_cp(fsm_copy(rules->left),fsm_copy(rules->right));
             } else {
-                /* A -> B ... C */
+                /* A -> B ... C type rule */
                 /* 0>BA0>C */
                 rules->cross_product = fsm_minimize(fsm_concat(rewrite_cp(fsm_empty_string(),fsm_copy(rules->right)),fsm_concat(fsm_copy(rules->left),rewrite_cp(fsm_empty_string(),fsm_copy(rules->right2)))));
             }
@@ -266,7 +277,6 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
                 //printf("RET\n");
                 rules->cross_product = fsm_minimize(fsm_concat(fsm_symbol("@[@"),fsm_concat(rules->cross_product,fsm_symbol("@]@"))));
             }
-
             UnionCP = fsm_minimize(fsm_union(fsm_copy(rules->cross_product),UnionCP));
         }
 
@@ -610,6 +620,13 @@ void fsm_clear_contexts(struct fsmcontexts *contexts) {
 	cp = c->next;
 	xxfree(c);
     }
+}
+
+struct fsm *rewrite_pad(struct fsm *net) {
+    struct fsm *pad;
+    /* [? 0:"@>@" ? 0:"@<@"]* [? 0:"@>@" ?] */
+    pad = fsm_minimize(fsm_parse_regex("[? 0:\"@>@\" ? 0:\"@<@\"]* [? 0:\"@>@\" ?]"));
+    return(fsm_minimize(fsm_lower(fsm_compose(net,pad))));
 }
 
 /** Takes two languages and produces the cross-product on one tape with marker symbols */
