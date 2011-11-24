@@ -88,7 +88,7 @@ Apply a single string to the top network on stack.
 
 Enter apply med mode, after which words entered are matched against the closest words in the network on top of the stack.  Apply med is currently only intended for automata and not transducers.  The minimum edit distance cost is by default 1 for all substitution/insertion/deletion operations (Levenshtein distance).  The `load cmatrix` command can be used to specify and associate different costs with different operations. `CTRL-D` exits the mode. This is an implementation of the algorithm described in [#References Hulden (2009b)].
 
-A confusion matrix can be specified separately (see [read_cmatrix_`<`filename`>` read cmatrix] below).
+A confusion matrix can be specified separately (see [#read_cmatrix_`<`filename`>` read cmatrix] below).
 
 == apply med `<`string`>` / med ==
 
