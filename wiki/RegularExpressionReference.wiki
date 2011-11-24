@@ -210,6 +210,14 @@ Restrictions: none
 
 == Replacement operators ==
 
+The most general format of a replacement rule is 
+
+{{{
+A -> B || L _ R ;
+}}}
+
+which dictates the replacement of sequences `A` with `B` when occurring between `L` and `R`. The replacement arrow (`->`) can be of various types indicating different replacement strategies, optional replacement (->), longest-leftmost `@->`, shortest-leftmost `@>`, etc. The directionality constraint `||` can also vary depending on the application.
+
 All replacement operators allow context specification through one of the directionality markers.
 
 The directionality constraint DIR can be one of:
@@ -245,10 +253,10 @@ The following replacement operators are available:
 The LHS/RHS of a replacement rule may also be of the format
 
 {{{
-X -> Y ... Z 
+X -> Y ... Z ;
 }}}
 
-in which case both `Y` and `Z` are inserted around instances of `X`.
+in which case both `Y` and `Z` are inserted around instances of `X`. `Y` or `Z` may be omitted and all contextual specifications are available.
 
 === Epsilon modifier `[. .]` ===
 
@@ -297,6 +305,43 @@ Separate rules can be compiled in parallel by separating each individual rules w
 Rule1 ,, Rule2 ,, ... ,, RuleN ;
 }}}
 
+=== Transducers with backreferences ===
+
+Rules of the format
+
+{{{
+T -> || L _ R ;
+}}}
+
+are also possible. Here, T is usually a transducer.  The contexts can be omitted, and several contexts can be specified as with ordinary rules, and the arrow can take any of the standard arrow types.
+
+The semantics of the rule is that the strings from the input side of `T` are replaced with T. This allows for a more general specification of chunking and insertion rules.
+
+For example, the rule
+
+{{{
+0:%[ Chunk 0:%] @-> ;
+}}}
+
+is identical to the chunking rule
+
+{{{
+Chunk @-> %{ ... %}
+}}}
+
+This type of rule allows for replacements that are otherwise hard to define. Gerdemann and van Noord(1999), who proposed the rule semantics, provide the following example: suppose we have a transducer of word-sequence/abbreviation pairs such as
+
+{{{
+define Abbr {nondeterministic finite automaton}:{NFA} | {deterministic finite automaton}:{DFA} ;
+}}}
+
+Now, if we wanted to convert all known word sequences into the known acronyms whenever they occur between `<abbr> ... </abbr>` tags, we can issue the rule:
+
+{{{
+Abbr -> || {<abbr>} _ {</abbr>}
+}}}
+
+which would for example transduce `<abbr>nondeterministic finite automaton</abbr>` to `<abbr>NFA</abbr>`.
 
 === Word-boundary marker (`.#.`) ===
 
@@ -440,6 +485,84 @@ dog
 dog-dog
 horse
 horse-horse
+}}}
+
+== `_flatten(X, EPS)` ==
+
+This function converts a transducer into an automaton where input-output symbols are interleaved.  Since epsilons cannot be retained, they need to be converted to the `EPS` symbol. For example:
+
+{{{
+regex _flatten(a:0 0:b c, "EPS");
+}}}
+
+produces an automaton which accepts only the word:
+
+{{{
+a EPS EPS b c c
+}}}
+
+== `_addloop(L, a:b)` ==
+
+This function adds self-loops to all states in `L` with the symbol pair `a:b`. `a` or `b` may be `0`.
+
+
+== `_addfinalloop(L, a:b)` ==
+
+Like `_addloop(L, a:b)` but only adds loops at final states.
+
+== `_addnonfinalloop(L, a:b)` ==
+
+Like `_addloop(L, a:b)` but only adds loops at nonfinal states.
+
+== `_leftrewr(L, a:b)` ==
+
+This is a fast low-level single-symbol rewrite with left contexts only.  It is sometimes useful for constructing complex transducers faster than with the generic operations.
+
+{{{
+_leftrewr(L, a:b)
+}}}
+
+is semantically equivalent to
+
+{{{
+a -> b || .#. L _ 
+}}}
+
+while 
+
+{{{
+_leftrewr(?* L, a:b)
+}}}
+
+is equivalent to:
+
+{{{
+a -> b || L _ 
+}}}
+
+== `_marktail(L, a:b)` ==
+
+The function converts L into a single-symbol insertion transducer. As the above, this is a fast state/arc manipulation function that produces a transducer equivalent to a certain operation. In this case:
+
+{{{
+ _marktail(?* L, 0:x)  
+}}}
+is equivalent to
+
+{{{
+~$x .o. [..] -> x || L _ ; 
+}}}
+
+and 
+
+{{{
+_marktail(?* R.r, 0:x).r
+}}}
+
+is equivalent to
+
+{{{
+~$x .o. [..] -> x || _ R
 }}}
 
 = First-order logic over substrings (experimental) =
