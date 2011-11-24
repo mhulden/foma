@@ -536,7 +536,7 @@ BPWPFPW
 
 since that particular ordering of bottle sizes has four possible solutions.
 
-Next, we extract from that transducer only the unambiguous paths; i.e. that part of the transducer `NumToSolutions` where for some input word there is only one path to a final state.  We do so with `foma`'s `_unambpart()`-function.
+Next, we extract from that transducer only the unambiguous paths; i.e. that part of the transducer `NumToSolutions` where for some input word there is only one path to a final state.  We do so with `foma`'s [RegularExpressionReference#Built-in_functions `_unambpart()`-function].
  
 This resulting transducer (`NumToUnambiguousSolutions`) only contains words such as `2137654` on its input side, since that particular bottle ordering gives a unique solution to the problem:
 
