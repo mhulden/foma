@@ -86,7 +86,9 @@ Apply a single string to the top network on stack.
 
 == apply med / med ==
 
-Enter apply med mode, after which words entered are matched against the closest words in the network on top of the stack.  Apply med is currently only intended for automata and not transducers.  The minimum edit distance cost is by default 1 for all substitution/insertion/deletion operations (Levenshtein distance).  The `load cmatrix` command can be used to specify and associate different costs with different operations. `CTRL-D` exits the mode. This is an implementation of the algorithm described in Hulden (2009b).
+Enter apply med mode, after which words entered are matched against the closest words in the network on top of the stack.  Apply med is currently only intended for automata and not transducers.  The minimum edit distance cost is by default 1 for all substitution/insertion/deletion operations (Levenshtein distance).  The `load cmatrix` command can be used to specify and associate different costs with different operations. `CTRL-D` exits the mode. This is an implementation of the algorithm described in [#References Hulden (2009b)].
+
+A confusion matrix can be specified separately (see [read_cmatrix_`<`filename`>` read cmatrix] below).
 
 == apply med `<`string`>` / med ==
 
@@ -125,7 +127,7 @@ Hence, the transducers are equivalent.
 
 == test functional / tfu ==
 
-Test if the top FST is functional (single-valued), i.e. is a function.  That is, whether for each input string in the domain of the transducer yields precisely one output string.  
+Test if the top FST is functional (single-valued), i.e. is a function.  That is, whether for each input string in the domain of the transducer yields precisely one output string.  The algorithm is documented in [#References Hulden(2009a)].
 
 == test identity / tid ==
 
@@ -177,7 +179,24 @@ Read a file in AT&T FSM format and add to top of stack.
 
 == read cmatrix `<`filename`>` ==
 
-Read a confusion matrix and associate it with the network on top of the stack.
+Read a confusion matrix and associate it with the network on top of the stack. 
+
+The format of the confusion matrix should be clear from the following example confusion matrix file:
+
+{{{
+Insert 1
+Substitute 2
+Delete 1
+Cost 1
+a:b c:d
+Cost 3
+:x x: x:y
+}}}
+
+The above snippet specifies a matrix where the default insertion cost is 1 unit, the default substitution cost is 2 units, and the default deletion cost is 1 unit.  Also, substituting an `a` with a `b` costs 1 unit, as does substituting a `c` for a `d`.  Inserting an `x` costs 3 units, as does deleting an `x` and substituting an `x` for a `y`.
+
+All costs must be positive integer values.  A cost specification that involves symbols not found in the alphabet of the top network are not included in the matrix, but are warned about.
+
 
 == read prolog `<`filename`>` ==
 
@@ -462,7 +481,7 @@ Prints all variable/value pairs
 
 == compose-tristate ==
 
-Controls the type of filtering used in the composition algorithm.  A value of 0 implies a bistate composition strategy.  See Hulden (2009a), or Mohri, Pereira, and Riley (1996) for the gory details.
+Controls the type of filtering used in the composition algorithm.  A value of 0 implies a bistate composition strategy.  See [#References Hulden (2009a)], or [#References Mohri, Pereira, and Riley (1996)] for the gory details.
 
   * Possible values: 0/1
   * Default value: 0
@@ -542,7 +561,7 @@ Controls verbosity of interface.
 
 == hopcroft-min ==
 
-Controls whether to minimize FSMs using a variant (Hulden, 2009a) of Hopcroft's (1971) algorithm, or Brzozowski's (1963) double-reversal-determinization minimization procedure.
+Controls whether to minimize FSMs using a variant [#References (Hulden, 2009a)] of [#References Hopcroft's (1971)] algorithm, or [#References Brzozowski's (1963)] double-reversal-determinization minimization procedure.
 
   * Possible values: 0/1
   * Default value: 1
@@ -573,12 +592,12 @@ Sets the epsilon-symbol-string to use when reading and writing AT&T format files
 
 = References =
 
-Brzozowski, J. A. (1963). Canonical regular expressions and minimal state graphs for definite events. In _Proceedings of the Symposium on Mathematical Theory of Automata_, New York, NY, April 24-26, 1962, volume 12 of MRI Symposia Series, pages 529–561, Brooklyn, NY. Polytechnic Press of the Polytechnic Institute of Brooklyn.
+Brzozowski, J. A. (1963). Canonical regular expressions and minimal state graphs for definite events. In _Proceedings of the Symposium on Mathematical Theory of Automata_, New York, NY, April 24-26, 1962, volume 12 of MRI Symposia Series, pages 529–561, Brooklyn, NY. Polytechnic Press of the Polytechnic Institute of Brooklyn. [http://www.diku.dk/hjemmesider/ansatte/henglein/papers/brzozowski1962.pdf (PDF version)]
 
-Hopcroft, J. (1971). An n log n algorithm for minimizing states in a finite automaton. _Technical Report STAN-CS-71-190_, Stanford University.
+Hopcroft, J. (1971). An n log n algorithm for minimizing states in a finite automaton. _Technical Report STAN-CS-71-190_, Stanford University. [ftp://db.stanford.edu/pub/cstr/reports/cs/tr/71/190/CS-TR-71-190.pdf (PDF version)]
 
 Hulden, M. (2009a). _Finite state machine construction methods and algorithms for phonology and morphology_.  Ph.D. Thesis, University of Arizona.
 
-Hulden, M. (2009b). Fast approximate string matching with finite automata.  _Procesamiento de Lenguaje Natural_ 43(1):57-64.
+Hulden, M. (2009b). Fast approximate string matching with finite automata.  _Procesamiento de Lenguaje Natural_ 43(1):57-64. [http://rua.ua.es/dspace/bitstream/10045/11687/1/PLN_43_07.pdf (PDF version)]
 
-Mohri, M., Pereira, F., and Riley, M. (1996). Weighted automata in text and speech processing. In _ECAI 96, 12th European Conference on Artificial Intelligence_.
+Mohri, M., Pereira, F., and Riley, M. (1996). Weighted automata in text and speech processing. In _ECAI 96, 12th European Conference on Artificial Intelligence_. [http://www.cs.nyu.edu/~mohri/pub/ecai.ps (PS version)]
