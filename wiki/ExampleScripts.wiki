@@ -5,6 +5,101 @@
 
 Here is a collection of short scripts intended to illustrate various uses of FSTs and how to compile/design them with `foma`.
 
+== Syllabification ==
+
+Syllabification — the task of segmenting a sequence of phones or phonemes into syllables or even smaller units — can in many cases be performed accurately and easily with phonological replacement rules.
+
+In particular, the interaction of two fairly universal phonological generalizations, the [http://www.glottopedia.de/index.php/Maximal_Onset_Principle maximum onset principle] and the [http://en.wikipedia.org/wiki/Sonority_Sequencing_Principle sonority sequencing principle] can be modeled with the shortest-match left-to-right replacement operator: `A @> B || L _ R`.
+
+To compile a replacement rule that acts as a syllabifier, we generally need knowledge of three language-specific details:
+
+ * The set of allowable onsets in the language
+ * The set of allowable codas (can usually be specified as a mirror image of the onsets)
+ * The set of allowable nuclei (vowels, diphthongs, possible syllabic consonants)
+
+For English, the set of onsets would contain strings such as: _p_, _pl_, _sp_, _spr_, as these are all legal onsets (occurring in words such as pot, play, spot, sprout), but not _`*`pn_, _`*`pk_, _`*`ts_, as these are unattested. The set will differ from language to language; French, for instance, allows the onset _pn_ (e.g. _pneu_) which is illegal in English, while Finnish, for instance, allows _ts_ (e.g. _tsaari), etc. 
+
+The general principle of how to build a syllabifier for a given language can be illustrated in the following toy code for an imaginary language that follows the sonority hierarchy and maximum onset principle strictly:
+
+{{{
+# toysyllabify1.script
+define V [a|e|i|o|u];
+define Gli [w|y];
+define Liq [r|l];
+define Nas [m|n];
+define Obs [p|t|k|b|d|g|f|v|s|z];
+
+define Onset (Obs) (Nas) (Liq) (Gli); # Each element is optional.
+define Coda  Onset.r;                 # Is mirror image of onset.
+
+define Syllable Onset V Coda;
+regex Syllable @> ... "." || _ Syllable;
+}}}
+
+The set of allowable onsets in the language are first defined as any sequence consisting of optionally an obstruent, a nasal, a liquid, and a glide, allowing onsets such as _p_, _fn_, _zl_, znl_, etc. This is assumed to be language particular. 
+
+Each syllable is then defined as a sequence *onset-vowel-coda*, after which the main rule rewrites syllables as themselves (the ... notation), followed by a period in the context where preceded by another syllable.  The fact that we are using the shortest-leftmost replacement operator produces a model of the *maximum onset* principle: by dividing each rewrite so as to minimize the size of the onset-vowel-coda unit, we are in effect minimizing the coda, and therefore maximizing the following onset. Also, the *sonority sequencing principle* is encoded in the definition of the *onsets*. The interaction of the two definitions guarantees a unique syllabification for each word:
+
+{{{
+apply down> abrakadabra
+a.bra.ka.da.bra
+}}}
+
+`[`to make sure our syllabifier always provides a unique output for each input, we can use the `test functional` command in foma`]`
+
+{{{
+foma[1]: test functional
+1 (1 = TRUE, 0 = FALSE)
+}}}
+
+=== More details ===
+
+The above example dealt with quite an impoverished language; one that contained no diphthongs and had a fairly regular set of allowable onsets. In actuality, most languages allow both diphthongs and sometimes even consonantal elements in the syllable nucleus. To handle these and other complications, we can model the syllabification as a two-step process where we first mark off the nuclei, and after that the syllables themselves.
+
+{{{
+# toysyllabify2.script
+define Gli [w|y];
+define Liq [r|l];
+define Nas [m|n];
+define Obs [p|t|k|b|d|g|f|v|s|z];
+
+define LowV  [a|e|o];
+define HighV [i|u];
+define V [LowV | HighV];
+define Nucleus [V | LowV HighV | HighV HighV - [u u] - [i i]];
+
+define Onset (Obs) (Nas) (Liq) (Gli);
+define Coda  Onset.r;
+
+define MarkNuclei Nucleus @-> %{ ... %} ;
+
+define Syllable Onset %{ Nucleus %} Coda;
+define MarkSyllables Syllable @> ... "." || _ Syllable;
+regex MarkNuclei .o. MarkSyllables .o. %{|%} -> 0;
+}}}
+
+This syllabifier now handles words such as:
+
+{{{
+apply down> autonomia
+au.to.no.mi.a
+}}}
+
+Here, we defined the nuclei as (1) a single vowel, or (2) a combination of a low and high vowel, or (3) a combination of two high vowels, except if they are both identical (disallowing _uu_ and _ii_). We then mark off the nuclei in the input word with brackets `{ ... }`, and proceed as before, except the syllabifier now assumes that nuclei come pre-marked with brackets. The intermediate brackets are removed at the final composition. In other words, we get a composition sequence as follows:
+
+{{{
+Input Word:          a u     t   o     n   o     m   i       a
+After MarkNuclei    {a u }   t { o }   n { o }   m { i }   { a } 
+After MarkSyllables {a u } . t { o } . n { o } . m { i } . { a }
+After Removing {}    a u   . t   o   . n   o   . m   i   .   a 
+}}}
+
+Naturally, if we want to retain the nuclei as marked after syllabifying, there is no need to remove the brackets as the final step.
+
+
+=== Further reading ===
+
+The above principles can be used to model a variety of complications in the syllabification task that may include: interaction of morpheme boundaries and syllable boundaries; interaction of stress and syllables (see e.g. [#References Hammond, 2006]); ambisyllabicity `[`the idea that a segment may belong to more than one syllable`]` (see [#References Kahn, 1976]). [#References Hulden(2006)] contains more details of how to model these phenomena in general with finite-state machines.
 
 == The Soundex algorithm ==
 
@@ -777,11 +872,17 @@ foma[11]: tuu
 
 Beesley, K. R. and Karttunen, L. (2003). _Finite State Morphology._ CSLI Publications, Stanford, CA.
 
+Hammond, M. (2006). Prosodic Phonology. In Aarts, B. (ed.) _The Handbook of English Linguistics_.  Blackwell.
+
+Hulden, M. (2006). Finite-state syllabification. In Yli-Jyrä, et. al (Eds.). _Finite-State Methods and Natural Language Processing_. LNAI 4002. Springer. [http://dingo.sbs.arizona.edu/~mhulden/hulden_syllabification_2006.pdf (PDF version)]
+
 Hulden, M. (2009) Finite-State Machine Construction Methods and Algorithms for Phonology and Morphology. PhD Thesis. University of Arizona.
+
+Kahn, D. (1976). _Syllable-based Generalizations in English Phonology_. PhD thesis, MIT. [http://www.ai.mit.edu/projects/dm/theses/kahn76.pdf (PDF version)]
 
 Knuth, D. E. (1998). _The Art of Computer Programming: Sorting and Searching, volume 3._ Addison-Wesley.
 
-Nash, D. G. (1980). _Topics in Warlpiri Grammar._ PhD thesis, MIT.
+Nash, D. G. (1980). _Topics in Warlpiri Grammar._ PhD thesis, MIT. [http://dspace.mit.edu/bitstream/handle/1721.1/15974/07044631.pdf?sequence=1 (PDF version)]
 
 Rowling, J. K. (1997). _Harry Potter and the Philosopher's Stone_. Bloomsbury.
 
