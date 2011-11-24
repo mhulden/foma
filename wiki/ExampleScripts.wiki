@@ -17,7 +17,7 @@ To compile a replacement rule that acts as a syllabifier, we generally need know
  * The set of allowable codas (can usually be specified as a mirror image of the onsets)
  * The set of allowable nuclei (vowels, diphthongs, possible syllabic consonants)
 
-For English, the set of onsets would contain strings such as: _p_, _pl_, _sp_, _spr_, as these are all legal onsets (occurring in words such as pot, play, spot, sprout), but not _`*`pn_, _`*`pk_, _`*`ts_, as these are unattested. The set will differ from language to language; French, for instance, allows the onset _pn_ (e.g. _pneu_) which is illegal in English, while Finnish, for instance, allows _ts_ (e.g. _tsaari), etc. 
+For English, the set of onsets would contain strings such as: _p_, _pl_, _sp_, _spr_, as these are all legal onsets (occurring in words such as pot, play, spot, sprout), but not _`*`pn_, _`*`pk_, _`*`ts_, as these are unattested. The set will differ from language to language; French, for instance, allows the onset _pn_ (e.g. _pneu_) which is illegal in English, while (standard) Finnish, for instance, allows the stop-fricative sequence _ts_ in onsets (e.g. _tsaari), etc.
 
 The general principle of how to build a syllabifier for a given language can be illustrated in the following toy code for an imaginary language that follows the sonority hierarchy and maximum onset principle strictly:
 
@@ -518,7 +518,7 @@ Hence, we conclude that the note in itself does not impart sufficient informatio
 
 === Harry Potter problem 2 ===
 
-However, a more interesting problem is this: in the book, Hermione does, without any doubt, work out where the bottles are.  In other words, she must have gotten an additional clue from seeing the sizes of the bottles (`Clue5`) — infomation which the reader doesn't have access to. Now, this leads to the following question, which is indeed solvable:
+However, a more interesting problem is this: in the book, Hermione does, without any doubt, work out where the bottles are.  In other words, she must have gotten an additional clue from seeing the sizes of the bottles (`Clue5`) — information which the reader doesn't have access to. Now, this leads to the following question, which is indeed solvable:
 
  * Question 2: in which position is the bottle that allows them to move back?
 
@@ -651,7 +651,7 @@ That is, there are 92 solutions to the problem. We can then print out all of the
 
 === Zebra/Einstein puzzles ===
 
-Here is a method by Lauri Karttunen (Beesley and Karttunen, 2003) to solve the famous [http://en.wikipedia.org/wiki/Zebra_Puzzle Zebra/Einstein puzzles].
+Here is a method by Lauri Karttunen [#References (Beesley and Karttunen, 2003)] to solve the famous [http://en.wikipedia.org/wiki/Zebra_Puzzle Zebra/Einstein puzzles].
 
 "Let us assume that there are five houses of different colors next to each other on the same road. In each house lives a man of a different nationality. Every man has his favorite drink, his favorite brand of cigarettes, and keeps pets of a particular kind.
 
