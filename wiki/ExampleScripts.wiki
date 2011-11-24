@@ -45,7 +45,7 @@ apply down> abrakadabra
 a.bra.ka.da.bra
 }}}
 
-`[`to make sure our syllabifier always provides a unique output for each input, we can use the `test functional` command in foma`]`
+`[`to make sure our syllabifier always provides a unique output for each input, we can use the [InterfaceReference#Tests_on_FSM properties `test functional` command] in foma`]`
 
 {{{
 foma[1]: test functional
@@ -105,7 +105,7 @@ The above principles can be used to model a variety of complications in the syll
 
 The following is an implementation of the Soundex algorithm in `foma`. Its purpose is to map phonetically similar names to the same letter+number sequence. See for example [http://www.archives.gov/research/census/soundex.html The National Archives] for details.
 
-Here's an alternative description of the algorithm in 4 steps (following Don Knuth in [http://www-cs-faculty.stanford.edu/~uno/taocp.html TAOCP Volume 3] (Knuth, 1998, p.394):
+Here's an alternative description of the algorithm in 4 steps (following Don Knuth in [http://www-cs-faculty.stanford.edu/~uno/taocp.html TAOCP Volume 3] ([#References Knuth, 1998, p.394]):
 
  * Retain the first letter of the name and drop all other occurrences of a, e, h, i, o, u, w, y.
 
@@ -299,7 +299,7 @@ apply up seventy-nine
 
 == Reduplication (example from Warlpiri) ==
 
-The following toy grammar of Warlpiri reduplication shows how the [RegularExpressionReference#_eq(X,L,R) `_eq()`] can be used to capture such phenomena. The description of the reduplication comes from Nash(1980), pp. 142-144 and Sproat (1992), p. 58, and the method from Hulden (2009).
+The following toy grammar of Warlpiri reduplication shows how the [RegularExpressionReference#_eq(X,L,R) `_eq()`] can be used to capture such phenomena. The description of the reduplication comes from [#References Nash(1980)], pp. 142-144 and [#References Sproat (1992)], p. 58, and the method from [#References Hulden (2009)].
 
 Warlpiri reduplication is an examle of "partial reduplication" where the reduplication process operates on the base form of a word and copies only a "prosodic foot" or "reduplication skeleton" from the base. The prosodic foot is of the shape C V (C) (C) V. This reduplication process yields, for example:
 
