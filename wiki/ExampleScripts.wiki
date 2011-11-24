@@ -9,7 +9,7 @@ Here is a collection of short scripts intended to illustrate various uses of FST
 
 Syllabification — the task of segmenting a sequence of phones or phonemes into syllables or even smaller units — can in many cases be performed accurately and easily with phonological replacement rules.
 
-In particular, the interaction of two fairly universal phonological generalizations, the [http://www.glottopedia.de/index.php/Maximal_Onset_Principle maximum onset principle] and the [http://en.wikipedia.org/wiki/Sonority_Sequencing_Principle sonority sequencing principle] can be modeled with the shortest-match left-to-right replacement operator: `A @> B || L _ R`.
+In particular, the interaction of two fairly universal phonological generalizations, the [http://www.glottopedia.de/index.php/Maximal_Onset_Principle maximum onset principle] and the [http://en.wikipedia.org/wiki/Sonority_Sequencing_Principle sonority sequencing principle] can be modeled with the [RegularExpressionReference#Replacement_Operators shortest-match left-to-right replacement operator]: `A @> B || L _ R`.
 
 To compile a replacement rule that acts as a syllabifier, we generally need knowledge of three language-specific details:
 
