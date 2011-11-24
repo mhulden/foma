@@ -208,9 +208,9 @@ The above example code only retrieves the raw best matches for the input string 
     }
 }}}
 
-Using the fact that `apply_med_get_instring` retrieves a padded version of the original string, and apply_med_get_cost the cost. These are guaranteed to be unchanged only until the next call to `apply_med()`.
+Here, we use the fact that `apply_med_get_instring()` retrieves a padded version of the original string, and apply_med_get_cost the MED cost associated with the search in question.  The results from `apply_med_get_instring()` and `apply_med_get_outstring()` are guaranteed to be unchanged only until the next call to `apply_med()` with the same handle.
 
-The code above could print out something like:
+The code above could print out something like (for an input word `cag`):
 
 {{{
 cat
@@ -220,13 +220,12 @@ Cost: 1
 cat-
 ca-g
 Cost: 2
-
 }}}
 
-Note that in contrast to the general apply functions, `apply_med()` requires that:
+Note that in contrast to the general `apply` functions, `apply_med()` requires that:
 
- * The input FSM be an automaton, and not a transducer
- * The input FSM only constains single-symbol utf8 symbol in its alphabet (no multichar symbols such as `+NOUN`, etc).
+ * The input FSM be an automaton, and not a transducer. Flag diacritics are also not supported.
+ * The input FSM only contain single-symbol utf8 symbols in its alphabet (i.e. no multichar symbols such as `+NOUN`, etc).
 
 == Compiling regular expressions ==
 
