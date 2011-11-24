@@ -1,4 +1,5 @@
 #summary Documentation for the `flookup` utility
+#labels Featured,Phase-Implementation
 
 = flookup =
 
@@ -38,4 +39,3 @@ The symbol for word separation can be changed with the `-w` flag. The separator 
   * `cgflookup` prints subsequent output alternatives each on a line, indented by a tab.
 
 The utility also has a flag `-u`, which adds the feature `<*>` to those lines whose input words were uppercase-initial. Otherwise, the set of options is identical to that of `flookup`.
-
