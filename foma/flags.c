@@ -1,11 +1,11 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2009 Mans Hulden                                     */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -283,7 +283,12 @@ void flag_purge (struct fsm *net, char *name) {
             }
         }
     }
-    
+    for (i = 0; i < sigmasize; i++) {
+	if (*(ftable+i)) {
+	    net->sigma = sigma_remove_num(i, net->sigma);
+	}
+    }
+
     for (i=0; (fsm+i)->state_no != -1; i++) {
         if ((fsm+i)->in >= 0 && (fsm+i)->out >= 0) {
             if (*(ftable+(fsm+i)->in))
@@ -292,6 +297,7 @@ void flag_purge (struct fsm *net, char *name) {
                 (fsm+i)->out = EPSILON;
         }
     }
+
     xxfree(ftable);
     net->is_deterministic = net->is_minimized = net->is_epsilon_free = NO;
     return;
