@@ -141,6 +141,8 @@ void iface_print_sigma(void);
 void iface_print_stats(void);
 void iface_shuffle(void);
 void iface_sort(void);
+void iface_sort_input(void);
+void iface_sort_output(void);
 int  iface_stack_check(int size);
 void iface_upper_words(int limit);
 void iface_prune(void);

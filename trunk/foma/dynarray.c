@@ -162,6 +162,8 @@ void fsm_state_close(struct fsm *net) {
     net->is_epsilon_free = is_epsilon_free;
     net->is_loop_free = UNK;
     net->is_completed = UNK;
+    net->arcs_sorted_in = 0;
+    net->arcs_sorted_out = 0;
 
     net->states = current_fsm_head;
     xxfree(slookup);
@@ -437,8 +439,8 @@ struct fsm *fsm_construct_done(struct fsm_construct_handle *handle) {
         }
         fsm_state_end_state();
     }
-
     net = fsm_create("");
+    sprintf(net->name, "%X",rand());
     xxfree(net->sigma);
     fsm_state_close(net);
     
