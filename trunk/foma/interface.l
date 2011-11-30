@@ -228,6 +228,8 @@ NOSPEQ     [\001-\177]{-}[\040\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 ^{SP}*show({SP}+(v(a(r(i(a(b(l(e)?)?)?)?)?)?)?)?)?{SP}+/[^ ] { BEGIN(SHOW_VAR); }
 ^{SP}*shu(f(f(le?)?)?)?({SP}+net?)?  { iface_shuffle(); }
 ^{SP}*sigma{SP}+net{SP}* { iface_sigma_net(); }
+^{SP}*so(rt?)?({SP}+in(put)?)  { iface_sort_input(); }
+^{SP}*so(rt?)?({SP}+out(put)?)  { iface_sort_output(); }
 ^{SP}*so(rt?)?({SP}+net?)?  { iface_sort(); }
 ^{SP}*sou(r(ce?)?)?{SP}+ {BEGIN(SOURCE);}
 ^{SP}*sub(s(t(i(t(u(te?)?)?)?)?)?)?{SP}+def(i(n(ed?)?)?)?{SP}+ {BEGIN(SUBSTITUTE_DEFINED);}
