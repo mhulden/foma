@@ -40,6 +40,27 @@ struct sigma *sigma_remove(char *symbol, struct sigma *sigma) {
   return(sigma_start);
 }
 
+struct sigma *sigma_remove_num(int num, struct sigma *sigma) {
+  struct sigma *sigma_start, *sigma_prev = NULL;
+  sigma_prev = NULL;
+  sigma_start = sigma;
+  for ( ; sigma != NULL && sigma->number != -1; sigma_prev = sigma, sigma=sigma->next) {
+    if (sigma->number == num) {
+      if (sigma_prev == NULL) {
+	sigma_start = sigma->next;
+	xxfree(sigma->symbol);
+	xxfree(sigma);
+      } else {
+	(sigma_prev)->next = sigma->next;
+	xxfree(sigma->symbol);
+	xxfree(sigma);
+      }
+      break;
+    }
+  }
+  return(sigma_start);
+}
+
 int sigma_add_special (int symbol, struct sigma *sigma) {
     struct sigma *sigma_previous = NULL, *sigma_splice = NULL;
     char *str;
