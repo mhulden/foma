@@ -165,7 +165,9 @@ struct global_help {
     {"shuffle net","asynchronous product on top two FSMs on stack","See ∥ (or <>)\n"},
     {"sigma net","Extracts the alphabet and creates a FSM that accepts all single symbols in it","See also: label net"},
     {"source <file>","read and compile script file",""},
-    {"sort net","sorts arcs lexicographically on top FSM",""},
+    {"sort net","sorts arcs topologically on top FSM",""},
+    {"sort in","sorts input arcs by sigma numbers on top FSM",""},
+    {"sort out","sorts output arcs by sigma number on top FSM",""},
     {"substitute defined X for Y","substitutes defined network X at all arcs containing Y ",""},
     {"substitute symbol X for Y","substitutes all occurrences of Y in an arc with X",""},
     {"system <cmd>","execute a system command","" },
@@ -778,6 +780,7 @@ void iface_apply_random(char *(*applyer)(), int limit) {
 	results = xxcalloc(limit, sizeof(struct apply_results));
 	ah = stack_get_ah();
         for (i = limit; i > 0; i--) {
+	    result = NULL;
             result = applyer(ah);
             if (result != NULL) {
 		for (tempresults = results; tempresults - results < limit; tempresults++) {
@@ -1083,12 +1086,25 @@ void iface_sigma_net() {
         stack_add(fsm_sigma_net(stack_pop()));
 }
 
+void iface_sort_input() {
+    if (iface_stack_check(1)) {
+        fsm_sort_arcs(stack_find_top()->fsm,1);
+    }
+}
+
+void iface_sort_output() {
+    if (iface_stack_check(1)) {
+        fsm_sort_arcs(stack_find_top()->fsm,2);
+    }
+}
+
 void iface_sort() {
     if (iface_stack_check(1)) {
         sigma_sort(stack_find_top()->fsm);
         stack_add(fsm_topsort(stack_pop()));
     }
 }
+
 
 void iface_test_equivalent() {
     struct fsm *one, *two;
@@ -1279,6 +1295,8 @@ static int print_net(struct fsm *net, char *filename) {
   if (net->is_minimized == YES) { fprintf(out,"minimized ");}
   if (net->is_epsilon_free == YES) { fprintf(out,"epsilon_free ");}
   if (net->is_loop_free) { fprintf(out,"loop_free "); }
+  if (net->arcs_sorted_in) { fprintf(out,"arcs_sorted_in "); }
+  if (net->arcs_sorted_out) { fprintf(out,"arcs_sorted_out "); }
   fprintf(out,"\n");
   fprintf(out,"Arity: %i\n", net->arity);
   for (; stateptr->state_no != -1; stateptr++) {

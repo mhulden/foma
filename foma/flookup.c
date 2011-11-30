@@ -23,8 +23,8 @@
 
 #define LINE_LIMIT 262144
 
-char *usagestring = "Usage: flookup [-h] [-a] [-i] [-s \"separator\"] [-w \"wordseparator\"] [-v] [-x] <binary foma file>\n";
-char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file.\nIf the file contains several nets, inputs will be passed through all of them (simulating composition) or applied as alternates if the -a flag is specified (simulating priority union: the first net is tried first, if that fails to produce an output, then the second is tried, etc.).\nOptions:\n-h\t\tprint help\n-a\t\ttry alternatives (in order of nets loaded)\n-i\t\tinverse application (apply down instead of up)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-w \"separator\"\tchange words separator symbol (default is newline)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
+char *usagestring = "Usage: flookup [-h] [-a] [-i] [-s \"separator\"] [-w \"wordseparator\"] [-v] [-x] [-b] <binary foma file>\n";
+char *helpstring = "Applies words from stdin to a foma transducer/automaton read from a file.\nIf the file contains several nets, inputs will be passed through all of them (simulating composition) or applied as alternates if the -a flag is specified (simulating priority union: the first net is tried first, if that fails to produce an output, then the second is tried, etc.).\nOptions:\n-h\t\tprint help\n-a\t\ttry alternatives (in order of nets loaded)\n-b\t\tunbuffered output (flushes output after each input word, for use in bidirectional piping)\n-i\t\tinverse application (apply down instead of up)\n-q\t\tdon't sort arcs before applying (usually slower, except for really small, sparse automata)\n-s \"separator\"\tchange input/output separator symbol (default is tab)\n-w \"separator\"\tchange words separator symbol (default is newline)\n-v\t\tprint version number\n-x\t\tdon't echo input string";
 
 struct lookup_chain {
     struct fsm *net;
@@ -36,23 +36,29 @@ struct lookup_chain {
 #define DIR_DOWN 0
 #define DIR_UP 1
 
+char buffer[2048];
+
 void app_print(int echo, char *line, char *separator, char *result) {
     if (result == NULL) {
-	if (echo == 1)
-	    printf("%s%s",line, separator);
-	printf("+?\n");
+	if (echo == 1) {
+	    fprintf(stdout, "%s%s+?\n",line, separator);
+	} else {
+	    fprintf(stdout,"+?\n");
+	}
 	return;
 
     } else {
-	if (echo == 1)
-	    printf("%s%s",line, separator);
-	printf("%s\n", result);		
+	if (echo == 1) {
+	    fprintf(stdout,"%s%s%s\n",line, separator, result);
+	} else {
+	    fprintf(stdout,"%s\n", result);
+	}
     }
 }
 
 int main(int argc, char *argv[]) {
     
-    int opt, echo = 1, apply_alternates = 0, numnets = 0, direction = DIR_UP, results;
+    int opt, echo = 1, sortarcs = 1, apply_alternates = 0, numnets = 0, direction = DIR_UP, results, buffered_output = 1;
     char *infilename, line[LINE_LIMIT], *result, *tempstr, *separator = "\t", *wordseparator = "\n";
     struct fsm *net;
     FILE *INFILE;   
@@ -61,10 +67,14 @@ int main(int argc, char *argv[]) {
 
     char *(*applyer)() = &apply_up; /* Default apply direction */
 
-    while ((opt = getopt(argc, argv, "ahis:w:vx")) != -1) {
+    setvbuf(stdout, buffer, _IOFBF, sizeof(buffer));
+    while ((opt = getopt(argc, argv, "abhiqs:w:vx")) != -1) {
         switch(opt) {
         case 'a':
 	    apply_alternates = 1;
+	    break;
+        case 'b':
+	    buffered_output = 0;
 	    break;
         case 'h':
 	    printf("%s%s\n", usagestring,helpstring);
@@ -73,6 +83,9 @@ int main(int argc, char *argv[]) {
 	    direction = DIR_DOWN;
 	    applyer = &apply_down;
 	    break;
+        case 'q':
+	    sortarcs = 0;
+	    break;
 	case 's':
 	    separator = strdup(optarg);
 	    break;
@@ -80,7 +93,7 @@ int main(int argc, char *argv[]) {
 	    wordseparator = strdup(optarg);
 	    break;
         case 'v':
-	    printf("flookup 1.01 (foma library version %s)\n", fsm_get_library_version_string());
+	    printf("flookup 1.02 (foma library version %s)\n", fsm_get_library_version_string());
 	    exit(0);
         case 'x':
 	    echo = 0;
@@ -105,7 +118,13 @@ int main(int argc, char *argv[]) {
 
     while ((net = fsm_read_binary_file_multiple(fsrh)) != NULL) {
 	numnets++;
-	chain_new = xxmalloc(sizeof(struct lookup_chain));
+	chain_new = xxmalloc(sizeof(struct lookup_chain));	
+	if (direction == DIR_DOWN && net->arcs_sorted_in != 1 && sortarcs) {
+	    fsm_sort_arcs(net, 1);
+	}
+	if (direction == DIR_UP && net->arcs_sorted_out != 1 && sortarcs) {
+	    fsm_sort_arcs(net, 2);
+	}
 	chain_new->net = net;
 	chain_new->ah = apply_init(net);
 	chain_new->next = NULL;
@@ -186,8 +205,10 @@ int main(int argc, char *argv[]) {
 	if (results == 0) {
 	    app_print(echo, line, separator, NULL);
 	}
-	printf("%s", wordseparator);
-	fflush(stdout);
+	fprintf(stdout, "%s", wordseparator);
+	if (!buffered_output) {	  
+	  fflush(stdout);
+	}
     }
 	
     /* Cleanup */

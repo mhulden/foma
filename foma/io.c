@@ -678,6 +678,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     
     char *new_symbol;
     int i, items, new_symbol_number, laststate, lineint[5], *cm;
+    int extras;
     char last_final;
 
     if (io_gets(iobh, buf) == 0) {
@@ -699,10 +700,15 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     }
     /* Properties */
     io_gets(iobh, buf);
-    sscanf(buf, "%i %i %i %i %i %lld %i %i %i %i %i %i %s", &net->arity, &net->arccount, &net->statecount, &net->linecount, &net->finalcount, &net->pathcount, &net->is_deterministic, &net->is_pruned, &net->is_minimized, &net->is_epsilon_free, &net->is_loop_free, &net->is_completed, buf);
+    extras = 0;
+    sscanf(buf, "%i %i %i %i %i %lld %i %i %i %i %i %i %s", &net->arity, &net->arccount, &net->statecount, &net->linecount, &net->finalcount, &net->pathcount, &net->is_deterministic, &net->is_pruned, &net->is_minimized, &net->is_epsilon_free, &net->is_loop_free, &extras, buf);
     strcpy(net->name, buf);
     *net_name = xxstrdup(buf);
     io_gets(iobh, buf);
+
+    net->is_completed = (extras & 3) ;
+    net->arcs_sorted_in = (extras & 12) >> 2;
+    net->arcs_sorted_out = (extras & 48) >> 4;
 
     /* Sigma */
     if (strcmp(buf, "##sigma##") != 0) {
@@ -826,7 +832,7 @@ static int io_gets(struct io_buf_handle *iobh, char *target) {
 int foma_net_print(struct fsm *net, gzFile *outfile) {
     struct sigma *sigma;
     struct fsm_state *fsm;
-    int i, maxsigma, laststate, *cm;
+    int i, maxsigma, laststate, *cm, extras;
 
     /* Header */
     gzprintf(outfile, "%s","##foma-net 1.0##\n");
@@ -834,8 +840,11 @@ int foma_net_print(struct fsm *net, gzFile *outfile) {
     /* Properties */
     gzprintf(outfile, "%s","##props##\n");
 
+    extras = 0;
+    extras = (net->is_completed) | (net->arcs_sorted_in << 2) | (net->arcs_sorted_out << 4);
+ 
     gzprintf(outfile, 
-	     "%i %i %i %i %i %lld %i %i %i %i %i %i %s\n", net->arity, net->arccount, net->statecount, net->linecount, net->finalcount, net->pathcount, net->is_deterministic, net->is_pruned, net->is_minimized, net->is_epsilon_free, net->is_loop_free, net->is_completed, net->name);
+	     "%i %i %i %i %i %lld %i %i %i %i %i %i %s\n", net->arity, net->arccount, net->statecount, net->linecount, net->finalcount, net->pathcount, net->is_deterministic, net->is_pruned, net->is_minimized, net->is_epsilon_free, net->is_loop_free, extras, net->name);
     
     /* Sigma */
     gzprintf(outfile, "%s","##sigma##\n");

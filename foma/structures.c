@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include "foma.h"
 
 static struct defined_quantifiers *quantifiers;
@@ -26,6 +27,55 @@ char *fsm_get_library_version_string() {
     static char s[20];
     sprintf(s,"%i.%i.%i%s",MAJOR_VERSION,MINOR_VERSION,BUILD_VERSION,STATUS_VERSION);
     return(s);
+}
+
+int linesortcompin(struct fsm_state *a, struct fsm_state *b) {
+    return (a->in - b->in);
+}
+
+int linesortcompout(struct fsm_state *a, struct fsm_state *b) {
+    return (a->out - b->out);
+}
+
+void fsm_sort_arcs(struct fsm *net, int direction) {
+    /* direction 1 = in, direction = 2, out */
+    struct fsm_state *fsm;
+    int i, lasthead, numlines;
+    int(*scin)() = linesortcompin;
+    int(*scout)() = linesortcompout;
+    fsm = net->states;
+    for (i=0, numlines = 0, lasthead = 0 ; (fsm+i)->state_no != -1; i++) {
+	if ((fsm+i)->state_no != (fsm+i+1)->state_no || (fsm+i)->target == -1) {
+	    numlines++;
+	    if ((fsm+i)->target == -1) {
+		numlines--;
+	    }
+	    if (numlines > 1) {
+		/* Sort, set numlines = 0 */
+		if (direction == 1)
+		    qsort(fsm+lasthead, numlines, sizeof(struct fsm_state), scin);
+		else
+		    qsort(fsm+lasthead, numlines, sizeof(struct fsm_state), scout);		
+	    }
+	    numlines = 0;
+	    lasthead = i + 1;
+	    continue;
+	}
+	numlines++;
+    }
+    if (net->arity == 1) {
+	net->arcs_sorted_in = 1;
+	net->arcs_sorted_out = 1;
+	return;
+    }
+    if (direction == 1) {
+	net->arcs_sorted_in = 1;
+	net->arcs_sorted_out = 0;
+    }
+    if (direction == 2) {
+	net->arcs_sorted_out = 1;
+	net->arcs_sorted_in = 0;
+    }    
 }
 
 struct state_array *map_firstlines(struct fsm *net) {
@@ -173,6 +223,8 @@ struct fsm *fsm_create (char *name) {
   fsm->is_minimized = NO;
   fsm->is_epsilon_free = NO;
   fsm->is_loop_free = NO;
+  fsm->arcs_sorted_in = NO;
+  fsm->arcs_sorted_out = NO;
   fsm->sigma = sigma_create();
   fsm->states = NULL;
   fsm->medlookup = NULL;
@@ -722,12 +774,9 @@ struct fsm *fsm_copy (struct fsm *net) {
         return net;
 
     net_copy = xxmalloc(sizeof(struct fsm));
-    
-    /* TODO: Copies only states and sigma separately */
-    /* Properties are not copied, only the ptr to fsm */
+    memcpy(net_copy, net, sizeof(struct fsm));
 
     fsm_count(net);
-    *net_copy = *net;
     net_copy->sigma = sigma_copy(net->sigma);
     net_copy->states = fsm_state_copy(net->states, net->linecount);      
     return(net_copy);
@@ -736,9 +785,7 @@ struct fsm *fsm_copy (struct fsm *net) {
 struct fsm_state *fsm_state_copy(struct fsm_state *fsm_state, int linecount) {
   struct fsm_state *new_fsm_state;
   
-  //new_fsm_state = xxmalloc(sizeof(struct fsm_state)*(linecount+1));
   new_fsm_state = xxmalloc(sizeof(struct fsm_state)*(linecount));
-
   memcpy(new_fsm_state, fsm_state, linecount*sizeof(struct fsm_state));
   return(new_fsm_state);
 }

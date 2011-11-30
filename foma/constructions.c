@@ -206,6 +206,11 @@ struct fsm *fsm_symbol(char *symbol) {
     net->statecount = 2;
     net->linecount = 2;
     net->finalcount = 1;
+    net->arcs_sorted_in = YES;
+    net->arcs_sorted_out = YES;
+    net->is_deterministic = YES;
+    net->is_minimized = YES;
+    net->is_epsilon_free = YES;
   }
   return(net);
 }
@@ -223,6 +228,8 @@ void fsm_update_flags(struct fsm *net, int det, int pru, int min, int eps, int l
   net->is_epsilon_free = eps;
   net->is_loop_free = loop;
   net->is_completed = completed;
+  net->arcs_sorted_in = NO;
+  net->arcs_sorted_out = NO;
 }
 
 int fsm_count_states(struct fsm_state *fsm) {
@@ -2690,7 +2697,10 @@ struct fsm *fsm_invert(struct fsm *net) {
     temp = (fsm+i)->in;
     (fsm+i)->in = (fsm+i)->out;
     (fsm+i)->out = temp;
-  }  
+  }
+  i = net->arcs_sorted_in;
+  net->arcs_sorted_in = net->arcs_sorted_out;
+  net->arcs_sorted_out = i;
   return (net);
 }
 
@@ -2926,13 +2936,13 @@ struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
     struct fsm_construct_handle *outh;
     struct fsm_read_handle *inh, *eps;
     int i, maxstate, in, out, target;
-    char *epssym, *instring, *outstring, *epsstring;
+    char *epssym, *instring, *outstring;
     
     inh = fsm_read_init(net);
     eps = fsm_read_init(epsilon);
     if (fsm_get_next_arc(eps) == -1) {
 	fsm_destroy(net);
-	fsm_destroy(eps);
+	fsm_destroy(epsilon);
 	return NULL;
     }
     epssym = strdup(fsm_get_arc_in(eps));

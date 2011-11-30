@@ -76,6 +76,9 @@ extern "C" {
 #define M_UPPER 1
 #define M_LOWER 2
 
+#define APPLY_INDEX_INPUT 1
+#define APPLY_INDEX_OUTPUT 2
+
 /* Automaton structures */
 
 /** Main automaton structure */
@@ -93,6 +96,8 @@ struct fsm {
   int is_epsilon_free;
   int is_loop_free;
   int is_completed;
+  int arcs_sorted_in;
+  int arcs_sorted_out;
   struct fsm_state *states;             /* pointer to first line */
   struct sigma *sigma;
   struct medlookup *medlookup;
@@ -164,7 +169,7 @@ FEXPORT struct fsm *fsm_find_ambiguous(struct fsm *net, int **extras);
 FEXPORT struct fsm *fsm_minimize(struct fsm *net);
 FEXPORT struct fsm *fsm_coaccessible(struct fsm *net);
 FEXPORT struct fsm *fsm_topsort(struct fsm *net);
-
+FEXPORT void fsm_sort_arcs(struct fsm *net, int direction);
 FEXPORT struct fsm *fsm_mark_ambiguous(struct fsm *net);
 FEXPORT struct fsm *fsm_sequentialize(struct fsm *net);
 FEXPORT struct fsm *fsm_bimachine(struct fsm *net);
@@ -323,6 +328,7 @@ FEXPORT char *apply_random_upper(struct apply_handle *h);
 FEXPORT char *apply_random_words(struct apply_handle *h);
 /* Reset the iterator to start anew with enumerating functions */
 FEXPORT void apply_reset_enumerator(struct apply_handle *h);
+FEXPORT void apply_index(struct apply_handle *h, int inout, int densitycutoff);
 /* Minimum edit distance & spelling correction */
 FEXPORT void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net);
 FEXPORT void cmatrix_init(struct fsm *net);

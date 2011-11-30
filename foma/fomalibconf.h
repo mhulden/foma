@@ -119,6 +119,9 @@ struct apply_handle {
 	struct sigma_trie_arrays *next;
     } *sigma_trie_arrays;
 
+    int binsearch;
+    int indexed;
+    int sigma_size;
     int sigmatch_array_size;
     int current_instring_length;
     int has_flags;
@@ -130,12 +133,19 @@ struct apply_handle {
     int iterator ;
     char *outstring;
     char *instring;
-    char **sigs;
+    struct sigs {
+	char *symbol;
+	int length;
+    } *sigs;
     char *oldflagvalue;
-
+    
     struct fsm *last_net;
     struct fsm_state *gstates;
     struct sigma *gsigma;
+    struct apply_state_index {
+	struct fsm_state *fsmptr;
+	struct apply_state_index *next;
+    } **index_in, **index_out, *iptr;
 
     struct flag_list {
 	char *name;
@@ -152,6 +162,7 @@ struct apply_handle {
 
     struct searchstack {
 	int offset;
+	struct apply_state_index *iptr;
 	int opos;
 	int ipos;
 	int visitmark;
@@ -221,6 +232,7 @@ FEXPORT int sigma_add (char *symbol, struct sigma *sigma);
 FEXPORT int sigma_add_number(struct sigma *sigma, char *symbol, int number);
 FEXPORT int sigma_add_special (int symbol, struct sigma *sigma);
 FEXPORT struct sigma *sigma_remove(char *symbol, struct sigma *sigma);
+FEXPORT struct sigma *sigma_remove_num(int num, struct sigma *sigma);
 
 int sigma_find (char *symbol, struct sigma *sigma);
 int sigma_find_number (int number, struct sigma *sigma);
