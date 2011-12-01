@@ -188,8 +188,8 @@ The equivalent of the interface command `apply med` is also available through th
                                                  
                                                /* Set some optional parameters              */
     apply_med_set_heap_max(medh,4194304);      /* Don't grow heap more than this            */
-    apply_med_set_med_limit(10);               /* Don't search for matches with cost > 10   */
-    apply_med_set_med_cutoff(5,g_med_cutoff);  /* Don't return more than 5 matches          */
+    apply_med_set_med_limit(medh, 10);               /* Don't search for matches with cost > 10   */
+    apply_med_set_med_cutoff(medh, 5);  /* Don't return more than 5 matches          */
 
     while (result = apply_med(medh, mystring)) {
         mystring = NULL; /* Call with NULL on subsequent calls to iterate */
@@ -200,7 +200,7 @@ The equivalent of the interface command `apply med` is also available through th
 The above example code only retrieves the raw best matches for the input string provided. If we want to see the "alignment" of the input string and the candidate matches, as well as find the costs, we can do this like so:
 
 {{{
-    apply_med_set_align_symbol("-"); /* Using - to represent inserts and deletes */
+    apply_med_set_align_symbol(medh, "-"); /* Using - to represent inserts and deletes */
 
     while (result = apply_med(medh, mystring)) {
         mystring = NULL;
