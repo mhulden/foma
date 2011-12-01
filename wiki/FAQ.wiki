@@ -9,7 +9,7 @@ If you only want to view the transducers, the following options are available:
 
   * Mac/OSX: install the [http://www.graphviz.org/Download_macos.php GraphViz] package (for OSX), and the `view` command within foma will be available.
 
-  * UNIX/Linux: install GraphViz (e.g. the `graphviz` package with `apt-get`), and the `view` command will be available and will launch your default viewer for *png* files.
+  * UNIX/Linux: install Graphviz (e.g. the `graphviz` package with `apt-get`), and the `view` command will be available and will launch your default viewer for *png* files (using `xdg-open`).
 
 If you need to export the transducers (say for LaTeX use), the OSX GraphViz viewer allows for direct pdf export of a transducer, which can be used elsewhere.  For Linux/UNIX in general, you can do something like:
 
@@ -19,7 +19,7 @@ foma[1]: print dot > myfile.dot            [in foma]
 mylinux$ dot -Tpdf myfile.dot > myfile.pdf [on command line]
 }}}
 
-Of course, if you want to change the default look, you can always edit the `.dot`-file foma produces.
+Of course, if you want to change the default look of the automata, you can always edit the `.dot`-file foma produces before converting.
 
 
 == Can I use Unicode/UTF8 with foma? ==
