@@ -3,6 +3,25 @@
 
 = Foma FAQ =
 
+== How do I best view/export graphics of my transducers? ==
+
+If you only want to view the transducers, the following options are available:
+
+  * Mac/OSX: install the [http://www.graphviz.org/Download_macos.php GraphViz] package (for OSX), and the `view` command within foma will be available.
+
+  * UNIX/Linux: install GraphViz (e.g. the `graphviz` package with `apt-get`), and the `view` command will be available and will launch your default viewer for *png* files.
+
+If you need to export the transducers (say for LaTeX use), the OSX GraphViz viewer allows for direct pdf export of a transducer, which can be used elsewhere.  For Linux/UNIX in general, you can do something like:
+
+{{{
+foma[1]: print dot > myfile.dot            [in foma]
+
+mylinux$ dot -Tpdf myfile.dot > myfile.pdf [on command line]
+}}}
+
+Of course, if you want to change the default look, you can always edit the `.dot`-file foma produces.
+
+
 == Can I use Unicode/UTF8 with foma? ==
 
 Yes, UTF8 input is the *only* format _foma_ accepts.  If you need to compile legacy grammars in other encodings, you need to recode them first.
@@ -38,7 +57,7 @@ echo "word" | flookup -i -x mytransducer.foma
 
 ==== Flookup with a bidirectional pipe ====
 
-The _flookup_ utility flushes its output with every set of outputs it gives for a single input, giving the opportunity to use a bidirectional pipe to link against _flookup_.
+The _flookup_ utility flushes its output with every set of outputs it gives for a single input (after 0.9.15, the `-b` flag is required for this behavior), giving the opportunity to use a bidirectional pipe to link against _flookup_.
 
 Here's an example in _perl_ that illustrates the usage in a program that opens "mytransducer.foma" and does what "apply down" would do inside foma:
 
@@ -49,7 +68,7 @@ use FileHandle;
 use IPC::Open2;
 use locale;
 
-my $pidFOMA = open2(*Reader, *Writer, "flookup -i -x ./mytransducer.foma");
+my $pidFOMA = open2(*Reader, *Writer, "flookup -i -x -b ./mytransducer.foma");
 
 print Writer "word\n";
 
@@ -60,6 +79,7 @@ while ((my $returnword = <Reader>) ne "\n") {
 close(Reader); close(Writer);
 }}}
 
+`[`Note: versions later than 0.9.15 require the `-b` flag to flush the output between every word`]`.
 
 ==== Through the foma API ====
 
