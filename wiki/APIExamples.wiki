@@ -258,7 +258,7 @@ int main() {
 }
 }}}
 
-Note that while `fsm_regex()` minimizes its FSTs, it does not topologically sort them, and hence does not count the number of paths (as the `foma` interface compiler does). If you need this, do:
+Note that while `fsm_parse_regex()` minimizes its FSTs, it does not topologically sort them, and hence does not count the number of paths (as the `foma` interface compiler does). If you need this, do:
 
 {{{
 mynet = fsm_topsort(fsm_parse_regex("myregex"));
