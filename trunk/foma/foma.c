@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <time.h>
 #include <readline/readline.h>
 #include "foma.h"
 

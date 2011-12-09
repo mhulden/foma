@@ -63,7 +63,7 @@ struct sigma *sigma_remove_num(int num, struct sigma *sigma) {
 
 int sigma_add_special (int symbol, struct sigma *sigma) {
     struct sigma *sigma_previous = NULL, *sigma_splice = NULL;
-    char *str;
+    char *str = NULL;
     if (symbol == EPSILON)
         str = xxstrdup("@_EPSILON_SYMBOL_@");
     if (symbol == IDENTITY)

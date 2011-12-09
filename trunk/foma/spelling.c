@@ -793,9 +793,9 @@ void cmatrix_print(struct fsm *net) {
                 continue;
             }
             if (i == j) {
-                printf("%.*s",strlen(sigma_string(j, net->sigma))+1,"*");
+                printf("%.*s",(int)strlen(sigma_string(j, net->sigma))+1,"*");
             } else {
-                printf("%.*d",strlen(sigma_string(j, net->sigma))+1,*(cm+i*maxsigma+j));
+                printf("%.*d",(int)strlen(sigma_string(j, net->sigma))+1,*(cm+i*maxsigma+j));
             }
         }
         printf("\n");
