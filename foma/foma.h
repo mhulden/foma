@@ -5,7 +5,7 @@
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -94,6 +94,7 @@ void iface_ambiguous_upper(void);
 void iface_apply_down(char *word);
 int iface_apply_file(char *infilename, char *outfilename, int direction);
 void iface_apply_med(char *word);
+void iface_apply_set_params(struct apply_handle *h);
 void iface_apply_up(char *word);
 void iface_apropos(char *s);
 void iface_compact(void);

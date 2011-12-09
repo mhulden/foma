@@ -328,7 +328,12 @@ FEXPORT char *apply_random_upper(struct apply_handle *h);
 FEXPORT char *apply_random_words(struct apply_handle *h);
 /* Reset the iterator to start anew with enumerating functions */
 FEXPORT void apply_reset_enumerator(struct apply_handle *h);
-FEXPORT void apply_index(struct apply_handle *h, int inout, int densitycutoff);
+FEXPORT void apply_index(struct apply_handle *h, int inout, int densitycutoff, int mem_limit, int flags_only);
+FEXPORT void apply_set_show_flags(struct apply_handle *h, int value);
+FEXPORT void apply_set_obey_flags(struct apply_handle *h, int value);
+FEXPORT void apply_set_print_space(struct apply_handle *h, int value);
+FEXPORT void apply_set_print_pairs(struct apply_handle *h, int value);
+
 /* Minimum edit distance & spelling correction */
 FEXPORT void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net);
 FEXPORT void cmatrix_init(struct fsm *net);
@@ -429,7 +434,7 @@ struct fsm_read_handle {
     struct fsm_sigma_list *fsm_sigma_list;
     int sigma_list_size;
     struct fsm *net;
-    char *lookuptable;
+    unsigned char *lookuptable;
     _Bool has_unknowns;
 };
 

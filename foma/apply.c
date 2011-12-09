@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <limits.h>
 #include "foma.h"
 
 #define RANDOM 1
@@ -36,27 +37,53 @@
 #define DEFAULT_OUTSTRING_SIZE 4096
 #define DEFAULT_STACK_SIZE 128
 
-extern int g_obey_flags;
-extern int g_show_flags;
-extern int g_print_space;
-extern int g_print_pairs;
+#define APPLY_BINSEARCH_THRESHOLD 10
+
+#define BITMASK(b) (1 << ((b) & 7))
+#define BITSLOT(b) ((b) >> 3)
+#define BITSET(a,b) ((a)[BITSLOT(b)] |= BITMASK(b))
+#define BITCLEAR(a,b) ((a)[BITSLOT(b)] &= ~BITMASK(b))
+#define BITTEST(a,b) ((a)[BITSLOT(b)] & BITMASK(b))
+#define BITNSLOTS(nb) ((nb + CHAR_BIT - 1) / CHAR_BIT)
+
+
 
 static int apply_append(struct apply_handle *h, int cptr, int sym);
 static char *apply_net(struct apply_handle *h);
 static void apply_create_statemap(struct apply_handle *h,struct fsm *net);
 static void apply_create_sigarray(struct apply_handle *h,struct fsm *net);
 static void apply_create_sigmatch(struct apply_handle *h);
+int apply_match_length(struct apply_handle *h, int symbol);
 static int apply_match_str(struct apply_handle *h,int symbol, int position);
 static void apply_add_flag(struct apply_handle *h,char *name);
 static int apply_check_flag(struct apply_handle *h,int type, char *name, char *value);
 static void apply_clear_flags(struct apply_handle *h);
+void apply_set_iptr(struct apply_handle *h);
+void apply_mark_flagstates(struct apply_handle *h);
+void apply_clear_index(struct apply_handle *h);
 
 static void apply_stack_clear(struct apply_handle *h);
 static int apply_stack_isempty(struct apply_handle *h);
 static void apply_stack_pop (struct apply_handle *h);
-static void apply_stack_push (struct apply_handle *h, int sptr, struct apply_state_index *iptr, int sipos, int sopos, int vmark, char *sflagname, char *sflagvalue, int sflagneg);
+static void apply_stack_push (struct apply_handle *h, int vmark, char *sflagname, char *sflagvalue, int sflagneg);
 static void apply_force_clear_stack(struct apply_handle *h);
 
+
+void apply_set_obey_flags(struct apply_handle *h, int value) {
+    h->obey_flags = value;
+}
+
+void apply_set_show_flags(struct apply_handle *h, int value) {
+    h->show_flags = value;
+}
+
+void apply_set_print_space(struct apply_handle *h, int value) {
+    h->print_space = value;
+}
+
+void apply_set_print_pairs(struct apply_handle *h, int value) {
+    h->print_pairs = value;
+}
 
 static void apply_force_clear_stack(struct apply_handle *h) {
     /* Make sure stack is empty and marks reset */
@@ -140,6 +167,10 @@ void apply_clear(struct apply_handle *h) {
         xxfree(h->statemap);
         h->statemap = NULL;
     }
+    if (h->numlines != NULL) {
+        xxfree(h->numlines);
+        h->numlines = NULL;
+    }
     if (h->marks != NULL) {
         xxfree(h->marks);
         h->marks = NULL;
@@ -160,6 +191,11 @@ void apply_clear(struct apply_handle *h) {
 	xxfree(h->sigmatch_array);
 	h->sigmatch_array = NULL;
     }
+    if (h->flagstates != NULL) {
+	xxfree(h->flagstates);
+	h->flagstates = NULL;
+    }
+    apply_clear_index(h);
     h->last_net = NULL;
     h->iterator = 0;
     xxfree(h->outstring);
@@ -197,7 +233,7 @@ char *apply_down(struct apply_handle *h, char *word) {
     } else {
 	h->indexed = 0;
     }
-    h->binsearch = (h->last_net->arcs_sorted_in == 1 && h->has_flags == 0) ? 1 : 0;
+    h->binsearch = (h->last_net->arcs_sorted_in == 1) ? 1 : 0;
     return(apply_updown(h, word));
 }
 
@@ -209,7 +245,7 @@ char *apply_up(struct apply_handle *h, char *word) {
     } else {
 	h->indexed = 0;
     }
-    h->binsearch = (h->last_net->arcs_sorted_out == 1 && h->has_flags == 0) ? 1 : 0;
+    h->binsearch = (h->last_net->arcs_sorted_out == 1) ? 1 : 0;
     return(apply_updown(h, word));
 }
 
@@ -225,6 +261,10 @@ struct apply_handle *apply_init(struct fsm *net) {
     h->instring = NULL;
     h->flag_list = NULL;
     h->flag_lookup = NULL;
+    h->obey_flags = 1;
+    h->show_flags = 0;
+    h->print_space = 0;
+    h->print_pairs = 0;
 
     h->last_net = net;
 
@@ -254,29 +294,35 @@ void apply_stack_clear (struct apply_handle *h) {
 }
 
 void apply_stack_pop (struct apply_handle *h) {
+    struct flag_list *flist;
+    struct searchstack *ss;
     (h->apply_stack_ptr)--;
-    h->iptr =  (h->searchstack+h->apply_stack_ptr)->iptr;
-    h->ptr = (h->searchstack+h->apply_stack_ptr)->offset;
-    h->ipos = (h->searchstack+h->apply_stack_ptr)->ipos;
-    h->opos = (h->searchstack+h->apply_stack_ptr)->opos;
-    /* Restore mark */
-    *(h->marks+(h->gstates+h->ptr)->state_no) = (h->searchstack+h->apply_stack_ptr)->visitmark;
+    ss = h->searchstack+h->apply_stack_ptr;
 
-    if (h->has_flags && (h->searchstack+h->apply_stack_ptr)->flagname != NULL) {
+    h->iptr =  ss->iptr;
+    h->ptr  =  ss->offset;
+    h->ipos =  ss->ipos;
+    h->opos =  ss->opos;
+    h->state_has_index = ss->state_has_index;
+    /* Restore mark */
+    *(h->marks+(h->gstates+h->ptr)->state_no) = ss->visitmark;
+
+    if (h->has_flags && ss->flagname != NULL) {
 	/* Restore flag */
-	for (h->flist = h->flag_list; h->flist != NULL; h->flist = h->flist->next) {
-	    if (strcmp(h->flist->name, (h->searchstack+h->apply_stack_ptr)->flagname) == 0) {
+	for (flist = h->flag_list; flist != NULL; flist = flist->next) {
+	    if (strcmp(flist->name, ss->flagname) == 0) {
 		break;
 	    }
 	}
-	if (h->flist == NULL)
+	if (flist == NULL)
 	    perror("***Nothing to pop\n");
-	h->flist->value = (h->searchstack+h->apply_stack_ptr)->flagvalue;
-	h->flist->neg = (h->searchstack+h->apply_stack_ptr)->flagneg;
+	flist->value = ss->flagvalue;
+	flist->neg = ss->flagneg;
     }
 }
 
-static void apply_stack_push (struct apply_handle *h, int sptr, struct apply_state_index *iptr, int sipos, int sopos, int vmark, char *sflagname, char *sflagvalue, int sflagneg) {
+static void apply_stack_push (struct apply_handle *h, int vmark, char *sflagname, char *sflagvalue, int sflagneg) {
+    struct searchstack *ss;
     if (h->apply_stack_ptr == h->apply_stack_top) {
 	h->searchstack = xxrealloc(h->searchstack, sizeof(struct searchstack)* ((h->apply_stack_top)*2));
 	if (h->searchstack == NULL) {
@@ -285,15 +331,17 @@ static void apply_stack_push (struct apply_handle *h, int sptr, struct apply_sta
 	}
 	h->apply_stack_top *= 2;
     }
-    (h->searchstack+h->apply_stack_ptr)->offset     = sptr;
-    (h->searchstack+h->apply_stack_ptr)->ipos       = sipos;
-    (h->searchstack+h->apply_stack_ptr)->opos       = sopos;
-    (h->searchstack+h->apply_stack_ptr)->visitmark  = vmark;
-    (h->searchstack+h->apply_stack_ptr)->iptr       = iptr;
+    ss = h->searchstack+h->apply_stack_ptr;
+    ss->offset     = h->curr_ptr;
+    ss->ipos       = h->ipos;
+    ss->opos       = h->opos;
+    ss->visitmark  = vmark;
+    ss->iptr       = h->iptr;
+    ss->state_has_index = h->state_has_index;
     if (h->has_flags) {
-	(h->searchstack+h->apply_stack_ptr)->flagname   = sflagname;
-	(h->searchstack+h->apply_stack_ptr)->flagvalue  = sflagvalue;
-	(h->searchstack+h->apply_stack_ptr)->flagneg    = sflagneg;
+	ss->flagname   = sflagname;
+	ss->flagvalue  = sflagvalue;
+	ss->flagneg    = sflagneg;
     }
     (h->apply_stack_ptr)++;
 }
@@ -308,9 +356,46 @@ void apply_reset_enumerator(struct apply_handle *h) {
     h->iterate_old = 0;
 }
 
-void apply_index(struct apply_handle *h, int inout, int densitycutoff) {
+void apply_clear_index_list(struct apply_handle *h, struct apply_state_index **index) {
+    int i, j, statecount;
+    struct apply_state_index *iptr, *iptr_tmp, *iptr_zero;
+    if (index == NULL)
+	return;
+    statecount = h->last_net->statecount;
+    for (i = 0; i < statecount; i++) {
+	iptr = *(index+i);
+	if (iptr == NULL) {
+	    continue;
+	}
+	iptr_zero = *(index+i);
+	for (j = h->sigma_size - 1 ; j >= 0; j--) { /* Make sure to not free the list in EPSILON    */
+	    iptr = *(index+i) + j;                  /* as the other states lists' tails point to it */
+	    for (iptr = iptr->next ; iptr != NULL && iptr != iptr_zero; iptr = iptr_tmp) {
+		iptr_tmp = iptr->next;
+		xxfree(iptr);
+	    }
+	}
+	xxfree(*(index+i));
+    }
+}
+
+void apply_clear_index(struct apply_handle *h) {
+    if (h->index_in) {
+	apply_clear_index_list(h, h->index_in);
+	xxfree(h->index_in);
+	h->index_in = NULL;
+    }
+    if (h->index_out) {
+	apply_clear_index_list(h, h->index_out);
+	xxfree(h->index_out);
+	h->index_out = NULL;
+    }
+}
+
+void apply_index(struct apply_handle *h, int inout, int densitycutoff, int mem_limit, int flags_only) {
     struct fsm_state *fsm;
-    int i, maxtrans, numtrans, laststate, sym, stateno;
+    unsigned int cnt = 0;
+    int i, j, maxtrans, numtrans, laststate, sym, stateno;
     fsm = h->gstates;
 
     struct apply_state_index **indexptr, *iptr, *tempiptr;
@@ -319,7 +404,9 @@ void apply_index(struct apply_handle *h, int inout, int densitycutoff) {
 	int state_no;
 	struct pre_index *next;
     } *pre_index, *tp, *tpp;
-
+    if (flags_only && !h->has_flags) {
+	return;
+    }
     /* get numtrans */
     for (i=0, laststate = 0, maxtrans = 0, numtrans = 0; (fsm+i)->state_no != -1; i++) {
 	if ((fsm+i)->state_no != laststate) {
@@ -333,10 +420,15 @@ void apply_index(struct apply_handle *h, int inout, int densitycutoff) {
     }
 
     pre_index = xxcalloc(maxtrans+1, sizeof(struct pre_index));
-    for (i=0; i <= maxtrans; i++) {
+    for (i = 0; i <= maxtrans; i++) {
 	(pre_index+i)->state_no = -1;
     }
-    for (i=0, laststate = 0, maxtrans = 0, numtrans = 0; (fsm+i)->state_no != -1; i++) {
+
+    /* We create an array of states, indexed by how many transitions they have */
+    /* so that later, we can traverse them in order densest first, in case we  */
+    /* only want to index to some predefined maximum memory usage.             */
+
+    for (i = 0, laststate = 0, maxtrans = 0, numtrans = 0; (fsm+i)->state_no != -1; i++) {
 	if ((fsm+i)->state_no != laststate) {
 	    if ((pre_index+numtrans)->state_no == -1) {
 		(pre_index+numtrans)->state_no = laststate;
@@ -354,22 +446,54 @@ void apply_index(struct apply_handle *h, int inout, int densitycutoff) {
 	}
 	laststate = (fsm+i)->state_no;
     }
+    indexptr = NULL;
+    cnt += round_up_to_power_of_two(h->last_net->statecount*sizeof(struct apply_state_index *));
+
+    if (cnt > mem_limit) {
+	cnt -= round_up_to_power_of_two(h->last_net->statecount*sizeof(struct apply_state_index *));
+	goto memlimitnoindex;
+    }
+
     indexptr = xxcalloc(h->last_net->statecount, sizeof(struct apply_state_index *));
-    for (i = maxtrans; i >= densitycutoff; i--) {
+
+    if (h->has_flags && flags_only) {
+	/* Mark states that have flags */
+	if (!(h->flagstates)) {
+	    apply_mark_flagstates(h);
+	}
+    }
+
+    for (i = maxtrans; i >= 0; i--) {
 	for (tp = pre_index+i; tp != NULL; tp = tp->next) {
 	    if (tp->state_no >= 0) {
-		*(indexptr + tp->state_no) = xxcalloc(h->sigma_size, sizeof(struct apply_state_index));
+		if (i < densitycutoff) {
+		    if (!(h->has_flags && flags_only && BITTEST(h->flagstates, tp->state_no))) {
+			continue;
+		    }
+		}
+		cnt += round_up_to_power_of_two(h->sigma_size*sizeof(struct apply_state_index));
+		if (cnt > mem_limit) {
+		    cnt -= round_up_to_power_of_two(h->sigma_size*sizeof(struct apply_state_index));
+		    goto memlimit;
+		}
+		*(indexptr + tp->state_no) = xxmalloc(h->sigma_size*sizeof(struct apply_state_index));
+
+		/* We make the tail of all index linked lists point to the index  */
+		/* for EPSILON, so that we automatically when EPSILON transitions */
+		/* also when traversing an index.                                 */
+
+		for (j = 0; j < h->sigma_size; j++) {
+		    (*(indexptr + tp->state_no) + j)->fsmptr = -1;
+		    if (j == EPSILON)
+			(*(indexptr + tp->state_no) + j)->next = NULL;
+		    else
+			(*(indexptr + tp->state_no) + j)->next = (*(indexptr + tp->state_no)); /* all tails point to epsilon */		    
+		}
 	    }
 	}
     }
-    /* Free preindex */
-    for (i = maxtrans; i >= 0; i--) {
-	for (tp = (pre_index+i)->next; tp != NULL; tp = tpp) {
-	    tpp = tp->next;
-	    xxfree(tp);	    
-	}
-    }
-    xxfree(pre_index);
+
+ memlimit:
 
     for (i=0; (fsm+i)->state_no != -1; i++) {
 	iptr = *(indexptr + (fsm+i)->state_no);
@@ -382,22 +506,39 @@ void apply_index(struct apply_handle *h, int inout, int densitycutoff) {
 	if (h->has_flags && (h->flag_lookup+sym)->type) {
 	    sym = EPSILON;
 	}
-	if ((iptr+sym)->fsmptr == NULL) {
-	    (iptr+sym)->fsmptr = (fsm+i);
+	if (sym == UNKNOWN) {  /* We make the index of UNKNOWN point to IDENTITY */
+	    sym = IDENTITY;    /* since these are really the same symbol         */
+	}
+	if ((iptr+sym)->fsmptr == -1) {
+	    (iptr+sym)->fsmptr = i;
 	} else {
+	    cnt += round_up_to_power_of_two(sizeof(struct apply_state_index));
 	    tempiptr = xxcalloc(1, sizeof(struct apply_state_index));
+
 	    tempiptr->next = (iptr+sym)->next;
-	    tempiptr->fsmptr =  (fsm+i);
+	    tempiptr->fsmptr =  i;
 	    (iptr+sym)->next = tempiptr;
 	}
     }
+
+    /* Free preindex */
+
+ memlimitnoindex:
+
+    for (i = maxtrans; i >= 0; i--) {
+	for (tp = (pre_index+i)->next; tp != NULL; tp = tpp) {
+	    tpp = tp->next;
+	    xxfree(tp);
+	}
+    }
+    xxfree(pre_index);
+
     if (inout == APPLY_INDEX_INPUT) {
 	h->index_in = indexptr;
     } else {
 	h->index_out = indexptr;
     }
 }
-
 
 int apply_binarysearch(struct apply_handle *h) {
     int thisstate, nextsym, seeksym, thisptr, lastptr, midptr;
@@ -416,12 +557,12 @@ int apply_binarysearch(struct apply_handle *h) {
 	return 1;
 
     thisstate = (h->gstates+thisptr)->state_no;
-    lastptr = *(h->statemap + thisstate + 1)-1;
+    lastptr = *(h->statemap+thisstate)+*(h->numlines+thisstate)-1;
     thisptr++;
 
-    if (seeksym == IDENTITY || lastptr - thisptr < 10) {
+    if (seeksym == IDENTITY || lastptr - thisptr < APPLY_BINSEARCH_THRESHOLD) {
 	for ( ; thisptr <= lastptr; thisptr++) {
-	    nextsym = (((h->mode) & DOWN) == DOWN) ? (h->gstates+thisptr)->in : (h->gstates+thisptr)->out;	    
+	    nextsym = (((h->mode) & DOWN) == DOWN) ? (h->gstates+thisptr)->in : (h->gstates+thisptr)->out;
 	    if ((nextsym == seeksym) || (nextsym == UNKNOWN && seeksym == IDENTITY)) {
 		h->curr_ptr = thisptr;
 		return 1;
@@ -446,7 +587,7 @@ int apply_binarysearch(struct apply_handle *h) {
 	} else {
 
 	    while (((((h->mode) & DOWN) == DOWN) ? (h->gstates+(midptr-1))->in : (h->gstates+(midptr-1))->out) == seeksym) {
-		midptr--;
+		midptr--; /* Find first match in case of ties */
 	    }
 	    h->curr_ptr = midptr;
 	    return 1;
@@ -454,35 +595,96 @@ int apply_binarysearch(struct apply_handle *h) {
     }
 }
 
-
 int apply_follow_next_arc(struct apply_handle *h) {
     char *fname, *fvalue;
     int eatupi, eatupo, symin, symout, fneg;
-    int vcount, msource, mtarget;
-    if (h->iptr) {
+    int vcount, marksource, marktarget;
+    
+    /* Here we follow three possible search strategies:        */
+    /* (1) if the state in question has an index, we use that  */
+    /* (2) if the state is binary searchable, we use that      */
+    /* (3) otherwise we traverse arc-by-arc                    */
+    /*     Condition (2) needs arcs to be sorted in the proper */
+    /*     direction, and requires that the state be flag-free */
+    /*     For those states that aren't flag-free, (3) is used */
 
-    } else if (h->binsearch) {
-	if (apply_binarysearch(h)) {
-	    symin  = (((h->mode) & DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->in  : (h->gstates+h->curr_ptr)->out;    
-	    msource = (h->gstates+h->curr_ptr)->state_no;
-	    mtarget = (h->gstates+h->curr_ptr)->target;
-	    
-	    if (((eatupi = apply_match_str(h, symin, h->ipos)) != -1) && -1-(h->ipos)-eatupi != mtarget) {
-		symout = (((h->mode) & DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->out : (h->gstates+h->curr_ptr)->in;
-		eatupo = apply_append(h, h->curr_ptr, symout);
+    if (h->state_has_index) {
+	for ( ; h->iptr != NULL && h->iptr->fsmptr != -1; ) {
 
-		/* Push old position */
-		apply_stack_push(h, h->curr_ptr, h->iptr, h->ipos, h->opos, msource, NULL, NULL, 0);
-		
-		/* Follow arc */
-		h->ptr = *(h->statemap+(h->gstates+h->curr_ptr)->target);
-		h->ipos += eatupi;
-		h->opos += eatupo;
-		return 1;
+	    h->ptr = h->curr_ptr = h->iptr->fsmptr;
+	    if (((h->mode) & DOWN) == DOWN) {
+		symin = (h->gstates+h->curr_ptr)->in;
+		symout = (h->gstates+h->curr_ptr)->out;
 	    } else {
-		return 0;
+		symin = (h->gstates+h->curr_ptr)->out;
+		symout = (h->gstates+h->curr_ptr)->in;
 	    }
-	} else {
+	    
+	    marksource = *(h->marks+(h->gstates+h->ptr)->state_no);
+	    marktarget = *(h->marks+(h->gstates+(*(h->statemap+(h->gstates+h->curr_ptr)->target)))->state_no);
+	    eatupi = apply_match_length(h, symin);
+	    if (!(eatupi == -1 || -1-(h->ipos)-eatupi == marktarget)) {     /* input 2x EPSILON loop check */
+		if ((eatupi = apply_match_str(h, symin, h->ipos)) != -1) {
+		    eatupo = apply_append(h, h->curr_ptr, symout);
+		    if (h->obey_flags && h->has_flags && ((h->flag_lookup+symin)->type & (FLAG_UNIFY|FLAG_CLEAR|FLAG_POSITIVE|FLAG_NEGATIVE))) {
+			fname = (h->flag_lookup+symin)->name;
+			fvalue = h->oldflagvalue;
+			fneg = h->oldflagneg;
+		    } else {
+			fname = fvalue = NULL;
+			fneg = 0;
+		    }
+		    /* Push old position */
+		    apply_stack_push(h, marksource, fname, fvalue, fneg);
+		    h->ptr = *(h->statemap+(h->gstates+h->curr_ptr)->target);
+		    h->ipos += eatupi;
+		    h->opos += eatupo;
+		    apply_set_iptr(h);
+		    return 1;
+		}
+	    }
+	    h->iptr = h->iptr->next;
+	}
+	return 0;
+    } else if ((h->binsearch && !(h->has_flags)) || (h->binsearch && !(BITTEST(h->flagstates, (h->gstates+h->ptr)->state_no)))) {
+	for (;;) {
+	    if (apply_binarysearch(h)) {
+		if (((h->mode) & DOWN) == DOWN) {
+		    symin = (h->gstates+h->curr_ptr)->in;
+		    symout = (h->gstates+h->curr_ptr)->out;
+		} else {
+		    symin = (h->gstates+h->curr_ptr)->out;
+		    symout = (h->gstates+h->curr_ptr)->in;
+		}
+		
+		marksource = *(h->marks+(h->gstates+h->ptr)->state_no);
+		marktarget = *(h->marks+(h->gstates+(*(h->statemap+(h->gstates+h->curr_ptr)->target)))->state_no);
+		
+		eatupi = apply_match_length(h, symin);
+		if (eatupi != -1 && -1-(h->ipos)-eatupi != marktarget) {
+		    if ((eatupi = apply_match_str(h, symin, h->ipos)) != -1) {
+			eatupo = apply_append(h, h->curr_ptr, symout);
+			
+			/* Push old position */
+			apply_stack_push(h, marksource, NULL, NULL, 0);
+			
+			/* Follow arc */
+			h->ptr = *(h->statemap+(h->gstates+h->curr_ptr)->target);
+			h->ipos += eatupi;
+			h->opos += eatupo;
+			apply_set_iptr(h);
+			return 1;
+		    }
+		}
+		if ((h->gstates+h->curr_ptr)->state_no == (h->gstates+h->curr_ptr+1)->state_no) {
+		    h->curr_ptr++; 
+		    h->ptr = h->curr_ptr;
+		    if ((h->gstates+h->curr_ptr)-> target == -1) { 
+			return 0; 
+		    }
+		    continue;
+		}
+	    }
 	    return 0;
 	}
     } else {
@@ -501,15 +703,24 @@ int apply_follow_next_arc(struct apply_handle *h) {
 		}
 	    }
 	    
-	    symin  = (((h->mode) & DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->in  : (h->gstates+h->curr_ptr)->out;
+	    if (((h->mode) & DOWN) == DOWN) {
+		symin = (h->gstates+h->curr_ptr)->in;
+		symout = (h->gstates+h->curr_ptr)->out;
+	    } else {
+		symin = (h->gstates+h->curr_ptr)->out;
+		symout = (h->gstates+h->curr_ptr)->in;
+	    }
 	    
-	    msource = (h->gstates+h->curr_ptr)->state_no;
-	    mtarget = (h->gstates+h->curr_ptr)->target;
+	    marksource = *(h->marks+(h->gstates+h->ptr)->state_no);
+	    marktarget = *(h->marks+(h->gstates+(*(h->statemap+(h->gstates+h->curr_ptr)->target)))->state_no);
 
-	    if (((eatupi = apply_match_str(h, symin, h->ipos)) != -1) && -1-(h->ipos)-eatupi != mtarget) {
-		symout = (((h->mode) & DOWN) == DOWN) ? (h->gstates+h->curr_ptr)->out : (h->gstates+h->curr_ptr)->in;  
+	    eatupi = apply_match_length(h, symin);
+
+	    if (eatupi == -1 || -1-(h->ipos)-eatupi == marktarget) { continue; } /* loop check */
+	    if ((eatupi = apply_match_str(h, symin, h->ipos)) != -1) {
 		eatupo = apply_append(h, h->curr_ptr, symout);
-		if (g_obey_flags && h->has_flags && ((h->flag_lookup+symin)->type & (FLAG_UNIFY|FLAG_CLEAR|FLAG_POSITIVE|FLAG_NEGATIVE))) {
+		if (h->obey_flags && h->has_flags && ((h->flag_lookup+symin)->type & (FLAG_UNIFY|FLAG_CLEAR|FLAG_POSITIVE|FLAG_NEGATIVE))) {
+		    
 		    fname = (h->flag_lookup+symin)->name;
 		    fvalue = h->oldflagvalue;
 		    fneg = h->oldflagneg;
@@ -519,12 +730,13 @@ int apply_follow_next_arc(struct apply_handle *h) {
 		}
 		
 		/* Push old position */
-		apply_stack_push(h, h->curr_ptr, h->iptr, h->ipos, h->opos, msource, fname, fvalue, fneg);
+		apply_stack_push(h, marksource, fname, fvalue, fneg);
 		
 		/* Follow arc */
 		h->ptr = *(h->statemap+(h->gstates+h->curr_ptr)->target);
 		h->ipos += eatupi;
 		h->opos += eatupo;
+		apply_set_iptr(h);
 		return(1);
 	    }
 	}
@@ -550,30 +762,44 @@ char *apply_return_string(struct apply_handle *h) {
 }
 
 void apply_mark_state(struct apply_handle *h) {
-    /* 0 = unseen, +ipos = seen at ipos, -ipos = seen second time at ipos */
+
+    /* This controls the how epsilon-loops are traversed.  Such loops can    */
+    /* only be followed once to reach a state already visited in the DFS.    */
+    /* This requires that we store the number of input symbols consumed      */
+    /* whenever we enter a new state.  If we enter the same state twice      */
+    /* with the same number of input symbols consumed, we abandon the search */
+    /* for that branch. Flags are epsilons from this point of view.          */
+    /* The encoding of h->marks is:                                          */
+    /* 0 = unseen, +ipos = seen at ipos, -ipos = seen second time at ipos    */
+
     if ((h->mode & RANDOM) != RANDOM) {
 	if (*(h->marks+(h->gstates+h->ptr)->state_no) == h->ipos+1) {
 	    *(h->marks+(h->gstates+h->ptr)->state_no) = -(h->ipos+1);
 	} else {
 	    *(h->marks+(h->gstates+h->ptr)->state_no) = h->ipos+1;
 	}
-    }    
+    }
 }
 
 void apply_skip_this_arc(struct apply_handle *h) {
+    /* If we have index ptr */
     if (h->iptr) {
-
+	h->ptr = h->iptr->fsmptr;
+	h->iptr = h->iptr->next;
+	/* Otherwise */
     } else {
-	(h->ptr)++; 	           /* Next arc */
+	(h->ptr)++;
     }
 }
 
 int apply_at_last_arc(struct apply_handle *h) {
     int seeksym, nextsym;
-    if (h->iptr) {
-
+    if (h->state_has_index) {
+	if (h->iptr->next == NULL || h->iptr->next->fsmptr == -1) {
+	    return 1;
+	}
     } else {
-	if (h->binsearch) {
+	if  ((h->binsearch && !(h->has_flags)) || (h->binsearch && !(BITTEST(h->flagstates, (h->gstates+h->ptr)->state_no)))) {
 	    if ((h->gstates+h->ptr)->state_no != (h->gstates+h->ptr+1)->state_no) {
 		return 1;
 	    }
@@ -591,22 +817,60 @@ int apply_at_last_arc(struct apply_handle *h) {
     return 0;
 }
 
+/* map h->ptr (line pointer) to h->iptr (index pointer) */
+void apply_set_iptr(struct apply_handle *h) {
+    struct apply_state_index **idx, *sidx;
+    int stateno, seeksym;
+    /* Check if state has index */
+    if ((idx = ((h->mode) & DOWN) == DOWN ? (h->index_in) : (h->index_out)) == NULL) {
+	return;
+    }
+ 
+    h->iptr = NULL;
+    h->state_has_index = 0;
+    stateno = (h->gstates+h->ptr)->state_no;
+    if (stateno < 0) {
+	return;
+    }
+   
+    sidx = *(idx + stateno);
+    if (sidx == NULL) { return; }
+    seeksym = (h->sigmatch_array+h->ipos)->signumber;
+    h->state_has_index = 1;
+    sidx = sidx + seeksym;
+    if (sidx->fsmptr == -1) {
+	if (sidx->next == NULL) {
+	    return;
+	} else {
+	    sidx = sidx->next;
+	}
+    }
+    h->iptr = sidx;
+    if (sidx->fsmptr == -1) {
+	h->iptr = NULL;
+    }
+    h->state_has_index = 1;
+}
+
 char *apply_net(struct apply_handle *h) {
 
 /*     We perform a basic DFS on the graph, with two minor complications:       */
 
-/*     1. We keep a mark for each state which indicates whether it is seen      */
-/*        on the current "run."  If we reach a marked state, we terminate.      */
+/*     1. We keep a mark for each state which indicates how many input symbols  */
+/*        we had consumed the last time we entered that state on the current    */
+/*        "run."  If we reach a state seen twice without consuming input, we    */
+/*        terminate that branch of the search.                                  */
 /*        As we pop a position, we also unmark the state we came from.          */
-/*        If we're matching against a string, we terminate if the mark          */
-/*        is set and ipos is the same as last time we saw the flag, i.e.        */
-/*        we've traversed a loop without consuming an input symbol              */
  
 /*     2. If the graph has flags, we push the previous flag value when          */
-/*        traversing a flag-modifying arc.  This is because a flag may          */
-/*        may have been set during the previous "run" and may not apply.        */
+/*        traversing a flag-modifying arc (P,U,N, or C).  This is because a     */
+/*        flag may have been set during the previous "run" and may not apply.   */
 /*        Since we're doing a DFS, we can be sure to return to the previous     */
 /*        global flag state by just remembering that last flag change.          */
+
+/*     3. The whole system needs to work as an iterator, meaning we need to     */
+/*        store the global state of the search so we can resume it later to     */
+/*        to yield more possible output words with the same input string.       */
 
     char *returnstring;
 
@@ -615,6 +879,7 @@ char *apply_net(struct apply_handle *h) {
     }
 
     h->iptr = NULL; h->ptr = 0; h->ipos = 0; h->opos = 0;
+    apply_set_iptr(h);
 
     apply_stack_clear(h);
 
@@ -634,7 +899,7 @@ char *apply_net(struct apply_handle *h) {
 	    *(h->marks+(h->gstates+h->ptr)->state_no) = 0; /* Unmark   */
 	    continue;                                      /* pop next */
 	}
-	apply_skip_this_arc(h);                            /* old pushed arc */
+	apply_skip_this_arc(h);                            /* skip old pushed arc */
     L1:
 	if (!apply_follow_next_arc(h)) {
 	    *(h->marks+(h->gstates+h->ptr)->state_no) = 0; /* Unmark   */
@@ -647,6 +912,7 @@ char *apply_net(struct apply_handle *h) {
 		return(returnstring);
 	    }
 	}
+
     resume:
        	apply_mark_state(h);  /* Mark upon arrival to new state */
 	goto L1;
@@ -665,30 +931,30 @@ int apply_append(struct apply_handle *h, int cptr, int sym) {
 
     char *astring, *bstring, *pstring;
     int symin, symout, len, alen, blen, idlen;
-
+    
     symin = (h->gstates+cptr)->in;
     symout = (h->gstates+cptr)->out;
     astring = ((h->sigs)+symin)->symbol;
     alen =  ((h->sigs)+symin)->length;
     bstring = ((h->sigs)+symout)->symbol;
     blen =  ((h->sigs)+symout)->length;
-
+    
     while (alen + blen + h->opos + 3 >= h->outstringtop) {
 	h->outstring = xxrealloc(h->outstring, sizeof(char) * ((h->outstringtop) * 2));
 	(h->outstringtop) *= 2;
     }
-
-    if ((h->has_flags) && !g_show_flags && (h->flag_lookup+symin)->type) {
+    
+    if ((h->has_flags) && !h->show_flags && (h->flag_lookup+symin)->type) {
 	astring = ""; alen = 0;
     }
-    if (h->has_flags && !g_show_flags && (h->flag_lookup+symout)->type) {
+    if (h->has_flags && !h->show_flags && (h->flag_lookup+symout)->type) {
 	bstring = ""; blen = 0;
     }
     if (((h->mode) & ENUMERATE) == ENUMERATE) {
 	/* Print both sides separated by colon */
 	/* if we're printing "words" */
 	if (((h->mode) & (UPPER | LOWER)) == (UPPER|LOWER)) {
-
+	    
 	    if (astring == bstring) {
 		strcpy(h->outstring+h->opos, astring);
 		len = alen;
@@ -699,10 +965,10 @@ int apply_append(struct apply_handle *h, int cptr, int sym) {
 		len = alen+blen+1;
 	    }
 	}
-
+	
 	/* Print one side only */
 	if (((h->mode) & (UPPER|LOWER)) != (UPPER|LOWER)) {
-
+	    
 	    if (symin == EPSILON) {
 		astring = ""; alen = 0;
 	    }
@@ -716,12 +982,13 @@ int apply_append(struct apply_handle *h, int cptr, int sym) {
 		pstring = bstring;
 		len = blen;
 	    }
-	    strcpy(h->outstring+h->opos, pstring);
+	    //strcpy(h->outstring+h->opos, pstring);
+	    memcpy(h->outstring+h->opos, pstring, len);
 	}
     }
     if (((h->mode) & ENUMERATE) != ENUMERATE) {
 	/* Print pairs is ON and symbols are different */
-	if (g_print_pairs && (symin != symout)) {
+	if (h->print_pairs && (symin != symout)) {
 
 	    if (symin == UNKNOWN && ((h->mode) & DOWN) == DOWN)
 		strncpy(astring, h->instring+h->ipos, 1);
@@ -751,24 +1018,48 @@ int apply_append(struct apply_handle *h, int cptr, int sym) {
 		pstring = astring;
 		len = alen;
 	    }
-	    strcpy(h->outstring+h->opos, pstring);
+	    memcpy(h->outstring+h->opos, pstring, len);
 	}
     }
-    if (g_print_space && len > 0) {
+    if (h->print_space && len > 0) {
 	strcpy(h->outstring+h->opos+len, " ");
 	len++;
     }
     return(len);
 }
 
+int apply_match_length(struct apply_handle *h, int symbol) {
+    if (symbol == EPSILON) {
+	return 0;
+    }
+    if (h->has_flags && (h->flag_lookup+symbol)->type) {
+	return 0;
+    }
+    if (((h->mode) & ENUMERATE) == ENUMERATE) {
+	return 0;
+    }
+    if (h->ipos >= h->current_instring_length) {
+	return -1;
+    }
+    if ((h->sigmatch_array+(h->ipos))->signumber == symbol) {
+	    return((h->sigmatch_array+(h->ipos))->consumes);
+    }
+    if ((symbol == IDENTITY) || (symbol == UNKNOWN)) {
+	if ((h->sigmatch_array+h->ipos)->signumber == IDENTITY) {
+	    return((h->sigmatch_array+(h->ipos))->consumes);
+	}
+    }
+    return -1;
+}
+
 /* Match a symbol from sigma against the current position in string */
-/* Return the number of symbols consumed in input string */
-/* For flags, we consume 0 symbols of the input string, naturally */
+/* Return the number of symbols consumed in input string            */
+/* For flags, we consume 0 symbols of the input string, naturally   */
 
 int apply_match_str(struct apply_handle *h, int symbol, int position) {
     if (((h->mode) & ENUMERATE) == ENUMERATE) {
 	if (h->has_flags && (h->flag_lookup+symbol)->type) {
-	    if (!g_obey_flags) {
+	    if (!h->obey_flags) {
 		return 0;
 	    }
 	    if (apply_check_flag(h,(h->flag_lookup+symbol)->type, (h->flag_lookup+symbol)->name, (h->flag_lookup+symbol)->value) == SUCCEED) {
@@ -780,13 +1071,14 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 	return(0);
     }
 
+
     if (symbol == EPSILON) {
 	return 0;
     }
     
     /* If symbol is a flag, we need to check consistency */
     if (h->has_flags && (h->flag_lookup+symbol)->type) {
-	if (!g_obey_flags) {
+	if (!h->obey_flags) {
 	    return 0;
 	}
 	if (apply_check_flag(h,(h->flag_lookup+symbol)->type, (h->flag_lookup+symbol)->name, (h->flag_lookup+symbol)->value) == SUCCEED) {
@@ -811,26 +1103,33 @@ int apply_match_str(struct apply_handle *h, int symbol, int position) {
 }
 
 void apply_create_statemap(struct apply_handle *h, struct fsm *net) {
-    int i, laststate = 0;
+    int i;
     struct fsm_state *fsm;
     fsm = net->states;
-    h->statemap = xxmalloc(sizeof(int)*(net->statecount+1));
+    h->statemap = xxmalloc(sizeof(int)*net->statecount);
     h->marks = xxmalloc(sizeof(int)*net->statecount);
+    h->numlines = xxmalloc(sizeof(int)*net->statecount);
 
     for (i=0; i < net->statecount; i++) {
+	*(h->numlines+i) = 0;  /* Only needed in binary search */
 	*(h->statemap+i) = -1;
 	*(h->marks+i) = 0;
     }
     for (i=0; (fsm+i)->state_no != -1; i++) {
-	laststate = (fsm+i)->state_no;
+	*(h->numlines+(fsm+i)->state_no) = *(h->numlines+(fsm+i)->state_no)+1;
 	if (*(h->statemap+(fsm+i)->state_no) == -1) {
 	    *(h->statemap+(fsm+i)->state_no) = i;
 	}
     }
-    *(h->statemap+laststate+1) = i;
 }
 
 void apply_add_sigma_trie(struct apply_handle *h, int number, char *symbol, int len) {
+
+    /* Create a trie of sigma symbols (prefixes) so we can    */
+    /* quickly (in O(n)) tokenize an arbitrary string into    */
+    /* integer sequences representing symbols, using longest- */
+    /* leftmost factorization.                                */
+
     int i;
     struct sigma_trie *st;
     struct sigma_trie_arrays *sta;
@@ -856,6 +1155,34 @@ void apply_add_sigma_trie(struct apply_handle *h, int number, char *symbol, int 
     }
 }
 
+void apply_mark_flagstates(struct apply_handle *h) {
+    int i;
+    struct fsm_state *fsm;
+
+    /* Create bitarray with those states that have a flag symbol on an arc */
+    /* This is needed to decide whether we can perform a binary search.    */
+
+    if (!h->has_flags || h->flag_lookup == NULL) {
+	return;
+    }
+    if (h->flagstates) {
+	xxfree(h->flagstates);
+    }
+    h->flagstates = xxcalloc(BITNSLOTS(h->last_net->statecount), sizeof(uint8_t));
+    fsm = h->last_net->states;
+    for (i=0; (fsm+i)->state_no != -1; i++) {
+	if ((fsm+i)->target == -1) { 
+	    continue;
+	}
+	if ((h->flag_lookup+(fsm+i)->in)->type) {
+	    BITSET(h->flagstates,(fsm+i)->state_no);
+	}
+	if ((h->flag_lookup+(fsm+i)->out)->type) {
+	    BITSET(h->flagstates,(fsm+i)->state_no);
+	}
+    }
+}
+
 void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
     struct sigma *sig;
     struct fsm_state *fsm;
@@ -874,7 +1201,9 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
     h->has_flags = 0;
     h->flag_list = NULL;
 
-    /* Malloc first array of trie and store trie ptrs to free later */
+    /* Malloc first array of trie and store trie ptrs to be able to free later */
+    /* when apply_clear() is called.                                           */
+
     h->sigma_trie = xxcalloc(256,sizeof(struct sigma_trie));
     h->sigma_trie_arrays = xxmalloc(sizeof(struct sigma_trie_arrays));
     h->sigma_trie_arrays->arr = h->sigma_trie;
@@ -894,13 +1223,14 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
 	    apply_add_sigma_trie(h, sig->number, sig->symbol, (h->sigs+(sig->number))->length);
 	}
     }
-    (h->sigs+EPSILON)->symbol = "0";
-    (h->sigs+EPSILON)->length =  1;
-    (h->sigs+UNKNOWN)->symbol = "?";
-    (h->sigs+UNKNOWN)->length =  1;
-    (h->sigs+IDENTITY)->symbol = "@";
-    (h->sigs+IDENTITY)->length =  1;
-
+    if (maxsigma >= IDENTITY) {
+	(h->sigs+EPSILON)->symbol = "0";
+	(h->sigs+EPSILON)->length =  1;
+	(h->sigs+UNKNOWN)->symbol = "?";
+	(h->sigs+UNKNOWN)->length =  1;
+	(h->sigs+IDENTITY)->symbol = "@";
+	(h->sigs+IDENTITY)->length =  1;
+    }
     if (h->has_flags) {
 
 	h->flag_lookup = xxmalloc(sizeof(struct flag_lookup)*(maxsigma+1));
@@ -916,6 +1246,7 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
 		(h->flag_lookup+sig->number)->value = flag_get_value(sig->symbol);		
 	    }
 	}
+	apply_mark_flagstates(h);
     }
 }
 
@@ -1016,7 +1347,7 @@ int apply_check_flag(struct apply_handle *h, int type, char *name, char *value) 
     }
     h->oldflagvalue = flist->value;
     h->oldflagneg = flist->neg;
-
+    
     if (type == FLAG_UNIFY) {
 	if (flist->value == NULL) {
 	    flist->value = xxstrdup(value);
@@ -1088,7 +1419,7 @@ int apply_check_flag(struct apply_handle *h, int type, char *name, char *value) 
                 }
 		return SUCCEED;
 	    }
-	}       	
+	}
     }
 
     if (type == FLAG_EQUAL) {

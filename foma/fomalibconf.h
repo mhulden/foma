@@ -1,3 +1,20 @@
+/*     Foma: a finite-state toolkit and library.                             */
+/*     Copyright © 2008-2011 Mans Hulden                                     */
+
+/*     This file is part of foma.                                            */
+
+/*     Foma is free software: you can redistribute it and/or modify          */
+/*     it under the terms of the GNU General Public License version 2 as     */
+/*     published by the Free Software Foundation. */
+
+/*     Foma is distributed in the hope that it will be useful,               */
+/*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
+/*     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         */
+/*     GNU General Public License for more details.                          */
+
+/*     You should have received a copy of the GNU General Public License     */
+/*     along with foma.  If not, see <http://www.gnu.org/licenses/>.         */
+
 struct state_array {
     struct fsm_state *transitions;
 };
@@ -101,6 +118,7 @@ struct apply_handle {
     int opos;
     int mode;
     int printcount;
+    int *numlines;
     int *statemap; 
     int *marks;
 
@@ -121,16 +139,22 @@ struct apply_handle {
 
     int binsearch;
     int indexed;
+    int state_has_index;
     int sigma_size;
     int sigmatch_array_size;
     int current_instring_length;
     int has_flags;
+    int obey_flags;
+    int show_flags;
+    int print_space;
+    int print_pairs;
     int apply_stack_ptr;
     int apply_stack_top; 
     int oldflagneg;
-    int outstringtop; 
-    int iterate_old ;
-    int iterator ;
+    int outstringtop;
+    int iterate_old;
+    int iterator;
+    uint8_t *flagstates;
     char *outstring;
     char *instring;
     struct sigs {
@@ -143,7 +167,7 @@ struct apply_handle {
     struct fsm_state *gstates;
     struct sigma *gsigma;
     struct apply_state_index {
-	struct fsm_state *fsmptr;
+	int fsmptr;
 	struct apply_state_index *next;
     } **index_in, **index_out, *iptr;
 
@@ -152,7 +176,7 @@ struct apply_handle {
 	char *value;
 	short neg;
 	struct flag_list *next;	
-    } *flag_list , *flist;
+    } *flag_list;
 
     struct flag_lookup {
 	int type;
@@ -163,6 +187,7 @@ struct apply_handle {
     struct searchstack {
 	int offset;
 	struct apply_state_index *iptr;
+	int state_has_index;
 	int opos;
 	int ipos;
 	int visitmark;
@@ -274,3 +299,4 @@ void *xxcalloc(size_t nmemb, size_t size);
 void *xxrealloc(void *ptr, size_t size);
 void xxfree(void *ptr);
 int next_power_of_two(int v);
+unsigned int round_up_to_power_of_two(unsigned int v);
