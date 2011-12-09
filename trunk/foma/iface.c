@@ -5,7 +5,7 @@
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -21,8 +21,6 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
-
-//#define LLONG_MAX 0x7fffffffffffffffLL/* max value for a long long */
 
 #include "foma.h"
 #include "zlib.h"
@@ -330,8 +328,14 @@ void iface_warranty() {
     printf("%s",warranty);
 }
 
+void iface_apply_set_params(struct apply_handle *h) {
+    apply_set_print_space(h, g_print_space);
+    apply_set_print_pairs(h, g_print_pairs);
+    apply_set_show_flags(h, g_show_flags);
+    apply_set_obey_flags(h, g_obey_flags);
+}
+
 void iface_apply_med(char *word) {
-    int i;
     char *result;
     struct apply_med_handle *amedh;
     struct fsm *net;
@@ -392,7 +396,7 @@ int iface_apply_file(char *infilename, char *outfilename, int direction) {
     }
     net = stack_find_top()->fsm;
     ah = stack_get_ah();
-
+    iface_apply_set_params(ah);
     while ((fgets(inword,LINE_LIMIT,INFILE)) != NULL) {
         if (inword[strlen(inword)-1] == '\n') {
             inword[strlen(inword)-1] = '\0';
@@ -435,6 +439,7 @@ void iface_apply_down(char *word) {
     }
     net = stack_find_top()->fsm;
     ah = stack_get_ah();
+    iface_apply_set_params(ah);
     result = apply_down(ah, word);
     if (result == NULL) {
         printf("???\n");
@@ -462,6 +467,7 @@ void iface_apply_up(char *word) {
 
     ah = stack_get_ah();
     
+    iface_apply_set_params(ah);
     result = apply_up(ah, word);
 
     if (result == NULL) {
@@ -653,6 +659,7 @@ void iface_lower_words(int limit) {
     limit = (limit == -1) ? g_list_limit : limit;
     if (iface_stack_check(1)) {
       ah = stack_get_ah();
+      iface_apply_set_params(ah);
         for (i = limit; i > 0; i--) {
             result = apply_lower_words(ah);
             if (result == NULL)
@@ -779,6 +786,7 @@ void iface_apply_random(char *(*applyer)(), int limit) {
     if (iface_stack_check(1)) {
 	results = xxcalloc(limit, sizeof(struct apply_results));
 	ah = stack_get_ah();
+	iface_apply_set_params(ah);
         for (i = limit; i > 0; i--) {
 	    result = NULL;
             result = applyer(ah);
@@ -966,6 +974,7 @@ void iface_upper_words(int limit) {
     limit = (limit == -1) ? g_list_limit : limit;
     if (iface_stack_check(1)) {
         ah = stack_get_ah();
+	iface_apply_set_params(ah);
         for (i = limit; i > 0; i--) {
             result = apply_upper_words(ah);
             if (result == NULL)
@@ -1028,7 +1037,7 @@ void iface_show_variable(char *name) {
     int i;
     for (i=0; global_vars[i].name != NULL; i++) {
         if (strncmp(name,global_vars[i].name,8) == 0) {
-	    printf("%s = %s\n",global_vars[i].name, ((int)(global_vars[i].ptr)) == 1 ? "ON" : "OFF");
+	    printf("%s = %s\n",global_vars[i].name, *((int *)(global_vars[i].ptr)) == 1 ? "ON" : "OFF");
             return;
         }
     }
@@ -1188,6 +1197,7 @@ void iface_words(int limit) {
     limit = (limit == -1) ? g_list_limit : limit;
     if (iface_stack_check(1)) {
         ah = stack_get_ah();
+	iface_apply_set_params(ah);
         for (i = limit; i > 0; i--) {
             result = apply_words(ah);
             if (result == NULL)
@@ -1484,7 +1494,9 @@ static int view_net(struct fsm *net) {
 
   char tmpstr[255];
   char *dotname;
+#ifndef __APPLE__
   char *pngname;
+#endif  /* __APPLE__ */
 
   dotname = strncpy(tmpstr,tempnam(NULL,"foma"), 250);
   strcat(dotname, ".dot");
