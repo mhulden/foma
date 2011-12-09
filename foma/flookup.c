@@ -96,18 +96,18 @@ void app_print(char *result) {
 	}
     } else {
 	if (echo == 1) {
-	    strncat(serverstring, line, UDP_MAX-udpsize);
+	    strncat(serverstring+udpsize, line, UDP_MAX-udpsize);
 	    udpsize += strlen(line);
-	    strncat(serverstring, separator, UDP_MAX-udpsize);
+	    strncat(serverstring+udpsize, separator, UDP_MAX-udpsize);
 	    udpsize += strlen(separator);
 	}
 	if (result == NULL) {
-	    strncat(serverstring, "?+\n", UDP_MAX-udpsize);
+	    strncat(serverstring+udpsize, "?+\n", UDP_MAX-udpsize);
 	    udpsize += 3;
 	} else {
-	    strncat(serverstring, result, UDP_MAX-udpsize);
+	    strncat(serverstring+udpsize, result, UDP_MAX-udpsize);
 	    udpsize += strlen(result);
-	    strncat(serverstring, "\n", UDP_MAX-udpsize);
+	    strncat(serverstring+udpsize, "\n", UDP_MAX-udpsize);
 	    udpsize++;
 	}
     }
@@ -239,19 +239,17 @@ int main(int argc, char *argv[]) {
     if (mode_server) {
 	server_init();
 	serverstring = xxcalloc(UDP_MAX+1, sizeof(char));
-	//line = xxcalloc(UDP_MAX+1, sizeof(char));
+	line = xxcalloc(UDP_MAX+1, sizeof(char));
 	addrlen = sizeof(clientaddr);
 	for (;;) {
 	    numbytes = recvfrom(listen_sd, line, UDP_MAX, 0,(struct sockaddr *)&clientaddr, &addrlen);
 	    if (numbytes == -1) {
-		perror("recvfrom() failed, aborting.");
+		perror("recvfrom() failed, aborting");
 		break;
 	    }
 	    line[numbytes] = '\0';
 	    line[strcspn(line, "\n\r")] = '\0';
-	    //printf("server received the following: <%s>\n", line);
-	    //printf("from port %d and address %s\n", ntohs(clientaddr.sin_port), inet_ntoa(clientaddr.sin_addr));
-	    //fflush(stdout);
+	    fflush(stdout);
 	    results = 0;
 	    udpsize = 0;
 	    serverstring[0] = '\0';
@@ -260,7 +258,7 @@ int main(int argc, char *argv[]) {
 		app_print(NULL);
 	    }
 	    if (serverstring[0] != '\0') {
-		numbytes = sendto(listen_sd, serverstring, strlen(serverstring), 0, (struct sockaddr *)&clientaddr, sizeof(clientaddr));
+		numbytes = sendto(listen_sd, serverstring, strlen(serverstring), 0, (struct sockaddr *)&clientaddr, addrlen);
 		if (numbytes < 0) {
 		    perror("sendto() failed"); fflush(stdout);
 		}
@@ -360,27 +358,20 @@ void handle_line(char *s) {
 }
 
 void server_init(void) {
-    int sockbufsize = 0;
     unsigned int rcvsize = 262144;
-    int isize = sizeof(int); 
 
     if ((listen_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 	perror("socket() failed");
 	exit(1);
     }
     if (setsockopt(listen_sd, SOL_SOCKET, SO_RCVBUF, (char *) &rcvsize, sizeof(rcvsize)) < 0) {
-	perror("setsockopt() failed");
-	exit(1);
+    	perror("setsockopt() failed");
+    	exit(1);
     }
     if (setsockopt(listen_sd, SOL_SOCKET, SO_SNDBUF, (char *) &rcvsize, sizeof(rcvsize)) < 0) {
-	perror("setsockopt() failed");
-	exit(1);
+    	perror("setsockopt() failed");
+    	exit(1);
     }
-
-    getsockopt(listen_sd, SOL_SOCKET, SO_RCVBUF, &sockbufsize, (void *) &isize);
-    printf("rcvsize is %i\n", sockbufsize); fflush(stdout);
-    getsockopt(listen_sd, SOL_SOCKET, SO_SNDBUF, &sockbufsize, (void *) &isize);
-    printf("sndsize is %i\n", sockbufsize); fflush(stdout);
 
     memset((char *) &serveraddr, 0, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
