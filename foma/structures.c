@@ -416,7 +416,7 @@ int fsm_isidentity(struct fsm *net) {
 
     struct state_array *state_array;
     struct fsm_state *curr_ptr;
-    int i, j, v, vp, num_states, factor, newlength, startfrom;
+    int i, j, v, vp, num_states, factor = 0, newlength, startfrom;
     short int in, out, *newstring;
     struct discrepancy *discrepancy, *currd, *targetd;
 
@@ -639,7 +639,7 @@ struct fsm *fsm_extract_nonidentity(struct fsm *net) {
     struct state_array *state_array;
     struct fsm_state *curr_ptr;
     struct fsm *net2;
-    int i, j, v, vp, num_states, factor, newlength, startfrom, killnum;
+    int i, j, v, vp, num_states, factor = 0, newlength, startfrom, killnum;
     short int in, out, *newstring;
     struct discrepancy *discrepancy, *currd, *targetd;
 

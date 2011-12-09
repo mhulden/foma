@@ -242,7 +242,7 @@ struct fsm *fsm_read_prolog (char *filename) {
     char buf [1024], temp [1024], in [128], out[128], *temp_ptr, *temp_ptr2;
     int arity, source, target, has_net;
     struct fsm *outnet;
-    struct fsm_construct_handle *outh;
+    struct fsm_construct_handle *outh = NULL;
     FILE *prolog_file;
     
     has_net = 0;
@@ -679,7 +679,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     char *new_symbol;
     int i, items, new_symbol_number, laststate, lineint[5], *cm;
     int extras;
-    char last_final;
+    char last_final = '1';
 
     if (io_gets(iobh, buf) == 0) {
         return NULL;

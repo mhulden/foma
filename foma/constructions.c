@@ -1812,7 +1812,7 @@ struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *su
 
 struct fsm *fsm_substitute_symbol(struct fsm *net, char *original, char *substitute) {
     struct fsm_state *fsm;
-    int i,o,s;
+    int i,o,s = EPSILON;
     if (strcmp(original,substitute) == 0)
         return(net);
     if ((o = sigma_find(original, net->sigma)) == -1) {

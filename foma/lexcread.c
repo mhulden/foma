@@ -227,7 +227,7 @@ void lexc_add_network() {
     struct states **slist, *sourcestate, *deststate, *newstate;
     struct statelist *s;
     struct trans *newtrans;
-    int i, j, *sigreplace, signumber, maxstate, *finals, maxsigma, unknown_symbols, first_new_sigma, last_new_sigma, *unk;
+    int i, j, *sigreplace, signumber, maxstate, *finals, maxsigma, unknown_symbols, first_new_sigma, last_new_sigma, *unk = NULL;
 
     unknown_symbols = 0;
     first_new_sigma = last_new_sigma = 0;

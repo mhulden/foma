@@ -568,7 +568,6 @@ void fsm_read_reset(struct fsm_read_handle *handle) {
 }
 
 int fsm_get_next_state_arc(struct fsm_read_handle *handle) {
-    int currstate;
     handle->arcs_cursor++;
     if ((handle->arcs_cursor->state_no != handle->current_state) || (handle->arcs_cursor->target == -1)) {
 	handle->arcs_cursor--;

@@ -224,7 +224,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     struct rewrite_set *ruleset;
     struct fsmrules *rules;
     struct fsmcontexts *contexts, *allcontexts, *newcontext;
-    struct fsm *UnionCP, *RuleCP, *UnionCPI, *Insert, *NoSpecial, *Context, *ContextD, *Result, *Coerce, *CoerceLR, *CoerceLM, *CoerceSM, *thisCoerce, *SigL, *SigR, *Id, *Outside, *EndOutside, *CoerceCenter;
+    struct fsm *UnionCP, *RuleCP, *UnionCPI, *Insert, *NoSpecial, *Context, *ContextD, *Result, *Coerce, *CoerceLR, *CoerceLM, *CoerceSM, *thisCoerce, *SigL, *SigR, *Id, *Outside, *EndOutside, *CoerceCenter = NULL;
     int dir, c, minimal_old, dottedrules, num_parallel_rules;
 
     extern int g_minimal;
