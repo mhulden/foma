@@ -56,13 +56,13 @@ You can also run `flookup` as UDP server.  The behavior is controlled by the `-S
 If you start a server as, say:
 
 {{{
-flookup -S mygrammar.foma &
+flookup -S -A 127.0.0.1 mygrammar.foma &
 }}}
 
 you can verify that it's working with the netcat utility (`nc` on most systems).
 
 {{{
-echo "testword" | nc -w 1 -u localhost 6062
+echo "testword" | nc -w 1 -u 127.0.0.1 6062
 }}}
 
 
