@@ -142,21 +142,17 @@ int main(int argc, char *argv[]) {
 	    if (strcmp(optarg, "f") == 0) {
 		index_flag_states = 1;
 		index_arcs = 1;
-		printf("indexing flags\n");
 	    } else if (strcasestr(optarg, "k") != NULL) {
 		/* k limit */
 		index_mem_limit = 1024*atoi(optarg);
-		printf("max %i", index_mem_limit);
 		index_arcs = 1;
 	    } else if (strcasestr(optarg, "m") != NULL) {
 		/* m limit */
 		index_mem_limit = 1024*1024*atoi(optarg);
-		printf("max %i", index_mem_limit);
 		index_arcs = 1;
 	    } else if (isdigit(*optarg)) {
 		index_arcs = 1;
 		index_cutoff = atoi(optarg);
-		printf("indexing from %i\n", index_cutoff);
 	    }
 	    break;
 	case 's':
