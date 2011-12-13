@@ -1,3 +1,14 @@
+0.9.16alpha (20111213)
+
+- New faster apply code, as well as optional indexing of arcs in flookup
+- adds rewrite rule formalism "transducers with backreferences" (e.g. T -> || L _ R, where T is a transducer)
+- flookup now has option to run as UDP server (-S)
+- Adds low-level functions _marktail(), _addfinalloop(), _addnonfinalloop(), _addsink(), leftrewr(), _flatten().
+- Minor bugfixes in apply code
+- Some rare memory leak fixes throughout
+- Adds functions so that apply_med() can be used through the API
+- Adds functions to API fsm_get_next_state(), fsm_get_next_state_arc()
+
 0.9.15alpha (20111110)
 
 - adds cgflookup utility to facilitate piping with Constraint Grammar parsers
