@@ -66,7 +66,7 @@ install: foma libfoma
 	-@if [ ! -d $(bindir)      ]; then mkdir -p $(bindir); fi
 	cp fomalib.h fomalibconf.h $(includedir);
 	chmod 644 $(includedir)/fomalib.h
-	cp foma $(bindir)
+	cp foma flookup cgflookup $(bindir)
 	cp $(LIBS) $(libdir)
 	cd $(libdir); chmod 755 $(LIBS); \
 	if test -f $(libdir)/$(SHAREDLIB); then rm  $(libdir)/$(SHAREDLIB); fi
