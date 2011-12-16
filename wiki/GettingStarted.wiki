@@ -3,7 +3,7 @@
 
 = Foma =
 
-The foma interface is meant to facilitate the compilation of regular expressions into finite automata and transducers (finite-state machines/FSMs).  Complex machines are normally compiled into FSMs by specifying them through a number of script files containing regular expressions and FSM definitions.  Once FSMs are built with foma, they can be stored in binary or text files and used for other purposes through the foma API, the command-line flookup utility, or other tools.
+The foma interface is meant to facilitate the compilation of regular expressions into finite automata and transducers (finite-state machines/FSMs).  Complex machines are normally compiled into FSMs by specifying them through a number of script files containing regular expressions and FSM definitions.  Once FSMs are built with foma, they can be stored in binary or text files and used for other purposes through the foma [APIExamples API], the command-line [FlookupDocumentation flookup] utility, or other tools.
 
 == Launching foma ==
 
@@ -303,3 +303,79 @@ We can also start up foma and do:
 {{{
 foma[0]: source words.foma
 }}}
+
+
+== Saving networks ==
+
+=== Binary format ===
+
+To be able to use a FSM in e.g. [FlookupDocumentation flookup], it needs to be save in a binary format.  The `save stack` command will store all FSMs on the stack in one file.  For basic usage, only a single FSM should be put in each file.  The [FlookupDocumentation flookup] utility does permit special actions if multiple FSMs are stored in one file, but the simplest course of action is to put one FSM in one file.  For example:
+
+{{{
+foma[0]: regex a b c -> d e f ;
+822 bytes. 5 states, 25 arcs, Cyclic.
+foma[1]: save stack abc.foma
+Writing to file abc.foma.
+}}}
+
+Will store the one transducer on the stack into the file `abc.foma`.  This can now be loaded back into `foma` with 
+
+{{{
+foma[1]: load abc.foma
+822 bytes. 5 states, 25 arcs, Cyclic.
+foma[2]:
+}}}
+
+Or, it can be used externally from the [FlookupDocumentation flookup] utility, as in this simple example:
+
+{{{
+mylinux$ echo "abc" | echo "abc" | flookup -ix abc.foma
+def
+}}}
+
+=== Textual formats ===
+
+The commands `write att filename` and `write prolog filename` both store the top network on the stack in different fairly self-explanatory text-based formats: the `AT&T` format, or the Xerox prolog-format.  Also, `write dot` can be used to generate a `dot` file of the current FSM for use with the `AT&T` GraphViz tools.  This is the same `dot`-layout that the `view`-command uses.
+
+=== Function definitions ===
+
+Foma has some 50 built-in operators and functions (see the regular expression [RegularExpressionReference reference]) for a more complete list).  Apart from the built-in functions, users can define their own operators with the define command.
+
+For example, suppose we needed to calculate the *derivative* of a FSM and realized there is no available operator to do this.  The derivative of a language *L* with respect to a symbol *a* is the remainder of the language after *a* has been consumed.  For example, the derivative of 
+
+{{{
+[f o o | b a r]*
+}}}
+
+with respect to *f* is:
+
+
+{{{
+[o o] [f o o | b a r]*
+}}}
+
+This `derivative`-operator can be defined for subsequent use by the command:
+
+{{{
+define D(L,S) [L .o. S:0 ?*].l;
+}}}
+
+Now, we can use the two-argument `D()`-expression in any regular expressions subsequently authored. For example:
+
+{{{
+regex D([f o o | b a r]*, f);
+}}}
+
+will return a FSM equivalent to `[o o] [f o o | b a r]*`, as per the definition.
+
+These definitions may be overloaded. That is, in the above example, a one-argument version of `D()` could be defined separately which will be kept distinct from the two-argument version.
+
+==== Built-in functions ====
+
+Foma also contains a number of built-in functions that work exactly like defined functions.  These, however, all begin with an underscore.  For example:
+
+{{{
+regex _allfinal(a b c);
+}}}
+
+will produce the automaton representing the language `a b c`, except all its states are marked final.
