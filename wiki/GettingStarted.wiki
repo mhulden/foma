@@ -246,7 +246,7 @@ defined PhonWord: 1.3 kB. 2 states, 38 arcs, Cyclic.
 foma[0]:
 }}}
 
-Here we first defined a set of consonants and vowels, called *C* and *V*, respectively.  Using those definitions, we defined a *Syllable* as any number of *C*s followed by a *V*, followed again by any number of *C*s.  Finally we defined `PhonWord` as one or more *Syllable*s.
+Here we first defined a set of consonants and vowels, called *C* and *V*, respectively.  Using those definitions, we defined a *Syllable* as any number of *C*s followed by a *V*, followed again by any number of *C*s.  Finally we defined `PhonWord` as one or more `Syllables`.
 
 Issuing the `define` command without any regular expression removes the top FSM off the stack and labels it, for example:
 
@@ -262,7 +262,7 @@ defines a FSM called *Words* which is based on the topmost FSM on the stack.
 
 === Examining the defined FSMs ===
 
-The command `print defined` lists all the labeled FSMs currently stored.  After the above *C-V-Syllable-PhonWord* definitions, for example, the command produces the following list:
+The command `print defined` lists all the labeled FSMs currently stored.  After the above `C-V-Syllable-PhonWord` definitions, for example, the command produces the following list:
 
 {{{
 foma[0]: print defined
