@@ -72,7 +72,7 @@ Now, if you start the server, you can easily access the `flookup` result through
 <?php
 $fp  = fsockopen("udp://localhost", 6062, $errno, $errstr, 30);
 fwrite($fp, $myword);
-$response = fread($fp); 
+$response = fread($fp, 1024); 
 fclose($fp);
 print $response;
 ?>
