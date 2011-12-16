@@ -188,7 +188,7 @@ regex ?* a ?* ;
 
 refers to any word that contains at least one `a`-symbol somewhere.  This regular expression compiles into the following FSM:
 
-[http://foma.googlecode.com/svn/wiki/gettingstarted-atsign.png http://foma.googlecode.com/svn/wiki/gettingstarted-atsign.png]
+[http://foma.googlecode.com/svn/wiki/gettingstarted-at-sign.png http://foma.googlecode.com/svn/wiki/gettingstarted-at-sign.png]
 
 
 == The define command ==
