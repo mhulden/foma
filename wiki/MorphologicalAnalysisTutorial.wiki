@@ -687,7 +687,7 @@ un+VERB+able
 un+VERB+ables
 }}}
 
-To address the two wordforms that shouldn't be allowed (`*`*undrink( and `*`*unpay*) the first problem is that, somehow, the `Vinf`-lexicon should be aware if the `UN+` prefix had been selected from the prefix lexicon and in that case force the selection of `able` to disallow `*undrink`, for example. This is tricky to manage in a clean way in the continuation-class formalism of _lexc_.  The second problem is that we don't want this restriction to apply in the case of `doable`.  Both of these restriction can be accomplished by the use of flag diacritic symbols placed into the grammar which gives a more fine-grained control over co-occurrence.
+To address the two wordforms that shouldn't be allowed (`*`*undrink* and `*`*unpay*) the first problem is that, somehow, the `Vinf`-lexicon should be aware if the `UN+` prefix had been selected from the prefix lexicon and in that case force the selection of `able` to disallow `*undrink`, for example. This is tricky to manage in a clean way in the continuation-class formalism of _lexc_.  The second problem is that we don't want this restriction to apply in the case of `doable`.  Both of these restriction can be accomplished by the use of flag diacritic symbols placed into the grammar which gives a more fine-grained control over co-occurrence.
 
 === Flag diacritics to control co-occurrence ===
 
