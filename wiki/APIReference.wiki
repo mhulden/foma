@@ -321,3 +321,115 @@ Regular expression equivalent: `_lm(X)
 == `struct fsm *fsm_copy(struct fsm *net)` ==
 
 Returns a copy of the argument FSM.
+
+== Transducer/automaton application ==
+
+Normally, when applying words through a transducer, `apply_init()` is called first, which returns a handle.  Subsequently, `apply_down()` or `apply_up()` is called with the handle and the word as arguments.  These functions are iterators and will produce multiple yields if the word argument is `NULL` on subsequent calls.  When the input word no longer yields any outputs, `NULL` is returned.  See FAQ for examples.
+
+
+== `struct apply_handle *apply_init(struct fsm *net)` ==
+
+Returns a handle which needs to be passed to the apply functions.
+
+== `void apply_clear(struct apply_handle *h)` ==
+
+Frees memory associated with a handle.
+
+
+== `char *apply_down(struct apply_handle *h, char *word)` ==
+
+Returns output words from a transducer with the input `*word`. `NULL` is returned when no more outputs are possible.  Call with `*word` set to the input word the first time, and `NULL` to retrieve subsequent outputs (if there are any).
+
+== `char *apply_up(struct apply_handle *h, char *word)` ==
+
+Inverse of `apply_down()`.
+
+== `char *apply_upper_words(struct apply_handle *h)` ==
+
+Returns all the words on the input side of the transducer (needs to be called once for every word). Returns `NULL` after the last word.
+
+== `char *apply_lower_words(struct apply_handle *h)` ==
+
+Returns all the words on the output side of the transducer (needs to be called once for every word). Returns `NULL` after the last word.
+
+== `char *apply_words(struct apply_handle *h)` ==
+
+
+Returns all the words of the transducer (needs to be called once for every word). Returns `NULL` after the last word.
+
+== `char *apply_random_lower(struct apply_handle *h)` ==
+
+Returns a random word from the output side.
+
+== `char *apply_random_upper(struct apply_handle *h)` ==
+
+Returns a random word from the input side.
+
+== `char *apply_random_words(struct apply_handle *h)` ==
+
+Returns a random "pair" from the transducer.
+
+== `void apply_reset_enumerator(struct apply_handle *h)` ==
+
+Resets an enumerator (apply random/words) to start from the beginning.
+
+== `void apply_index(struct apply_handle *h, int inout, int densitycutoff, int mem_limit, int flags_only)` ==
+
+Indexes a transducer for faster lookup.  Set inout to `APPLY_INDEX_INPUT` or `APPLY_INDEX_OUTPUT`. `densitycutoff` controls the minimum number of arcs that a state needs to have to be indexed.  `mem_limit` sets a cap of the maximum memory usage of the index in bytes (set to e.g. `INT_MAX` if you don't care).  `flags_only` is an option that when permits indexing of only those states that have flag diacritics.  
+
+== Indexing vs. binary search ==
+
+In general, indexing is not worthwhile unless a transducer has quite a few arcs for a state.  Normally, a minimum of roughly 1,000 arcs are needed for indexed search to be significantly faster than binary search (which has the advantage of consuming no extra memory in the runtime).  Note that binary search is always used if arcs are sorted in the right direction (call `fsm_sort_arcs(struct fsm *net, 1)` to sort the input arcs, and `fsm_sort_arcs(struct fsm *net, 2)` to sort the output arcs before calling `apply_init()`.
+
+== `void apply_set_show_flags(struct apply_handle *h, int value)` ==
+
+Controls whether flags are shown in the output. Default is no.
+
+== `void apply_set_obey_flags(struct apply_handle *h, int value)` ==
+
+Controls whether flags are obeyed. Default is yes.
+
+== Minimum edit distance functions ==
+
+The minimum edit distance functions attempt to find the closest approximate match to a given input word from an automaton using an `A*`-search.  Transducers are not supported.  Also, automata need to have single-symbol alphabets (i.e. every transition must be a single utf8 symbol).  The functionality is similar to the `apply_up()` and `apply_down()` functions: first, an initialization is performed by calling `apply_med_init()` which returns a handle, which is passed to `apply_med()`.  This function is an iterator which keeps returning matches in order of cost (lowest to highest).  After each match is returned `apply_get_cost()` can be called to retrieve the MED cost of the last match returned.
+
+== `struct apply_med_handle *apply_med_init(struct fsm *net)` ==
+
+Initialized structures for MED functions.  An automaton is supplied.
+
+== `char *apply_med(struct apply_med_handle *medh, char *word)` ==
+
+Finds the closest approximate match to `* word` in the automaton previously initialized to the handle `* medh`.
+
+== `void apply_med_set_heap_max(struct apply_med_handle *medh, int max)` ==
+
+Caps the maximum number of bytes `apply_med()` can use for its heap when searching. Default is 256kB.
+
+== `void apply_med_set_med_limit(struct apply_med_handle *medh, int max)` == 
+
+Sets the maximum number of words `apply_med()` will return. Default is 4.
+
+== `void apply_med_set_med_cutoff(struct apply_med_handle *medh, int max)` ==
+
+Caps the maximum distance that `apply_med()` will search for matches. Default is 15.
+
+== `int apply_med_get_cost(struct apply_med_handle *medh)` == 
+
+Returns the MED cost of the last approximate match.
+
+== `void apply_med_set_align_symbol(struct apply_med_handle *medh, char *align)` ==
+
+Sets the alignment symbol that represents insertions and deletions.  This needs to be set if one wants to retrieve the alignment as well. Default is no padding.  If the symbol is set to, e.g. `-`, approximate matches will return string pairs like:
+
+{{{
+instring:  c-t
+outstring: cat
+}}}
+
+== `char *apply_med_get_instring(struct apply_med_handle *medh)` ==
+
+Retrieves the input string for the last call to `apply_med()`.  Note that this string might not be same string as was provided as input to `apply_med()` if an alignment symbol is specified by `apply_med_set_align_symbol()`.
+
+== `char *apply_med_get_outstring(struct apply_med_handle *medh)` ==
+
+Retrieves the output string for the last call to `apply_med()`.  This is equal to the string returned by `apply_med()`.
