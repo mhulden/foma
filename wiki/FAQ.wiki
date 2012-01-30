@@ -43,9 +43,10 @@ recode latin1..utf8 myoldlexcgrammar.lexc
 
 You can 
 
- * Pipe text through the _flookup_ utility, or run a bidirectional pipe between it and some other application
- * Use the foma C API to load/apply transducers 
- * Roll you own automaton applyer after exportin the foma transducers in a text format, the prolog format (`write prolog`) or the AT&T format (`write att`).
+ * Pipe text through the _flookup_ utility, or run a bidirectional pipe between it and some other application (C/C++/Perl/PHP/...)
+ * Use the foma C API to load/apply transducers (C/C++)
+ * Javascript/mobile devices: use the js runtime
+ * Roll your own automaton applyer after exportin the foma transducers in a text format, the prolog format (`write prolog`) or the AT&T format (`write att`).
 
 ==== Using flookup on its own ====
 
@@ -123,6 +124,29 @@ or, to include the foma library statically
 {{{
 gcc -o fomaread fomaread.c /usr/local/lib/libfoma.a -lz
 }}}
+
+==== The Javascript runtime ====
+
+
+  * Convert the foma file to a javascript array (`foma2js.perl`).
+  * Include `foma_apply_down.js` and the array file in your code
+
+Example:
+
+{{{
+<script type="text/javascript" src="mynet.js"></script>
+<script type="text/javascript" src="foma_apply_down.js"></script>
+...
+<script type="text/javascript">
+...
+// foma_apply_down returns an array with all the outputs
+// for the input inputString
+var returnArray = foma_apply_down(myNet, inputString);
+...
+</script>
+
+}}}
+
 
 ==== Rolling your own ====
 
