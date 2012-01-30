@@ -1239,7 +1239,7 @@ void iface_write_prolog(char *filename) {
 
 void iface_zero_plus() {
     if (iface_stack_check(1))
-        stack_add(fsm_topsort(fsm_minimize(fsm_kleene_plus(stack_pop()))));
+        stack_add(fsm_topsort(fsm_minimize(fsm_kleene_star(stack_pop()))));
 }
 
 static char *sigptr(struct sigma *sigma, int number) {
