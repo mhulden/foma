@@ -101,6 +101,42 @@ Naturally, if we want to retain the nuclei as marked after syllabifying, there i
 
 The above principles can be used to model a variety of complications in the syllabification task that may include: interaction of morpheme boundaries and syllable boundaries; interaction of stress and syllables (see e.g. [#References Hammond, 2006]); ambisyllabicity `[`the idea that a segment may belong to more than one syllable`]` (see [#References Kahn, 1976]). [#References Hulden(2006)] contains more details of how to model these phenomena in general with finite-state machines.
 
+== Post-editing of transducers ==
+
+Sometimes it is necessary to perform surgical tricks to already existing transducers. One common problem is to remove a certain set of mappings modeled by some transducer.  One commonly recurring theme is the problem of removing words that are shorter/longer/have more symbols X than some other set of words. Here is a concrete example, using a solution that is applicable to this type of problem.
+
+Consider a morpheme identifier transducer that maps words to their lemmas and prefixes/suffixes based on a dictionary and a grammar. Such a morpheme identifier could perhaps, given an input word `deconstruction`, provide the output `de+construct+ion` (since `construct` is a verb, and the other parts are known suffixes), or, alternatively, `deconstruct+ion` (since `deconstruct` is also a known word in our dictionary).  We might like to alter such a transducer to _only_ return `deconstruct+ion`, using the reasonable argument that if there exists a longer stand-alone word in our dictionary, it might be better to use that instead of overanalyzing the word.  The same goes for various analyses: we'd rather not analyze `incorporate` as `in+corporate`, and could avoid doing so by choosing the longest possible analysis for the stem whenever possible.  Here's a toy analyzer that does the above overgeneration, mapping those two words to all their possible analyses:
+
+{{{
+define M [{de} (0:"+") {construct} 0:"+" {ion}] | [ {in} (0:"+") {corporate} ] ;
+}}}
+
+On to the removal of extraneous analyses; one way to remove the superfluous analyses is to, starting from the original transducer `M`, first create a transducer `M2` that contains all the mappings of `M`, except every word on the output side contains _at least_ one more `+`-symbol than the original transducer `M`.  See (1) and (2) of the following figure.  Such a transducer `M2` can be produced easily by composing `M` with a simple `+`-adding transducer:
+
+{{{
+define M2 M .o. [?* 0:"+" ?*]+;
+}}}
+
+[http://foma.googlecode.com/svn/wiki/xyz.png http://foma.googlecode.com/svn/wiki/xyz.png]
+
+
+Now, we can simply calculate `M - M2` which removes from M the mappings where there is an alternative output for the same input with fewer `+`-symbols:
+
+{{{
+foma[1]: regex M - M2;
+1001 bytes. 26 states, 26 arcs, 2 paths.
+
+foma[13]: down
+apply down> deconstruction
+deconstruct+ion
+apply down> incorporate
+incorporate
+apply down>
+}}}
+
+The above trick comes with a caveat: since we are subtracting transducers, we are operating under the assumption that we _know_ the alignment of the input-output symbols, and that an output-side `+` is always aligned with `0` on the input side.  Normally, this would be the case, but if the grammar were designed otherwise, we could not count on the subtraction working correctly.  Another caveat is that if the transducer `M` has various alternative mappings that are not aligned, say `WXYZ` could be mapped to `W+XYZ` or `WX+Y+Z`, adding a `+` to the output side of `W+XYZ` could never match the output `WX+Y+Z`, and so it would not be removed by the subtraction operation, even though it has more `+`-symbols in it.
+
+
 == The Soundex algorithm ==
 
 The following is an implementation of the Soundex algorithm in `foma`. Its purpose is to map phonetically similar names to the same letter+number sequence. See for example [http://www.archives.gov/research/census/soundex.html The National Archives] for details.
