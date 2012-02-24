@@ -123,6 +123,8 @@ define M2 M .o. [?* 0:"+" ?*]+;
 Now, we can simply calculate `M - M2` which removes from M the mappings where there is an alternative output for the same input with fewer `+`-symbols:
 
 {{{
+foma[0]: regex M;
+1021 bytes. 28 states, 30 arcs, 4 paths.
 foma[1]: regex M - M2;
 1001 bytes. 26 states, 26 arcs, 2 paths.
 
