@@ -348,7 +348,7 @@ char *apply_med(struct apply_med_handle *medh, char *word) {
             h = calculate_h(medh, medh->intword, medh->curr_pos, medh->curr_ptr->target);
 
             if ((medh->curr_pos == medh->utf8len) && (medh->curr_ptr->final_state == 0) && (h == 0)) {
-                h = 1;
+		// h = 1;
             }
 
             if (g+h <= medh->med_cutoff) {
