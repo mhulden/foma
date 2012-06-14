@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -135,7 +135,8 @@ struct global_help {
     {"print cmatrix","prints the confusion matrix associated with the top network in tabular format",""},
     {"print defined","prints defined symbols and functions",""},
     {"print dot (>filename)","prints top FSM in Graphviz dot format",""},
-    {"print lower-words","prints words on the lower-side of top FSM",""},
+    {"print lower-words","prints words on the lower side of top FSM",""},
+    {"print lower-words > filename","prints words on the lower side of top FSM to file",""},
     {"print name","prints the name of the top FSM","" },
     {"print net","prints all information about top FSM","Short form: net\n" },
     {"print random-lower","prints random words from lower side","Short form: random-lower\n" },
@@ -145,6 +146,10 @@ struct global_help {
     {"print size","prints size information about top FSM","Short form: size\n"},
     {"print shortest-string","prints the shortest string of the top FSM","Short form: pss\n"},
     {"print shortest-string-size","prints length of shortest string","Short form: psz\n"},
+    {"print upper-words","prints words on the upper side of top FSM","Short form: upper-words"},
+    {"print upper-words > filename","prints words on the upper side of top FSM to file","Short form:upper-words"},
+    {"print words","prints words of top FSM","Short form: words"},
+    {"print words > filename","prints words of top FSM to file","Short form: words"},
     {"prune net","makes top network coaccessible",""},
     {"push (defined) <name>","adds a defined FSM to top of stack",""},
     {"quit","exit foma",""},
@@ -338,11 +343,9 @@ void iface_apply_set_params(struct apply_handle *h) {
 void iface_apply_med(char *word) {
     char *result;
     struct apply_med_handle *amedh;
-    struct fsm *net;
     if (!iface_stack_check(1)) {
         return;
     }
-    net = stack_find_top()->fsm;
     amedh = stack_get_med_ah();
 
     apply_med_set_heap_max(amedh,4194304+1);
@@ -367,7 +370,6 @@ void iface_apply_med(char *word) {
 
 int iface_apply_file(char *infilename, char *outfilename, int direction) {
     char *result, inword[LINE_LIMIT];
-    struct fsm *net;
     struct apply_handle *ah;
     FILE *OUTFILE, *INFILE;
 
@@ -394,7 +396,6 @@ int iface_apply_file(char *infilename, char *outfilename, int direction) {
             return 1;
         }
     }
-    net = stack_find_top()->fsm;
     ah = stack_get_ah();
     iface_apply_set_params(ah);
     while ((fgets(inword,LINE_LIMIT,INFILE)) != NULL) {
@@ -433,11 +434,9 @@ void iface_apply_down(char *word) {
     int i;
     char *result;
     struct apply_handle *ah;
-    struct fsm *net;
     if (!iface_stack_check(1)) {
         return;
     }
-    net = stack_find_top()->fsm;
     ah = stack_get_ah();
     iface_apply_set_params(ah);
     result = apply_down(ah, word);
@@ -458,13 +457,10 @@ void iface_apply_down(char *word) {
 void iface_apply_up(char *word) {
     int i;
     char *result;
-    struct fsm *net;
     struct apply_handle *ah; 
     if (!iface_stack_check(1)) {
         return;
     }
-    net = stack_find_top()->fsm;
-
     ah = stack_get_ah();
     
     iface_apply_set_params(ah);
@@ -1188,6 +1184,42 @@ void iface_upper_side() {
 void iface_view() {
     if (iface_stack_check(1))
         view_net(stack_find_top()->fsm);
+}
+
+void iface_words_file(char *filename, int type) {
+    /* type 0 (words), 1 (upper-words), 2 (lower-words) */
+    FILE *outfile;
+    char *result;
+    static char *(*applyer)() = &apply_words;
+    struct apply_handle *ah;
+    int i;
+    if (type == 1) {
+	applyer = &apply_upper_words;
+    }
+    if (type == 2) {
+	applyer = &apply_lower_words;
+    }
+    if (iface_stack_check(1)) {
+	if (stack_find_top()->fsm->pathcount == PATHCOUNT_CYCLIC) {
+	    printf("FSM is cyclic: can't write all words to file.\n");
+	    return;
+	}
+	printf("Writing to %s.\n",filename);
+	if ((outfile = fopen(filename, "w")) == NULL) {
+	    perror("Error opening file");
+	    return;
+	}
+        ah = stack_get_ah();
+	iface_apply_set_params(ah);
+        for (;;) {
+            result = applyer(ah);
+            if (result == NULL)
+                break;
+            fprintf(outfile,"%s\n",result);
+        }
+        apply_reset_enumerator(ah);
+	fclose(outfile);
+    }   
 }
 
 void iface_words(int limit) {

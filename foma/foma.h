@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -178,6 +178,7 @@ void iface_upper_side(void);
 void iface_view(void);
 void iface_warranty(void);
 void iface_words(int limit);
+void iface_words_file(char *filename, int type);
 int iface_write_att(char *filename);
 void iface_write_prolog(char *filename);
 void iface_zero_plus(void);
