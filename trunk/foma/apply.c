@@ -553,7 +553,7 @@ int apply_binarysearch(struct apply_handle *h) {
 	return 0;
     }
     seeksym = (h->sigmatch_array+h->ipos)->signumber;
-    if (seeksym == nextsym)
+    if (seeksym == nextsym || (nextsym == UNKNOWN && seeksym == IDENTITY))
 	return 1;
 
     thisstate = (h->gstates+thisptr)->state_no;
