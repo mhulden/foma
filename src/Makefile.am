@@ -31,8 +31,8 @@ libfoma_la_SOURCES = apply.c \
 					 dynarray.c \
 					 extract.c \
 					 flags.c \
-					 io.c \
 					 int_stack.c \
+					 io.c \
 					 lex.cmatrix.c \
 					 lex.lexc.c \
 					 lex.yy.c \
@@ -51,7 +51,7 @@ libfoma_la_SOURCES = apply.c \
 					 trie.c \
 					 utf8.c
 
-foma_SOURCES = foma.c foma.h stack.c iface.c lex.interface.c
+foma_SOURCES = foma.c foma.h iface.c lex.interface.c stack.c
 
 flookup_SOURCES = flookup.c
 
