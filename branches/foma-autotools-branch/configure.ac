@@ -48,3 +48,11 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile])
 
 AC_OUTPUT
+
+# Print a summary at the end:
+cat <<EOF
+./configure ready. To build, test and install:
+    make
+    make check
+    [sudo] make install
+EOF
