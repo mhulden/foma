@@ -366,7 +366,7 @@ network11: NET { $$ = $1;}
 sub1: SUBSTITUTE LBRACKET network COMMA { $$ = $3; substituting = 1;                      }
 sub2: SUBVAL COMMA SUBVAL RBRACKET      { subval1 = $2; subval2 = $4; }
 
-network12: fend    { $$ = $1 } |
+network12: fend    { $$ = $1; } |
          ISIDENTITY   network RPAREN    { $$ = fsm_boolean(fsm_isidentity($2));   } |
          ISFUNCTIONAL network RPAREN    { $$ = fsm_boolean(fsm_isfunctional($2)); } |
          ISUNAMBIGUOUS network RPAREN   { $$ = fsm_boolean(fsm_isunambiguous($2)); } |
