@@ -1,20 +1,19 @@
-VERSION = 0.9.16
+VERSION = $(PACKAGE_VERSION)
 
 # Local variables:
-RANLIB = ranlib
+# RANLIB = ranlib
 YACC = bison -d -t -v
 LEX = flex -8
 LEXCLEX = flex -8 --prefix=lexc
 LEXIFACE = flex -8 --prefix=interface
 LEXCMATRIX = flex -8 --prefix=cmatrix
-RM = /bin/rm -f
 
 # Linker flags:
 AM_LDFLAGS = -lreadline -lz -ltermcap
 AM_CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
 AM_CPPFLAGS = -I${top_srcdir}/src
 
-FLOOKUPLDFLAGS = libfoma.a -lz
+# FLOOKUPLDFLAGS = libfoma.a -lz
 
 foma_LDADD = $(top_builddir)/src/libfoma.la
 
