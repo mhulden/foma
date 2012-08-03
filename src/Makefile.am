@@ -1,5 +1,6 @@
 VERSION = 0.9.16
-CC = gcc
+
+# Local variables:
 RANLIB = ranlib
 YACC = bison -d -t -v
 LEX = flex -8
@@ -7,56 +8,108 @@ LEXCLEX = flex -8 --prefix=lexc
 LEXIFACE = flex -8 --prefix=interface
 LEXCMATRIX = flex -8 --prefix=cmatrix
 RM = /bin/rm -f
-LDFLAGS = -lreadline -lz -ltermcap
+
+# Linker flags:
+AM_LDFLAGS = -lreadline -lz -ltermcap
+AM_CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
+AM_CPPFLAGS = -I${top_srcdir}/src
+
 FLOOKUPLDFLAGS = libfoma.a -lz
-CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
-FOMAOBJS = foma.o stack.o iface.o lex.interface.o
-LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.tab.o
 
-all: libfoma foma flookup cgflookup
+foma_LDADD = $(top_builddir)/src/libfoma.la
 
-foma: $(FOMAOBJS) $(LIBOBJS)
-	$(CC) $(CFLAGS) $(FOMAOBJS) $(LIBOBJS) $(LDFLAGS) -o $@
+# Main targets
+lib_LTLIBRARIES = libfoma.la
+bin_PROGRAMS = foma flookup cgflookup
 
-flookup: flookup.o $(LIBOBJS)
-	$(CC) $(CFLAGS) flookup.o $(FLOOKUPLDFLAGS) -o $@
+# And their source files:
+libfoma_la_SOURCES = apply.c \
+					 coaccessible.c \
+					 constructions.c \
+					 define.c \
+					 determinize.c \
+					 dynarray.c \
+					 extract.c \
+					 flags.c \
+					 io.c \
+					 int_stack.c \
+					 lex.cmatrix.c \
+					 lex.lexc.c \
+					 lex.yy.c \
+					 lexcread.c \
+					 mem.c \
+					 minimize.c \
+					 regex.tab.c \
+					 regex.tab.h \
+					 reverse.c \
+					 rewrite.c \
+					 sigma.c \
+					 spelling.c \
+					 stringhash.c \
+					 structures.c \
+					 topsort.c \
+					 trie.c \
+					 utf8.c
 
-cgflookup: cgflookup.o $(LIBOBJS)
-	$(CC) $(CFLAGS) cgflookup.o $(FLOOKUPLDFLAGS) -o $@
+foma_SOURCES = foma.c foma.h stack.c iface.c lex.interface.c
 
-STATICLIB = libfoma.a
+flookup_SOURCES = flookup.c
 
-UNAME := $(shell uname)
+cgflookup_SOURCES = cgflookup.c
 
-ifeq ($(UNAME), Darwin)
-SHAREDLIB = libfoma.dylib
-SHAREDLIBV = libfoma.dylib.$(VERSION)
-SHAREDLIBM = libfoma.dylib.0
-AR = libtool
-ARFLAGS = -static -o
-DFLAG = -dylib_install_name
-else 
-SHAREDLIB = libfoma.so
-SHAREDLIBV = libfoma.so.$(VERSION)
-SHAREDLIBM = libfoma.so.0
-AR = ar
-ARFLAGS = cru
-DFLAG = -soname
-endif
+# Do we need this one?
+BUILT_SOURCES = regex.tab.h
 
-LIBS = $(SHAREDLIBV) $(STATICLIB)
-
-libfoma: $(SHAREDLIBV)
-
-$(SHAREDLIBV): $(LIBOBJS)
-	$(AR) $(ARFLAGS) $(STATICLIB) $(LIBOBJS)
-	$(RANLIB) $(STATICLIB)
-	$(CC) $(CFLAGS) -shared -Wl,$(DFLAG),$(SHAREDLIBM) -o $(SHAREDLIBV) $(LIBOBJS) $(LDFLAGS)
-
-$(OBJS): foma.h
-
-.c.o:
-	$(CC) $(CFLAGS) -c $< -o $@
+# Old code that should be cleaned away, but may be needed for reference for
+# a while:
+#
+# FOMAOBJS = foma.o stack.o iface.o lex.interface.o
+# LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.tab.o
+# 
+# all: libfoma foma flookup cgflookup
+# 
+# foma: $(FOMAOBJS) $(LIBOBJS)
+# 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+# 
+# flookup: flookup.o $(LIBOBJS)
+# 	$(CC) $(CFLAGS) $< $(FLOOKUPLDFLAGS) -o $@
+# 
+# cgflookup: cgflookup.o $(LIBOBJS)
+# 	$(CC) $(CFLAGS) $< $(FLOOKUPLDFLAGS) -o $@
+# 
+# STATICLIB = libfoma.a
+# 
+# UNAME = $(shell uname)
+# 
+# ifeq ($(UNAME), Darwin)
+# SHAREDLIB = libfoma.dylib
+# SHAREDLIBV = libfoma.dylib.$(VERSION)
+# SHAREDLIBM = libfoma.dylib.0
+# AR = libtool
+# ARFLAGS = -static -o
+# DFLAG = -dylib_install_name
+# else 
+# SHAREDLIB = libfoma.so
+# SHAREDLIBV = libfoma.so.$(VERSION)
+# SHAREDLIBM = libfoma.so.0
+# AR = ar
+# ARFLAGS = cru
+# DFLAG = -soname
+# endif
+# 
+# LIBS = $(SHAREDLIBV) $(STATICLIB)
+# 
+# libfoma: $(SHAREDLIBV)
+# 
+# $(SHAREDLIBV): $(LIBOBJS)
+# 	$(AR) $(ARFLAGS) $(STATICLIB) $(LIBOBJS)
+# 	$(RANLIB) $(STATICLIB)
+# 	$(CC) $(CFLAGS) -shared -Wl,$(DFLAG),$(SHAREDLIBM) -o $(SHAREDLIBV) $(LIBOBJS) $(LDFLAGS)
+# 
+# $(OBJS): foma.h
+#
+#.c.o:
+#	$(CC) $(CFLAGS) -c $< -o $@
 
 lex.yy.c: regex.l regex.tab.h
 	$(LEX) regex.l
