@@ -1,9 +1,3 @@
-prefix = /usr/local
-exec_prefix = $(prefix)
-libdir = $(exec_prefix)/lib
-bindir = $(exec_prefix)/bin
-includedir = $(prefix)/include
-
 VERSION = 0.9.16
 CC = gcc
 RANLIB = ranlib
@@ -59,22 +53,6 @@ $(SHAREDLIBV): $(LIBOBJS)
 	$(RANLIB) $(STATICLIB)
 	$(CC) $(CFLAGS) -shared -Wl,$(DFLAG),$(SHAREDLIBM) -o $(SHAREDLIBV) $(LIBOBJS) $(LDFLAGS)
 
-install: foma libfoma
-	-@if [ ! -d $(exec_prefix) ]; then mkdir -p $(exec_prefix); fi
-	-@if [ ! -d $(includedir)  ]; then mkdir -p $(includedir); fi
-	-@if [ ! -d $(libdir)      ]; then mkdir -p $(libdir); fi
-	-@if [ ! -d $(bindir)      ]; then mkdir -p $(bindir); fi
-	cp fomalib.h fomalibconf.h $(includedir);
-	chmod 644 $(includedir)/fomalib.h
-	cp foma flookup cgflookup $(bindir)
-	cp $(LIBS) $(libdir)
-	cd $(libdir); chmod 755 $(LIBS); \
-	if test -f $(libdir)/$(SHAREDLIB); then rm  $(libdir)/$(SHAREDLIB); fi
-	if test -f $(libdir)/$(SHAREDLIBM); then rm  $(libdir)/$(SHAREDLIBM); fi
-	cd $(libdir); ln -s $(SHAREDLIBV) $(SHAREDLIB); cd $(libdir);	\
-	ln -s $(SHAREDLIBV) $(SHAREDLIBM); (ldconfig || true)		\
-	>/dev/null 2>&1; \
-
 $(OBJS): foma.h
 
 .c.o:
@@ -95,5 +73,5 @@ lex.cmatrix.c: cmatrix.l
 regex.tab.c regex.tab.h: regex.y
 	$(YACC) $<
 
-clean:
-	$(RM) foma flookup cgflookup $(FOMAOBJS) $(LIBOBJS) flookup.o cgflookup.o regex.tab.h regex.tab.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a
+clean-local:
+	rm -f *.tab.* *.output lex.*
