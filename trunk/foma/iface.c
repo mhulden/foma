@@ -1192,7 +1192,7 @@ void iface_words_file(char *filename, int type) {
     char *result;
     static char *(*applyer)() = &apply_words;
     struct apply_handle *ah;
-    int i;
+
     if (type == 1) {
 	applyer = &apply_upper_words;
     }
