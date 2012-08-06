@@ -59,12 +59,12 @@ struct T_memo {
     unsigned int set_offset;
 };
 
-struct trans_list {
+extern struct trans_list {
     int inout;
     int target;
 } *trans_list;
 
-struct trans_array {
+extern struct trans_array {
     struct trans_list *transitions;
     unsigned int size;
     unsigned int tail;
