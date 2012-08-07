@@ -51,9 +51,12 @@ extern int promptmode;
 extern int apply_direction;
 extern int g_list_limit;
 
+// The following three lines cause compilation problems with autotools
+// - the symbols are not visible for the linker:
 extern int my_yyparse(char *my_string, int lineno);
 extern void my_cmatrixparse(struct fsm *net, char *my_string);
 extern struct fsm *current_parse;
+
 extern struct fsm *fsm_lexc_parse_string(char *string);
 extern int interfacelex();
 extern struct fsm *current_parse;
