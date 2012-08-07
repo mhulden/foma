@@ -25,6 +25,8 @@
 #include "foma.h"
 #include "zlib.h"
 
+// The following lines cause compilation problems with autotools
+// - the symbols are not visible for the linker:
 extern char *g_att_epsilon;
 extern int g_compose_tristate;
 extern int g_flag_is_epsilon;
@@ -45,6 +47,7 @@ extern int g_recursive_define;
 extern int g_show_flags;
 extern int g_sort_arcs;
 extern int g_verbose;
+// End of problematic lines
 
 extern int foma_net_print(struct fsm *net, gzFile *outfile);
 
