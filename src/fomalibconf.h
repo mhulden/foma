@@ -262,7 +262,7 @@ FEXPORT struct sigma *sigma_remove_num(int num, struct sigma *sigma);
 int sigma_find (char *symbol, struct sigma *sigma);
 int sigma_find_number (int number, struct sigma *sigma);
 FEXPORT char *sigma_string(int number, struct sigma *sigma);
-int sigma_sort (struct fsm *net);
+FEXPORT int sigma_sort (struct fsm *net);
 void sigma_cleanup (struct fsm *net, int force);
 FEXPORT struct sigma *sigma_create ();
 int sigma_size(struct sigma *sigma);
@@ -275,12 +275,12 @@ void xprintf(char *string);
 /* UTF8 */
 unsigned char *utf8code16tostr(char *str);
 int utf8skip(char *str);
-int utf8strlen(char *str);
+FEXPORT int utf8strlen(char *str);
 int ishexstr(char *str);
 void decode_quoted(char *s);
-void dequote_string(char *s);
-char *remove_trailing(char *s, char c);
-char *escape_string(char *string, char chr);
+FEXPORT void dequote_string(char *s);
+FEXPORT char *remove_trailing(char *s, char c);
+FEXPORT char *escape_string(char *string, char chr);
 
 /* Flag-related */
 int flag_check(char *sm);
@@ -289,14 +289,14 @@ char *flag_get_value(char *string);
 int flag_get_type(char *string);
 
 /* Misc */
-char *trim(char *string);
-void strip_newline(char *s);
+FEXPORT char *trim(char *string);
+FEXPORT void strip_newline(char *s);
 char *streqrep(char *s, char *oldstring, char *newstring);
 char *xxstrndup(const char *s, size_t n);
-char *xxstrdup(const char *s);
+FEXPORT char *xxstrdup(const char *s);
 FEXPORT void *xxmalloc(size_t size);
-void *xxcalloc(size_t nmemb, size_t size);
+FEXPORT void *xxcalloc(size_t nmemb, size_t size);
 void *xxrealloc(void *ptr, size_t size);
-void xxfree(void *ptr);
+FEXPORT void xxfree(void *ptr);
 int next_power_of_two(int v);
 unsigned int round_up_to_power_of_two(unsigned int v);
