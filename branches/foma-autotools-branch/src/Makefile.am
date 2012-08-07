@@ -9,13 +9,13 @@ LEXIFACE = flex -8 --prefix=interface
 LEXCMATRIX = flex -8 --prefix=cmatrix
 
 # Linker flags:
-AM_LDFLAGS = -lreadline -lz -ltermcap
+AM_LDFLAGS = -lreadline -lz -ltermcap -static
 AM_CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
 AM_CPPFLAGS = -I${top_srcdir}/src
 
 # FLOOKUPLDFLAGS = libfoma.a -lz
 
-foma_LDADD = $(top_builddir)/src/libfoma.la
+LDADD = $(top_builddir)/src/libfoma.la
 
 # Main targets
 lib_LTLIBRARIES = libfoma.la
@@ -125,5 +125,5 @@ lex.cmatrix.c: cmatrix.l
 regex.tab.c regex.tab.h: regex.y
 	$(YACC) $<
 
-clean-local:
-	rm -f *.tab.* *.output lex.*
+# clean-local:
+# 	rm -f *.tab.* *.output lex.*
