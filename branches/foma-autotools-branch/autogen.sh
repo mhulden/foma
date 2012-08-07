@@ -2,6 +2,6 @@
 
 # Minimal autogen.sh file.
 
-aclocal -I m4 --install
+aclocal
 autoreconf -i
 automake --add-missing
