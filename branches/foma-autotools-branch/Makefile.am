@@ -17,7 +17,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-# Yacc and Flex AM options - they do not seem to work, so commented out:
+# Yacc and Flex AM options - they do not seem to have any effect, but
+# they are still added here for completeness:
 AM_YFLAGS="-d -t -v"
 AM_LFLAGS=-8
 
