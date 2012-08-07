@@ -25,26 +25,26 @@
 #include "foma.h"
 #include "zlib.h"
 
-extern int g_show_flags;
-extern int g_obey_flags;
+extern char *g_att_epsilon;
+extern int g_compose_tristate;
 extern int g_flag_is_epsilon;
-extern int g_print_space;
-extern int g_print_pairs;
+extern int g_list_limit;
+extern int g_list_random_limit;
+extern int g_med_cutoff ;
+extern int g_med_limit ;
 extern int g_minimal;
+extern int g_minimize_hopcroft;
 extern int g_name_nets;
+extern int g_obey_flags;
+extern int g_print_pairs;
 extern int g_print_sigma;
+extern int g_print_space;
 extern int g_quit_on_fail;
 extern int g_quote_special;
 extern int g_recursive_define;
+extern int g_show_flags;
 extern int g_sort_arcs;
 extern int g_verbose;
-extern int g_minimize_hopcroft;
-extern int g_list_limit;
-extern int g_list_random_limit;
-extern int g_compose_tristate;
-extern int g_med_limit ;
-extern int g_med_cutoff ;
-extern char *g_att_epsilon;
 
 extern int foma_net_print(struct fsm *net, gzFile *outfile);
 
