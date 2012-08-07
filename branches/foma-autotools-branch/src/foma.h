@@ -57,13 +57,13 @@ struct stack_entry {
 };
 
 /* Define functions */
-struct fsm *find_defined (char *string);
+FEXPORT struct fsm *find_defined (char *string);
 char *find_defined_function(char *name, int numargs);
-int add_defined (struct fsm *net, char *string);
-int add_defined_function (char *name, char *regex, int numargs);
-int remove_defined (char *string);
-struct defined *get_defines();
-struct definedf *get_defines_f();
+FEXPORT int add_defined (struct fsm *net, char *string);
+FEXPORT int add_defined_function (char *name, char *regex, int numargs);
+FEXPORT int remove_defined (char *string);
+FEXPORT struct defined *get_defines();
+FEXPORT struct definedf *get_defines_f();
 
 /* Quantifier & Logic-related */
 char *find_quantifier(char *string);

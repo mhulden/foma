@@ -8,4 +8,4 @@ void lexc_set_current_lexicon(char *name, int which);
 void lexc_set_current_word(char *name);
 void lexc_clear_current_word();
 void lexc_set_network(struct fsm *net);
-void lexc_trim(char *s);
+FEXPORT void lexc_trim(char *s);
