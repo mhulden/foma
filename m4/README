@@ -1,0 +1,7 @@
+Please keep this dir in svn, it is needed by aclocal, and forcing aclocal to install it using:
+
+aclocal -I m4 --install
+
+is not portable.
+
+The dir will be populated by several *.m4 macros that should NOT be added to svn.
