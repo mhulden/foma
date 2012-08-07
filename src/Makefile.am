@@ -127,3 +127,8 @@ regex.tab.c regex.tab.h: regex.y
 
 # clean-local:
 # 	rm -f *.tab.* *.output lex.*
+
+EXTRA_DIST=fomalib.h fomalibconf.h \
+			regex.l regex.y \
+			cmatrix.l interface.l \
+			lexc.h lexc.l
