@@ -37,11 +37,14 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 # Checks for programs
 AM_PROG_AR
 LT_INIT
+AC_PROG_RANLIB
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_YACC
 AC_PROG_LEX
+
+AC_PROG_INSTALL
 
 # config files
 AC_CONFIG_FILES([Makefile
