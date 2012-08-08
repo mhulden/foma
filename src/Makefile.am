@@ -1,4 +1,6 @@
 VERSION = $(PACKAGE_VERSION)
+LIBRARY_RELEASE=0
+LIBRARY_VERSION=9
 
 # Local variables:
 # RANLIB = ranlib
@@ -37,6 +39,7 @@ library_include_HEADERS = $(h_sources)
 
 # And their source files:
 libfoma_la_SOURCES = $(h_sources) $(c_sources)
+libfoma_la_LDFLAGS= -version-info $(LIBRARY_VERSION) -release $(LIBRARY_RELEASE)
 
 foma_SOURCES = foma.c foma.h iface.c lex.interface.c stack.c
 foma_LDADD   = libfoma.la
