@@ -21,14 +21,14 @@ LDADD = $(top_builddir)/src/libfoma.la
 lib_LTLIBRARIES = libfoma.la
 bin_PROGRAMS = foma flookup cgflookup
 
-h_sources = fomalib.h fomalibconf.h lexc.h regex.tab.h
+h_sources = fomalib.h fomalibconf.h
 c_sources = apply.c coaccessible.c constructions.c \
 			define.c determinize.c dynarray.c \
 			extract.c flags.c \
 			int_stack.c io.c \
-			lex.cmatrix.c lex.lexc.c lex.yy.c lexcread.c \
+			lex.cmatrix.c lexc.h lex.lexc.c lex.yy.c lexcread.c \
 			mem.c minimize.c \
-			regex.tab.c reverse.c rewrite.c \
+			regex.tab.h regex.tab.c reverse.c rewrite.c \
 			sigma.c spelling.c stringhash.c structures.c \
 			topsort.c trie.c utf8.c
 
