@@ -21,36 +21,26 @@ LDADD = $(top_builddir)/src/libfoma.la
 lib_LTLIBRARIES = libfoma.la
 bin_PROGRAMS = foma flookup cgflookup
 
+h_sources = fomalib.h fomalibconf.h lexc.h regex.tab.h
+c_sources = apply.c coaccessible.c constructions.c \
+			define.c determinize.c dynarray.c \
+			extract.c flags.c \
+			int_stack.c io.c \
+			lex.cmatrix.c lex.lexc.c lex.yy.c lexcread.c \
+			mem.c minimize.c \
+			regex.tab.c reverse.c rewrite.c \
+			sigma.c spelling.c stringhash.c structures.c \
+			topsort.c trie.c utf8.c
+
+library_includedir = $(includedir)/foma
+library_include_HEADERS = $(h_sources)
+
 # And their source files:
-libfoma_la_SOURCES = apply.c \
-					 coaccessible.c \
-					 constructions.c \
-					 define.c \
-					 determinize.c \
-					 dynarray.c \
-					 extract.c \
-					 flags.c \
-					 int_stack.c \
-					 io.c \
-					 lex.cmatrix.c \
-					 lex.lexc.c \
-					 lex.yy.c \
-					 lexcread.c \
-					 mem.c \
-					 minimize.c \
-					 regex.tab.c \
-					 regex.tab.h \
-					 reverse.c \
-					 rewrite.c \
-					 sigma.c \
-					 spelling.c \
-					 stringhash.c \
-					 structures.c \
-					 topsort.c \
-					 trie.c \
-					 utf8.c
+libfoma_la_SOURCES = $(h_sources) $(c_sources)
 
 foma_SOURCES = foma.c foma.h iface.c lex.interface.c stack.c
+foma_LDADD   = libfoma.la
+#foma_LDFLAGS = -llibfoma.la $(FOMA_LIBS)
 
 flookup_SOURCES = flookup.c
 
@@ -128,7 +118,6 @@ regex.tab.c regex.tab.h: regex.y
 # clean-local:
 # 	rm -f *.tab.* *.output lex.*
 
-EXTRA_DIST=fomalib.h fomalibconf.h \
-			regex.l regex.y \
+EXTRA_DIST= regex.l regex.y \
 			cmatrix.l interface.l \
-			lexc.h lexc.l
+			lexc.l
