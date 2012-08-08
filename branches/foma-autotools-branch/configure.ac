@@ -32,10 +32,9 @@ AC_REVISION([$Revision$])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 # AM_INIT_AUTOMAKE sets up make conventions
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign -Wno-extra-portability])
 
 # Checks for programs
-AM_PROG_AR
 LT_INIT
 AC_PROG_CC
 AC_PROG_CXX
