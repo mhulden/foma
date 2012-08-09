@@ -24,10 +24,10 @@ all: libfoma foma flookup cgflookup
 foma: $(FOMAOBJS) $(LIBOBJS)
 	$(CC) $(CFLAGS) $(FOMAOBJS) $(LIBOBJS) $(LDFLAGS) -o $@
 
-flookup: flookup.o $(LIBOBJS)
+flookup: flookup.o libfoma
 	$(CC) $(CFLAGS) flookup.o $(FLOOKUPLDFLAGS) -o $@
 
-cgflookup: cgflookup.o $(LIBOBJS)
+cgflookup: cgflookup.o libfoma
 	$(CC) $(CFLAGS) cgflookup.o $(FLOOKUPLDFLAGS) -o $@
 
 STATICLIB = libfoma.a
