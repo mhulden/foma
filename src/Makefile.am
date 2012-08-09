@@ -46,8 +46,12 @@ foma_LDADD   = libfoma.la
 #foma_LDFLAGS = -llibfoma.la $(FOMA_LIBS)
 
 flookup_SOURCES = flookup.c
+flookup_LDADD   = libfoma.la
+flookup_LDFLAGS = -lz
 
 cgflookup_SOURCES = cgflookup.c
+cgflookup_LDADD   = libfoma.la
+cgflookup_LDFLAGS = -lz
 
 # Do we need this one?
 BUILT_SOURCES = regex.tab.h
