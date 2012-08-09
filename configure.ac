@@ -48,6 +48,8 @@ AC_PROG_INSTALL
 # Make sure zlib is available, and that the required function is there:
 AC_SEARCH_LIBS([gzprintf], [z], [ ],
 		 [AC_MSG_FAILURE([no working zlib library was found])])
+# Also check that readline.h is available:
+AC_CONFIG_SRCDIR(readline.h)
 
 # config files
 AC_CONFIG_FILES([Makefile
