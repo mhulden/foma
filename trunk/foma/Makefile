@@ -35,19 +35,29 @@ STATICLIB = libfoma.a
 UNAME := $(shell uname)
 
 ifeq ($(UNAME), Darwin)
-SHAREDLIB = libfoma.dylib
-SHAREDLIBV = libfoma.dylib.$(VERSION)
-SHAREDLIBM = libfoma.dylib.0
-AR = libtool
-ARFLAGS = -static -o
-DFLAG = -dylib_install_name
+	SHAREDLIB = libfoma.dylib
+	SHAREDLIBV = libfoma.$(VERSION).dylib
+	SHAREDLIBM = libfoma.0.dylib
+	AR = libtool
+	ARFLAGS = -static -o
+	DFLAG = -dylib_install_name
 else 
-SHAREDLIB = libfoma.so
-SHAREDLIBV = libfoma.so.$(VERSION)
-SHAREDLIBM = libfoma.so.0
-AR = ar
-ARFLAGS = cru
-DFLAG = -soname
+	SHAREDLIB = libfoma.so
+	SHAREDLIBV = libfoma.so.$(VERSION)
+	SHAREDLIBM = libfoma.so.0
+	AR = ar
+	ARFLAGS = cru
+	DFLAG = -soname
+endif
+
+ifeq ($(UNAME), SunOS)
+	DFLAG = -h
+	FLOOKUPLDFLAGS = libfoma.a -lz -lsocket -lnsl
+endif
+
+ifeq ($(UNAME), CYGWIN_NT-5.1)
+	LDFLAGS = /usr/lib/libreadline.dll.a /usr/lib/libz.a
+	FLOOKUPLDFLAGS = libfoma.a /usr/lib/libz.a
 endif
 
 LIBS = $(SHAREDLIBV) $(STATICLIB)

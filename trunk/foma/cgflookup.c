@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -122,11 +122,11 @@ int main(int argc, char *argv[]) {
 	    if (strcmp(optarg, "f") == 0) {
 		index_flag_states = 1;
 		index_arcs = 1;
-	    } else if (strcasestr(optarg, "k") != NULL) {
+	    } else if (strstr(optarg, "k") != NULL && strstr(optarg,"K") != NULL) {
 		/* k limit */
 		index_mem_limit = 1024*atoi(optarg);
 		index_arcs = 1;
-	    } else if (strcasestr(optarg, "m") != NULL) {
+	    } else if (strstr(optarg, "m") != NULL && strstr(optarg,"M") != NULL) {
 		/* m limit */
 		index_mem_limit = 1024*1024*atoi(optarg);
 		index_arcs = 1;
