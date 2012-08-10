@@ -21,6 +21,7 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "foma.h"
 #include "zlib.h"
@@ -302,12 +303,12 @@ void iface_apropos(char *s) {
     int i, maxlen;
 
     for (maxlen = 0, gh = global_help; gh->name != NULL; gh++) {
-        if (strcasestr(gh->name,s) != NULL || strcasestr(gh->help,s) != NULL) {
+        if (strstr(gh->name,s) != NULL || strstr(gh->help,s) != NULL) {
             maxlen = maxlen < utf8strlen(gh->name) ? utf8strlen(gh->name) : maxlen;
         }
     }
     for (gh = global_help; gh->name != NULL; gh++) {
-        if (strcasestr(gh->name,s) != NULL || strcasestr(gh->help,s) != NULL) {
+        if (strstr(gh->name,s) != NULL || strstr(gh->help,s) != NULL) {
             printf("%s",gh->name);
             for (i = maxlen - utf8strlen(gh->name); i>=0; i--) {
                 printf("%s"," ");
@@ -321,7 +322,7 @@ void iface_help_search(char *s) {
     struct global_help *gh;
     
     for (gh = global_help; gh->name != NULL; gh++) {
-        if (strcasestr(gh->name,s) != NULL || strcasestr(gh->help,s) != NULL) {
+        if (strstr(gh->name,s) != NULL || strstr(gh->help,s) != NULL) {
             printf("##\n");
             printf("%-32.32s%s\n%s\n",gh->name,gh->help,gh->longhelp);
         }
@@ -1005,7 +1006,7 @@ void iface_save_stack(char *filename) {
     struct stack_entry *stack_ptr;
 
     if (iface_stack_check(1)) {
-        if ((outfile = gzopen(filename, "wb")) == NULL) {
+      if ((outfile = gzopen(filename, "wb")) == NULL) {
             printf("Error opening file %s for writing.\n", filename);
             return;
         }
