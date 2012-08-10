@@ -19,11 +19,11 @@ long_description    Foma is designed to be a complete replacement for the \
 homepage            https://code.google.com/p/foma/
 master_sites        googlecode
 
-checksums           rmd160  cd3afc0eeb1b1424bb7b00d4ae2a351c83eef51e \
+checksums           rmd160  17944b8fc164014262996cd643a0923d56869692 \
                     sha1    fcc984252931d337578b0344cdcaa77efd0ff092 \
-                    sha256  fce5903ef3256b05c961d273bd3a8d2fb500b7a7ed2b9ad8ecac047091f4982d
+                    sha256  dc019dcdf6dc8f7e881394f3d76821006e7f0cf6e3fe1c12ac2887fa48d81208
 
-depends_lib         port:libz
+depends_lib         port:zlib
 depends_build       port:bison \
                     port:flex  \
                     port:libtool
