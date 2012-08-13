@@ -10,11 +10,8 @@ LEXIFACE = flex -8 --prefix=interface
 LEXCMATRIX = flex -8 --prefix=cmatrix
 
 # Linker flags:
-AM_LDFLAGS = -lreadline -lz -ltermcap -static
 AM_CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
 AM_CPPFLAGS = -I${top_srcdir}/src
-
-LDADD = $(top_builddir)/src/libfoma.la
 
 # Main targets
 lib_LTLIBRARIES = libfoma.la
@@ -40,15 +37,15 @@ libfoma_la_LDFLAGS= -version-info $(LIBRARY_VERSION) -release $(LIBRARY_RELEASE)
 
 foma_SOURCES = foma.c foma.h iface.c lex.interface.c stack.c
 foma_LDADD   = libfoma.la
-#foma_LDFLAGS = -llibfoma.la $(FOMA_LIBS)
+foma_LDFLAGS = -lreadline -lz -ltermcap -static-libtool-libs
 
 flookup_SOURCES = flookup.c
 flookup_LDADD   = libfoma.la
-flookup_LDFLAGS = -lz
+flookup_LDFLAGS = -lz -static-libtool-libs
 
 cgflookup_SOURCES = cgflookup.c
 cgflookup_LDADD   = libfoma.la
-cgflookup_LDFLAGS = -lz
+cgflookup_LDFLAGS = -lz -static-libtool-libs
 
 # Make sure the regex header file is built before it is included:
 BUILT_SOURCES = regex.tab.h
