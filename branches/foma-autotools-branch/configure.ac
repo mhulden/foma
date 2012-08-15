@@ -34,6 +34,9 @@ AC_CONFIG_MACRO_DIR([m4])
 # AM_INIT_AUTOMAKE sets up make conventions
 AM_INIT_AUTOMAKE([-Wall foreign])
 
+# Some extra hoopla to avoid AC setting CFLAGS to -g -O2:
+: ${CFLAGS=""}
+
 # Checks for programs
 LT_INIT
 AC_PROG_CC
