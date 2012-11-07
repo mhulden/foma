@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -261,6 +261,7 @@ FEXPORT struct sigma *sigma_remove_num(int num, struct sigma *sigma);
 
 int sigma_find (char *symbol, struct sigma *sigma);
 int sigma_find_number (int number, struct sigma *sigma);
+int sigma_substitute(char *orig, char *sub, struct sigma *sigma);
 FEXPORT char *sigma_string(int number, struct sigma *sigma);
 int sigma_sort (struct fsm *net);
 void sigma_cleanup (struct fsm *net, int force);
