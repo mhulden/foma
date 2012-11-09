@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -1007,6 +1007,17 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
   struct fsm_state *fsm_state, *new_1_state, *new_2_state;
   int i, j, end_1 = 0, end_2 = 0, sigmasizes, *mapping_1, *mapping_2, equal = 1, unknown_1 = 0, unknown_2 = 0, net_unk = 0, net_adds = 0, net_lines;
 
+  i = sigma_find(".#.", net1->sigma);
+  j = sigma_find(".#.", net2->sigma);
+  if (i != -1 && j == -1) {
+      sigma_add(".#.", net2->sigma);
+      sigma_sort(net2);
+  }
+  if (j != -1 && i == -1) {
+      sigma_add(".#.", net1->sigma);
+      sigma_sort(net1);
+  }
+
   sigma_1 = net1->sigma;
   sigma_2 = net2->sigma;
 
@@ -1902,8 +1913,8 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 
     fsm_state_set_current_state(current_state, current_final, current_start);
 
-    for (machine_a = (point_a+a)->transitions ; (machine_a->state_no == a)  ; machine_a++) {
-      for (machine_b = (point_b+b)->transitions; (machine_b->state_no == b) ; machine_b++) {
+    for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a  ; machine_a++) {
+      for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
 	
 	if ((machine_a->target == -1) && (machine_b->target == -1)) {
 	  continue;
@@ -2042,7 +2053,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
     fsm_state_set_current_state(current_state, current_final, current_start);
 
     /* Follow A, B stays */
-    for (machine_a = (point_a+a)->transitions ; (machine_a->state_no == a)  ; machine_a++) {
+    for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a  ; machine_a++) {
 	if (machine_a->target == -1) {
 	  continue;
 	}
@@ -2055,7 +2066,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
     }
 
     /* Follow B, A stays */
-      for (machine_b = (point_b+b)->transitions; (machine_b->state_no == b) ; machine_b++) {
+      for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
 	
 	if (machine_b->target == -1) {
 	  continue;
@@ -2077,7 +2088,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
   xxfree(point_a);
   xxfree(point_b);
   fsm_destroy(net2);
-  bi_avl_free(bi_avl);
+  bi_avl_free();
   return(net1);
 }
 
@@ -2146,7 +2157,7 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
           } else {
               /* b is alive */
               b_has_trans = 0;
-              for (machine_b = (point_b+b)->transitions ; (machine_b->state_no == b) ; machine_b++) {
+              for (machine_b = (point_b+b)->transitions ; machine_b->state_no == b ; machine_b++) {
                   if (machine_a->in == machine_b->in && machine_a->out == machine_b->out) {
                       b_has_trans = 1;
                       btarget = machine_b->target;
@@ -2176,7 +2187,7 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
   xxfree(point_a);
   xxfree(point_b);
   fsm_destroy(net2);
-  bi_avl_free(bi_avl);
+  bi_avl_free();
   return(fsm_minimize(net1));
 }
 

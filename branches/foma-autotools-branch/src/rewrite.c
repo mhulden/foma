@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -56,10 +56,10 @@
  *      if the relation is not equal length, the shorter string
  *      is padded with a special hard zero symbol
  *
- *   b. construct the language Insert = .#. NoSpecial* /[ %[ CP %] ] .#.
+ *   b. construct the language Insert = @#@ NoSpecial* /[ %[ CP %] ] @#@
 *       NoSpecial being any single non-auxiliary symbol
  *      i.e. identity relations interspersed with cross-products
- *      and where every string begins and ends with the special symbol .#.      
+ *      and where every string begins and ends with the special symbol @#@      
  *      Now we have strings such as aaa[a>0]a[a>b]va
  *      Where the bracketed sequences are rewrite centers
  *      Naturally, for many parallel rules, we take the union of *all* rule
@@ -91,12 +91,12 @@
  *   d. Construct a transducer from the bracketed language by calling
  *      rewrite_cp_to_fst() which converts single-tape languages with strings
  *      such as a[c>d]e to a:a c:d e:e and removes the auxiliaries.
- *      We now remove the .#. symbols as well
+ *      We now remove the @#@ symbols as well
  *
  *
  * More detail:
 
- *  Insert = .#. NoSpecial/[ %[ UnionCP %] ] .#.
+ *  Insert = @#@ NoSpecial/[ %[ UnionCP %] ] @#@
  *  i.e. as described above.  UnionCP = C1|C2|C3... 
  *  cross products where C1 = [A:B] for a rule A op B
 
@@ -109,7 +109,7 @@
  *  on the context pair's directionality
 
  *  Coerce =  ~[[?* -[?* %>]] Dir(L) A [Dir(R) ?* & OSR ?*] ?*]
- *  OSR  = NoSpecial* %[ | .#.
+ *  OSR  = NoSpecial* %[ | @#@
  *  i.e. Coerce is the language that does not contain a upper-side center A
  *  occurring outside brackets (that's what OSR is for) if the contexts
  *  are correct.  If the rule arrow is <-, replace A with B, yielding
@@ -149,10 +149,10 @@
 
  *  Additional notes: we have a special function to perform the context restriction
  *  involved in constructing Context for two reasons:
- *  1) We want to maintain the .#. symbols and not treat them as special which
+ *  1) We want to maintain the @#@ symbols and not treat them as special which
  *     the generic context_restrict doesn't do.
  *  2) We need some efficiency tweaks, such as are done in Coerce to 
- *     minimize nondeterminism. 
+ *     minimize nondeterminism.
  
  *  If we have dotted rules we extend Context with [ => [ _ also.
  */
@@ -165,8 +165,12 @@ struct fsm *rewrite_pad(struct fsm *net);
 void rewrite_add_special_syms(struct fsm *net) {
     if (net == NULL)
         return;
-    if (sigma_find(".#.", net->sigma) == -1)
-        sigma_add(".#.",net->sigma);
+    sigma_substitute(".#.", "@#@", net->sigma); /* We convert boundaries to our interal rep.      */
+                                                /* This is because sigma merging is handled       */
+                                                /* in a special way for .#., which we don't want. */
+    if (sigma_find("@#@", net->sigma) == -1)
+	sigma_add("@#@",net->sigma);
+
     sigma_add("@Z@",net->sigma);
     sigma_add("@<@",net->sigma);
     sigma_add("@>@",net->sigma);
@@ -208,7 +212,7 @@ struct fsm *rewrite_nospecial() {
     net->states = xxmalloc(sizeof(struct fsm_state)*3);
     sigma_add_special(IDENTITY,net->sigma);
     sigma_add("@Z@",net->sigma);
-    sigma_add(".#.",net->sigma);
+    sigma_add("@#@",net->sigma);
     sigma_add("@<@",net->sigma);
     sigma_add("@>@",net->sigma);
     sigma_add("@]@",net->sigma);
@@ -251,7 +255,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     //printf("Initial CP and Ignore\n"); fflush(stdout);
 
     NoSpecial = rewrite_nospecial();
-    Id = fsm_minimize(fsm_union(fsm_copy(NoSpecial),fsm_symbol(".#.")));
+    Id = fsm_minimize(fsm_union(fsm_copy(NoSpecial),fsm_symbol("@#@")));
 
     for (ruleset = all_rules; ruleset != NULL; ruleset = ruleset->next) {
         for (rules = ruleset->rewrite_rules; rules != NULL; rules = rules->next) {
@@ -315,7 +319,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     UnionCPI = fsm_minimize(fsm_concat(fsm_symbol("@[@"),fsm_minimize(fsm_concat(fsm_copy(UnionCP),fsm_symbol("@]@")))));
 
     Insert = fsm_minimize(fsm_ignore(fsm_kleene_star(fsm_copy(NoSpecial)), UnionCPI, OP_IGNORE_ALL));
-    Insert = fsm_minimize(fsm_concat(fsm_symbol(".#."),fsm_minimize(fsm_concat(Insert,fsm_symbol(".#.")))));
+    Insert = fsm_minimize(fsm_concat(fsm_symbol("@#@"),fsm_minimize(fsm_concat(Insert,fsm_symbol("@#@")))));
     
     /* Context = [ => Lower(L) _ C1|...|Cn ] Upper(R) */
     //printf("RuleCP\n"); fflush(stdout);
@@ -374,7 +378,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
             newcontext->next = NULL;
 
             ContextD = fsm_minimize(fsm_context_restrict(fsm_minimize(fsm_concat(fsm_symbol("@[@"),fsm_symbol("@[@"))), newcontext));
-            sigma_remove(".#.",ContextD->sigma);
+            sigma_remove("@#@",ContextD->sigma);
             Context = fsm_intersect(Context,ContextD);
 	    fsm_destroy(newcontext->left);
 	    fsm_destroy(newcontext->right);
@@ -389,7 +393,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     /* ~[?* - [?* @>@] Dir(L) B [Dir(R) ?* & Outside ?*] ?*] for <- */
     
     /* Outside = [NoSpecial* [%[|%#]]; */
-    Outside = fsm_minimize(fsm_concat(fsm_kleene_star(fsm_copy(NoSpecial)),fsm_union(fsm_symbol("@[@"),fsm_symbol(".#."))));
+    Outside = fsm_minimize(fsm_concat(fsm_kleene_star(fsm_copy(NoSpecial)),fsm_union(fsm_symbol("@[@"),fsm_symbol("@#@"))));
     /* EndOutside = ~[?* %[ \%]*] - [?* %>] */
     EndOutside = fsm_complement(fsm_concat(fsm_universal(),fsm_concat(fsm_symbol("@[@"),fsm_kleene_star(fsm_term_negation(fsm_symbol("@]@"))))));
     EndOutside = fsm_minus(EndOutside, fsm_concat(fsm_universal(),fsm_symbol("@>@")));
@@ -477,7 +481,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     //printf("Have result\n"); fflush(stdout); 
     //Result = fsm_intersect(Insert,fsm_intersect(Context,Coerce));
     Result = fsm_intersect(Context,Coerce);
-    Result = fsm_substitute_symbol(Result, ".#.", "@_EPSILON_SYMBOL_@");
+    Result = fsm_substitute_symbol(Result, "@#@", "@_EPSILON_SYMBOL_@");
     Result = fsm_substitute_symbol(Result, "@<@", "@_EPSILON_SYMBOL_@");
     Result = fsm_minimize(Result);
     Result = rewrite_cp_to_fst(fsm_minimize(Result), "@>@", "@Z@");
@@ -572,12 +576,14 @@ struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
             pairs->left = fsm_empty_string();
         } else {
             sigma_add("@VARX@",pairs->left->sigma);
+	    sigma_substitute(".#.", "@#@", pairs->left->sigma);
             sigma_sort(pairs->left);
         }
         if (pairs->right == NULL) {
             pairs->right = fsm_empty_string();
         } else {
             sigma_add("@VARX@",pairs->right->sigma);
+	    sigma_substitute(".#.", "@#@", pairs->right->sigma);
             sigma_sort(pairs->right);
         }
     }
@@ -597,10 +603,10 @@ struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
 	Result = fsm_complement(Result);
     }
 
-    if (sigma_find(".#.", Result->sigma) != -1) {
-	Word = fsm_minimize(fsm_concat(fsm_symbol(".#."),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol(".#."))),fsm_symbol(".#."))));
+    if (sigma_find("@#@", Result->sigma) != -1) {
+	Word = fsm_minimize(fsm_concat(fsm_symbol("@#@"),fsm_concat(fsm_kleene_star(fsm_term_negation(fsm_symbol("@#@"))),fsm_symbol("@#@"))));
         Result = fsm_intersect(Word, Result);
-        Result = fsm_substitute_symbol(Result, ".#.", "@_EPSILON_SYMBOL_@");
+        Result = fsm_substitute_symbol(Result, "@#@", "@_EPSILON_SYMBOL_@");
     }
     fsm_destroy(UnionP);
     fsm_destroy(Var);
