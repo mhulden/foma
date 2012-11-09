@@ -15,6 +15,13 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Information on package
+FOMA_NAME=foma
+FOMA_MAJOR=0
+FOMA_MINOR=9
+FOMA_EXTENSION=16
+FOMA_VERSION=$FOMA_MAJOR.$FOMA_MINOR.$FOMA_EXTENSION
+
 # Following things just need to be at top of all configure.ac files:
 
 # AC_INIT sets up project metadata:
@@ -24,15 +31,24 @@
 # third is email address for bug reports
 # fourth is name of packages made by make dist, excluding .tar.gz
 # fifth is the project web address
-AC_INIT([foma], [0.9.16], [mans.hulden@gmail.com], [foma],
+AC_INIT([foma], [$FOMA_VERSION], [mans.hulden@gmail.com], [foma],
         [https://code.google.com/p/foma/])
 # AC_REVISION is used to get SVN revision into bug reports
-AC_REVISION([$Revision$])
+AC_REVISION([$Revision:$])
 # These configuration dirs hide some extra cruft
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 # AM_INIT_AUTOMAKE sets up make conventions
 AM_INIT_AUTOMAKE([-Wall foreign])
+
+# For automake >= 1.12
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+
+AC_SUBST([LIBFOMA_MAJOR], [$FOMA_MAJOR])
+AC_SUBST([LIBFOMA_MINOR], [$FOMA_MINOR])
+AC_SUBST([LIBFOMA_EXTENSION], [$FOMA_EXTENSION])
+AC_SUBST([LIBFOMA_VERSION], [$FOMA_VERSION])
+AC_SUBST([LIBFOMA_NAME], [foma])
 
 # Some extra hoopla to avoid AC setting CFLAGS to -g -O2:
 : ${CFLAGS=""}
