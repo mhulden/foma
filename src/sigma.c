@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2012 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -300,6 +300,22 @@ char *sigma_string(int number, struct sigma *sigma) {
         }
     }
     return NULL;
+}
+
+/* Substitutes string symbol for sub in sigma */
+/* no check for duplicates                    */
+int sigma_substitute(char *symbol, char *sub, struct sigma *sigma) {
+    if (sigma->number == -1) {
+        return -1;
+    }
+    for (; sigma != NULL && sigma->number != -1 ; sigma = sigma->next) {
+        if (strcmp(sigma->symbol, symbol) == 0) {
+	    xxfree(sigma->symbol);
+	    sigma->symbol = strdup(sub);
+            return(sigma->number);
+        }
+    }
+    return -1;
 }
 
 int sigma_find(char *symbol, struct sigma *sigma) {
