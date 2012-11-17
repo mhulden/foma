@@ -1,3 +1,8 @@
+0.9.17alpha (20121117)
+
+- Many bugfixes in foma, flookup (apply code)
+- Adds possibility to redirect "print words" output to file by "print words > file"
+
 0.9.16alpha (20111213)
 
 - New faster apply code, as well as optional indexing of arcs in flookup
