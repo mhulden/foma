@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
 	    wordseparator = strdup(optarg);
 	    break;
         case 'v':
-	    printf("cgflookup 1.02 (foma library version %s)\n", fsm_get_library_version_string());
+	    printf("cgflookup 1.03 (foma library version %s)\n", fsm_get_library_version_string());
 	    exit(0);
 	default:
             fprintf(stderr, "%s", usagestring);

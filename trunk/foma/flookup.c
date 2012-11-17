@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
 	    wordseparator = strdup(optarg);
 	    break;
         case 'v':
-	    printf("flookup 1.02 (foma library version %s)\n", fsm_get_library_version_string());
+	    printf("flookup 1.03 (foma library version %s)\n", fsm_get_library_version_string());
 	    exit(0);
         case 'x':
 	    echo = 0;
