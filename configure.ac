@@ -19,7 +19,7 @@
 FOMA_NAME=foma
 FOMA_MAJOR=0
 FOMA_MINOR=9
-FOMA_EXTENSION=16
+FOMA_EXTENSION=17
 FOMA_VERSION=$FOMA_MAJOR.$FOMA_MINOR.$FOMA_EXTENSION
 
 # Following things just need to be at top of all configure.ac files:
