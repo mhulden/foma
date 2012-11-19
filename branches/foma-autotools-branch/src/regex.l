@@ -282,8 +282,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   yylval_param->net = fsm_identity();  
   return NET;
 }
- /* TODO: This S(x,y) conflicts with function definitions. */
- /*  Need to resolve this somehow. */
+
 (_S\() { return SUCCESSOR_OF; }
 
 (_isunambiguous\()   { return ISUNAMBIGUOUS;   }
