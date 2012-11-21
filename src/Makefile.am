@@ -1,6 +1,6 @@
 VERSION = $(PACKAGE_VERSION)
 LIBRARY_RELEASE=0
-LIBRARY_VERSION=9
+LIBRARY_VERSION=9:16:9
 
 # Local variables:
 YACC = bison -d -t -v
@@ -33,7 +33,8 @@ library_include_HEADERS = $(h_sources)
 
 # Autotools variable bindings for the main targets:
 libfoma_la_SOURCES = $(h_sources) $(c_sources)
-libfoma_la_LDFLAGS= -version-info $(LIBRARY_VERSION) -release $(LIBRARY_RELEASE)
+#libfoma_la_LDFLAGS= -version-info $(LIBRARY_VERSION) -release $(LIBRARY_RELEASE)
+libfoma_la_LDFLAGS= -version-info $(LIBRARY_VERSION) 
 
 foma_SOURCES = foma.c foma.h iface.c lex.interface.c stack.c
 foma_LDADD   = libfoma.la
