@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2012 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -254,7 +254,8 @@ struct state_arr *init_state_pointers(struct fsm_state *fsm_state) {
   /* Create an array for quick lookup of whether states are final, and a pointer to the first line regarding each state */
 
   struct state_arr *state_arr;
-  int states, i, sold = -1;
+  int states, i, sold;
+  sold = -1;
   states = fsm_count_states(fsm_state);
   state_arr = xxmalloc(sizeof(struct state_arr)*(states+1));
   for (i=0; i<states; i++) {
@@ -388,8 +389,116 @@ void tri_avl_free() {
   return;
 }
 
-/* Bistate lookups */
+struct pairhash_pairs {
+    int a;
+    int b;
+    int key;
+};
 
+struct pairhash {
+    struct pairhash_pairs *pairs;
+    unsigned int tablesize;
+    int occupancy;
+};
+
+struct pairhash *pair_hash_init() {
+    struct pairhash *ph;
+    int i;
+    ph = xxmalloc(sizeof(struct pairhash));
+    ph->tablesize = 1021;
+    ph->occupancy = 0;
+    ph->pairs = xxmalloc(sizeof(struct pairhash_pairs) * ph->tablesize);
+    for (i = 0; i < ph->tablesize; i++) {
+	(ph->pairs+i)->key = -1;
+    }
+    return(ph);
+}
+
+unsigned int pairhash_hashf(int a, int b) {
+    return((unsigned int)(a + b * 86028157));
+}
+
+void pair_hash_free(struct pairhash *ph) {
+    if (ph != NULL) {
+	if (ph->pairs != NULL) {
+	    xxfree(ph->pairs);
+	}
+	xxfree(ph);
+    }    
+}
+
+void pair_hash_rehash(struct pairhash *ph);
+
+void pair_hash_insert_with_key(struct pairhash *ph, int a, int b, int key) {
+    struct pairhash_pairs *ph_table;
+    unsigned int hash;
+    ph_table = ph->pairs;
+    hash = pairhash_hashf(a, b);
+    for (  ;  ; hash++) {
+	if ((ph_table + (hash % ph->tablesize))->key == -1) {
+	    (ph_table + (hash % ph->tablesize))->key = key;
+	    (ph_table + (hash % ph->tablesize))->a = a;
+	    (ph_table + (hash % ph->tablesize))->b = b;
+	    break;
+	}
+    }
+}
+
+int pair_hash_insert(struct pairhash *ph, int a, int b) {
+    struct pairhash_pairs *ph_table;
+    unsigned int hash;
+    ph_table = ph->pairs;
+    for (hash = pairhash_hashf(a, b);  ; hash++) {
+	if ((ph_table + (hash % ph->tablesize))->key == -1) {
+	    (ph_table + (hash % ph->tablesize))->key = ph->occupancy;
+	    (ph_table + (hash % ph->tablesize))->a = a;
+	    (ph_table + (hash % ph->tablesize))->b = b;
+	    ph->occupancy = ph->occupancy + 1;
+	    /* Check if we need to grow table */
+	    if (ph->occupancy > ph->tablesize / 2) {
+		pair_hash_rehash(ph);
+	    }
+	    return(ph->occupancy);
+	}
+    }
+}
+
+void pair_hash_rehash(struct pairhash *ph) {
+    int i;
+    unsigned int newtablesize, oldtablesize;
+    struct pairhash_pairs *oldpairs;
+    for (i = 0; primes[i] <= ph->tablesize; i++) { }
+    newtablesize = primes[i];
+    oldtablesize = ph->tablesize;
+    oldpairs = ph->pairs;
+    ph->pairs = xxmalloc(sizeof(struct pairhash_pairs) * newtablesize);
+    ph->tablesize = newtablesize;
+    for (i = 0; i < newtablesize; i++) {
+	(ph->pairs+i)->key = -1;
+    }
+    for (i = 0; i < oldtablesize; i++) {
+	if ((oldpairs+i)-> key != -1) {
+	    pair_hash_insert_with_key(ph, (oldpairs+i)->a, (oldpairs+i)->b, (oldpairs+i)->key);
+	}
+    }
+    xxfree(oldpairs);
+}
+
+int pair_hash_find(struct pairhash *ph, int a, int b) {
+    struct pairhash_pairs *ph_table;
+    unsigned int hash;
+    ph_table = ph->pairs;
+    for (hash = pairhash_hashf(a,b);  ; hash++) {
+	if ((ph_table + (hash % ph->tablesize))->key == -1) {
+	    return -1;
+	}
+	if ((ph_table + (hash % ph->tablesize))->a == a && (ph_table + (hash % ph->tablesize))->b == b) {
+	    return((ph_table + (hash % ph->tablesize))->key);
+	}
+    }
+}
+
+/* Bistate lookups */
 static struct bi_avl {
   int state_a;
   int state_b;
@@ -2091,6 +2200,90 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
   bi_avl_free();
   return(net1);
 }
+
+int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
+    /* Test path equivalence of two FSMs by traversing both in parallel */
+    int a, b, target_number, matching_arc, equivalent;
+    struct fsm_state *machine_a, *machine_b;
+    struct state_arr *point_a, *point_b;
+    struct pairhash *ph;
+    
+    fsm_merge_sigma(net1, net2);
+    
+    fsm_count(net1);
+    fsm_count(net2);
+    
+    machine_a = net1->states;
+    machine_b = net2->states;
+    
+    equivalent = 0;
+    /* new state 0 = {0,0} */
+    STACK_2_PUSH(0,0);
+    
+    ph = pair_hash_init();
+    pair_hash_insert(ph, 0, 0);
+    
+    point_a = init_state_pointers(machine_a);
+    point_b = init_state_pointers(machine_b);
+    
+    while (!int_stack_isempty()) {
+	
+	/* Get a pair of states to examine */
+	
+	a = int_stack_pop();
+	b = int_stack_pop();
+   	
+	if ((point_a+a)->final != (point_b+b)->final) {	  
+	    goto not_equivalent;
+	}
+	/* Check that all arcs in A have matching arc in B, push new state pair on stack */
+	for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a  ; machine_a++) {
+	    if (machine_a->target == -1) {
+		break;
+	    }
+	    matching_arc = 0;
+	    for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
+		if (machine_b->target == -1) {
+		    break;
+		}
+		if (machine_a->in == machine_b->in && machine_a->out == machine_b->out) {
+		    matching_arc = 1;
+		    if ((target_number = pair_hash_find(ph, machine_a->target, machine_b->target)) == -1) {
+			STACK_2_PUSH(machine_b->target, machine_a->target);
+			target_number = pair_hash_insert(ph, machine_a->target, machine_b->target);
+		    }
+		    break;
+		}
+	    }
+	    if (matching_arc == 0) {
+		goto not_equivalent;
+	    }
+	}
+	for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
+	    if (machine_b->target == -1) {
+		break;
+	    }
+	    matching_arc = 0;
+	    for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a  ; machine_a++) {
+		if (machine_a->in == machine_b->in && machine_a->out == machine_b->out) {
+		    matching_arc = 1;
+		    break;
+		}
+	    }
+	    if (matching_arc == 0) {
+		goto not_equivalent;
+	    }
+	}
+    }
+    equivalent = 1;
+ not_equivalent:
+    xxfree(net1->states);
+    xxfree(point_a);
+    xxfree(point_b);
+    pair_hash_free(ph);
+    return(equivalent);
+}
+
 
 struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
     int a, b, current_state, current_start, current_final, target_number, b_has_trans, btarget, statecount;

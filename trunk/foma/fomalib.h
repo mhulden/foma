@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2012 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -259,6 +259,7 @@ FEXPORT int fsm_isunambiguous(struct fsm *net);
 FEXPORT int fsm_isidentity(struct fsm *net);
 FEXPORT int fsm_isuniversal(struct fsm *net);
 FEXPORT int fsm_issequential(struct fsm *net);
+FEXPORT int fsm_equivalent(struct fsm *net1, struct fsm *net2);
 
 /* Test if a symbol occurs in a FSM */
 /* side = M_UPPER (upper side) M_LOWER (lower side), M_UPPER+M_LOWER (both) */

@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -646,6 +646,9 @@ static inline int explode_line(char *buf, int *values) {
 
 /* where name is used if defined networks are saved/loaded */
 
+/* Following the props line, we accept anything (for future expansion) */
+/* until we find ##sigma## */
+
 /* the section beginning with "##sigma##" consists of lines with two fields: */
 /* number string */
 /* correponding to the symbol number and the symbol string */
@@ -711,12 +714,15 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     net->arcs_sorted_out = (extras & 48) >> 4;
 
     /* Sigma */
-    if (strcmp(buf, "##sigma##") != 0) {
-        printf("File format error sigma!\n");
-	fsm_destroy(net);
-        return NULL;
+    while (strcmp(buf, "##sigma##") != 0) { /* Loop until we encounter ##sigma## */
+        if (buf == '\0') {
+	  printf("File format error at sigma definition!\n");
+	  fsm_destroy(net);
+	  return NULL;
+        }
+        io_gets(iobh, buf);
     }
-    //    net->sigma = sigma_create();
+
     for (;;) {
         io_gets(iobh, buf);
         if (buf[0] == '#') break;
