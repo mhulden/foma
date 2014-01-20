@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2012 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -1113,11 +1113,19 @@ void iface_sort() {
 
 
 void iface_test_equivalent() {
-    struct fsm *one, *two;
+  struct fsm *one, *two;
     if (iface_stack_check(2)) {
         one = fsm_copy(stack_find_top()->fsm);
         two = fsm_copy(stack_find_second()->fsm);
-        iface_print_bool(fsm_isempty(fsm_union(fsm_minus(fsm_copy(one),fsm_copy(two)),fsm_minus(fsm_copy(two),fsm_copy(one)))));
+	fsm_count(one);
+	fsm_count(two);
+	
+	//if (one->arccount != two->arccount || one->statecount != two->statecount || one->finalcount != two->finalcount) {
+	//iface_print_bool(0);
+	    //} else {
+	    iface_print_bool(fsm_equivalent(one, two));
+	    //iface_print_bool(fsm_isempty(fsm_union(fsm_minus(fsm_copy(one),fsm_copy(two)),fsm_minus(fsm_copy(two),fsm_copy(one)))));
+	    //}
     }
 }
 
