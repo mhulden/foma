@@ -273,121 +273,128 @@ struct state_arr *init_state_pointers(struct fsm_state *fsm_state) {
 }
 
 /* An open addressing scheme (with linear probing) to store triplets of ints */
-/* and hashing them with an automatically increasing key at every insert */
-/* The hash is rehashed whenever occupancy reaches 0.5 */
+/* and hashing them with an automatically increasing key at every insert     */
+/* The table is rehashed whenever occupancy reaches 0.5                      */
 
-static unsigned int primes[26] = {61,127,251,509,1021,2039,4093,8191,16381,32749,65521,131071,262139,524287,1048573,2097143,4194301,8388593,16777213,33554393,67108859,134217689,268435399,536870909,1073741789,2147483647};
-
-struct pairhash_pairs {
+struct triplethash_triplets {
     int a;
     int b;
     int c;
     int key;
 };
 
-struct pairhash {
-    struct pairhash_pairs *pairs;
+struct triplethash {
+    struct triplethash_triplets *triplets;
     unsigned int tablesize;
     int occupancy;
 };
 
-struct pairhash *pair_hash_init() {
-    struct pairhash *ph;
+struct triplethash *triplet_hash_init() {
+    struct triplethash *th;
     int i;
-    ph = xxmalloc(sizeof(struct pairhash));
-    ph->tablesize = 1021;
-    ph->occupancy = 0;
-    ph->pairs = xxmalloc(sizeof(struct pairhash_pairs) * ph->tablesize);
-    for (i = 0; i < ph->tablesize; i++) {
-	(ph->pairs+i)->key = -1;
+    th = xxmalloc(sizeof(struct triplethash));
+    th->tablesize = 128;
+    th->occupancy = 0;
+    th->triplets = xxmalloc(sizeof(struct triplethash_triplets) * th->tablesize);
+    for (i = 0; i < th->tablesize; i++) {
+	(th->triplets+i)->key = -1;
     }
-    return(ph);
+    return(th);
 }
 
-unsigned int pairhash_hashf(int a, int b, int c) {
+unsigned int triplethash_hashf(int a, int b, int c) {
     return((unsigned int)(a * 7907 + b * 86028157 + c * 7919));
 }
 
-void pair_hash_free(struct pairhash *ph) {
-    if (ph != NULL) {
-	if (ph->pairs != NULL) {
-	    xxfree(ph->pairs);
+void triplet_hash_free(struct triplethash *th) {
+    if (th != NULL) {
+	if (th->triplets != NULL) {
+	    xxfree(th->triplets);
 	}
-	xxfree(ph);
+	xxfree(th);
     }    
 }
 
-void pair_hash_rehash(struct pairhash *ph);
+void triplet_hash_rehash(struct triplethash *th);
 
-void pair_hash_insert_with_key(struct pairhash *ph, int a, int b, int c, int key) {
-    struct pairhash_pairs *ph_table;
+void triplet_hash_insert_with_key(struct triplethash *th, int a, int b, int c, int key) {
+    struct triplethash_triplets *th_table;
     unsigned int hash;
-    ph_table = ph->pairs;
-    hash = pairhash_hashf(a, b, c);
-    for (  ;  ; hash++) {
-	if ((ph_table + (hash % ph->tablesize))->key == -1) {
-	    (ph_table + (hash % ph->tablesize))->key = key;
-	    (ph_table + (hash % ph->tablesize))->a = a;
-	    (ph_table + (hash % ph->tablesize))->b = b;
-	    (ph_table + (hash % ph->tablesize))->c = c;
+    th_table = th->triplets;
+    hash = triplethash_hashf(a, b, c) % th->tablesize;
+    for (;;) {
+	if ((th_table + hash)->key == -1) {
+	    (th_table + hash)->key = key;
+	    (th_table + hash)->a = a;
+	    (th_table + hash)->b = b;
+	    (th_table + hash)->c = c;
 	    break;
 	}
+	hash++;
+	if (hash >= th->tablesize)
+	    hash -= th->tablesize;
     }
 }
 
-int pair_hash_insert(struct pairhash *ph, int a, int b, int c) {
-    struct pairhash_pairs *ph_table;
+int triplet_hash_insert(struct triplethash *th, int a, int b, int c) {
+    struct triplethash_triplets *th_table;
     unsigned int hash;
-    ph_table = ph->pairs;
-    for (hash = pairhash_hashf(a, b, c);  ; hash++) {
-	if ((ph_table + (hash % ph->tablesize))->key == -1) {
-	    (ph_table + (hash % ph->tablesize))->key = ph->occupancy;
-	    (ph_table + (hash % ph->tablesize))->a = a;
-	    (ph_table + (hash % ph->tablesize))->b = b;
-	    (ph_table + (hash % ph->tablesize))->c = c;
-	    ph->occupancy = ph->occupancy + 1;
-	    /* Check if we need to grow table */
-	    if (ph->occupancy > ph->tablesize / 2) {
-		pair_hash_rehash(ph);
+    th_table = th->triplets;
+    hash = triplethash_hashf(a,b,c) % th->tablesize;
+    for (;;) {
+	if ((th_table + hash)->key == - 1) {
+	    (th_table + hash)->key = th->occupancy;
+	    (th_table + hash)->a = a;
+	    (th_table + hash)->b = b;
+	    (th_table + hash)->c = c;
+	    th->occupancy = th->occupancy + 1;
+	    if (th->occupancy > th->tablesize / 2) {
+		triplet_hash_rehash(th);
 	    }
-	    return(ph->occupancy - 1);
+	    return(th->occupancy - 1);
 	}
+	hash++;
+	if (hash >= th->tablesize)
+	    hash -= th->tablesize;
     }
 }
 
-void pair_hash_rehash(struct pairhash *ph) {
+void triplet_hash_rehash(struct triplethash *th) {
     int i;
     unsigned int newtablesize, oldtablesize;
-    struct pairhash_pairs *oldpairs;
-    for (i = 0; primes[i] <= ph->tablesize; i++) { }
-    newtablesize = primes[i];
-    oldtablesize = ph->tablesize;
-    oldpairs = ph->pairs;
-    ph->pairs = xxmalloc(sizeof(struct pairhash_pairs) * newtablesize);
-    ph->tablesize = newtablesize;
+    struct triplethash_triplets *oldtriplets;
+    newtablesize = th->tablesize * 2;
+    oldtablesize = th->tablesize;
+    oldtriplets = th->triplets;
+    th->triplets = xxmalloc(sizeof(struct triplethash_triplets) * newtablesize);
+    th->tablesize = newtablesize;
     for (i = 0; i < newtablesize; i++) {
-	(ph->pairs+i)->key = -1;
+	(th->triplets+i)->key = -1;
     }
     for (i = 0; i < oldtablesize; i++) {
-	if ((oldpairs+i)-> key != -1) {
-	    pair_hash_insert_with_key(ph, (oldpairs+i)->a, (oldpairs+i)->b, (oldpairs+i)->c, (oldpairs+i)->key);
+	if ((oldtriplets+i)-> key != -1) {
+	    triplet_hash_insert_with_key(th, (oldtriplets+i)->a, (oldtriplets+i)->b, (oldtriplets+i)->c, (oldtriplets+i)->key);
 	}
     }
-    xxfree(oldpairs);
+    xxfree(oldtriplets);
 }
 
-int pair_hash_find(struct pairhash *ph, int a, int b, int c) {
-    struct pairhash_pairs *ph_table;
-    unsigned int hash;
-    ph_table = ph->pairs;
-    for (hash = pairhash_hashf(a, b, c);  ; hash++) {
-	if ((ph_table + (hash % ph->tablesize))->key == -1) {
+int triplet_hash_find(struct triplethash *th, int a, int b, int c) {
+    struct triplethash_triplets *th_table;
+    unsigned int hash, j;
+    th_table = th->triplets;
+    hash = triplethash_hashf(a, b, c) % th->tablesize;
+    for (j = 0; j < th->tablesize; j++) {
+	if ((th_table + hash)->key == - 1)
 	    return -1;
+	if ((th_table + hash)->a == a && (th_table + hash)->b == b && (th_table + hash)->c == c) {
+	    return((th_table + hash)->key);
 	}
-	if ((ph_table + (hash % ph->tablesize))->a == a && (ph_table + (hash % ph->tablesize))->b == b &&  (ph_table + (hash % ph->tablesize))->c == c) {
-	    return((ph_table + (hash % ph->tablesize))->key);
-	}
+	hash++;
+	if (hash >= th->tablesize)
+	    hash -= th->tablesize;
     }
+    return -1;
 }
 
 struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
@@ -397,7 +404,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
     struct fsm_state *machine_a, *machine_b;
     struct state_arr *point_a, *point_b;
     struct fsm *new_net;
-    struct pairhash *ph;
+    struct triplethash *th;
 
     net1 = fsm_minimize(net1);
     net2 = fsm_minimize(net2);
@@ -424,8 +431,8 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
     
     STACK_2_PUSH(0,0);
     
-    ph = pair_hash_init();
-    pair_hash_insert(ph, 0, 0, 0);
+    th = triplet_hash_init();
+    triplet_hash_insert(th, 0, 0, 0);
 
     fsm_state_init(sigma_max(net1->sigma));
     
@@ -439,7 +446,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
         a = int_stack_pop();
         b = int_stack_pop();
         
-	current_state = pair_hash_find(ph, a, b, 0);
+	current_state = triplet_hash_find(th, a, b, 0);
         current_start = (((point_a+a)->start == 1) && ((point_b+b)->start == 1)) ? 1 : 0;
         current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 1)) ? 1 : 0;
         
@@ -469,9 +476,9 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
             if (bptr->mainloop != mainloop)
                 continue;
                 
-            if ((target_number = pair_hash_find(ph, machine_a->target, bptr->target, 0)) == -1) {
+            if ((target_number = triplet_hash_find(th, machine_a->target, bptr->target, 0)) == -1) {
                 STACK_2_PUSH(bptr->target, machine_a->target);
-                target_number = pair_hash_insert(ph, machine_a->target, bptr->target, 0);		
+                target_number = triplet_hash_insert(th, machine_a->target, bptr->target, 0);		
             }
             
             fsm_state_add_arc(current_state, machine_a->in, machine_a->out, target_number, current_final, current_start);
@@ -489,7 +496,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
     xxfree(point_a);
     xxfree(point_b);
     xxfree(array);
-    pair_hash_free(ph);
+    triplet_hash_free(th);
     return(fsm_coaccessible(new_net));
 }
 
@@ -540,7 +547,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     int a,b,i,mainloop,current_state, current_start, current_final, target_number, ain, bin, aout, bout, asearch, max2sigma;
     struct fsm_state *machine_a, *machine_b;
     struct state_arr *point_a, *point_b;
-    struct pairhash *ph;
+    struct triplethash *th;
     int mode;
     _Bool *is_flag = NULL;
 
@@ -636,8 +643,8 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     /* Mode, a, b */
     STACK_3_PUSH(0,0,0);
 
-    ph = pair_hash_init();
-    pair_hash_insert(ph, 0, 0, 0);
+    th = triplet_hash_init();
+    triplet_hash_insert(th, 0, 0, 0);
 
     fsm_state_init(sigma_max(net1->sigma));
     
@@ -654,7 +661,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
         b = int_stack_pop();
         mode = int_stack_pop();
         
-	current_state = pair_hash_find(ph, a,b,mode);
+	current_state = triplet_hash_find(th, a,b,mode);
         current_start = (((point_a+a)->start == 1) && ((point_b+b)->start == 1) && (mode == 0)) ? 1 : 0;
         current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 1)) ? 1 : 0;
         
@@ -707,9 +714,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 if (!g_compose_tristate) {
                     if (bin == aout && bin != -1 && bin != EPSILON) {
                         /* mode -> 0 */
-                        if ((target_number = pair_hash_find(ph, machine_a->target, iptr->target, 0)) == -1) {
+                        if ((target_number = triplet_hash_find(th, machine_a->target, iptr->target, 0)) == -1) {
                             STACK_3_PUSH(0, iptr->target, machine_a->target);
-                            target_number = pair_hash_insert(ph, machine_a->target, iptr->target, 0);
+                            target_number = triplet_hash_insert(th, machine_a->target, iptr->target, 0);
                         }
                         
                         fsm_state_add_arc(current_state, ain, bout, target_number, current_final, current_start);
@@ -719,9 +726,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 else if (g_compose_tristate) {
                     if (bin == aout && bin != -1 && ((bin != EPSILON || mode == 0))) {
                         /* mode -> 0 */
-                        if ((target_number = pair_hash_find(ph, machine_a->target, iptr->target, 0)) == -1) {
+                        if ((target_number = triplet_hash_find(th, machine_a->target, iptr->target, 0)) == -1) {
                             STACK_3_PUSH(0, iptr->target, machine_a->target);
-                            target_number = pair_hash_insert(ph, machine_a->target, iptr->target, 0);
+                            target_number = triplet_hash_insert(th, machine_a->target, iptr->target, 0);
                         }
                         
                         fsm_state_add_arc(current_state, ain, bout, target_number, current_final, current_start);
@@ -739,9 +746,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
             ain = machine_a->in;
 
             if (g_flag_is_epsilon && aout != -1 && mode == 0 && *(is_flag+aout)) {
-                if ((target_number = pair_hash_find(ph, machine_a->target, b, 0)) == -1) {
+                if ((target_number = triplet_hash_find(th, machine_a->target, b, 0)) == -1) {
                     STACK_3_PUSH(0, b, machine_a->target);
-		    target_number = pair_hash_insert(ph, machine_a->target, b, 0);
+		    target_number = triplet_hash_insert(th, machine_a->target, b, 0);
                 }
                 fsm_state_add_arc(current_state, ain, aout, target_number, current_final, current_start);
             }
@@ -750,9 +757,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 /* Check A:0 arcs on upper side */
                 if (aout == EPSILON && mode == 0) {
                     /* mode -> 0 */        
-                    if ((target_number = pair_hash_find(ph, machine_a->target, b, 0)) == -1) {
+                    if ((target_number = triplet_hash_find(th, machine_a->target, b, 0)) == -1) {
                         STACK_3_PUSH(0, b, machine_a->target);
-                        target_number = pair_hash_insert(ph, machine_a->target, b, 0);                    
+                        target_number = triplet_hash_insert(th, machine_a->target, b, 0);                    
                     }
                     
                     fsm_state_add_arc(current_state, ain, EPSILON, target_number, current_final, current_start);
@@ -762,9 +769,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
             else if (g_compose_tristate) {
                 if (aout == EPSILON && (mode != 2)) {
                     /* mode -> 1 */
-                    if ((target_number = pair_hash_find(ph, machine_a->target, b, 1)) == -1) {
+                    if ((target_number = triplet_hash_find(th, machine_a->target, b, 1)) == -1) {
                         STACK_3_PUSH(1, b, machine_a->target);
-                        target_number = pair_hash_insert(ph, machine_a->target, b, 1);                    
+                        target_number = triplet_hash_insert(th, machine_a->target, b, 1);                    
                     }
                     
                     fsm_state_add_arc(current_state, ain, EPSILON, target_number, current_final, current_start);
@@ -782,9 +789,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
             bout = machine_b->out;
             
             if (g_flag_is_epsilon && bin != -1 && *(is_flag+bin)) {
-                if ((target_number = pair_hash_find(ph, a, machine_b->target, 1)) == -1) {
+                if ((target_number = triplet_hash_find(th, a, machine_b->target, 1)) == -1) {
                     STACK_3_PUSH(1, machine_b->target,a);
-                    target_number = pair_hash_insert(ph, a, machine_b->target, 1);
+                    target_number = triplet_hash_insert(th, a, machine_b->target, 1);
                 }
                 fsm_state_add_arc(current_state, bin, bout, target_number, current_final, current_start);
             }
@@ -793,9 +800,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 /* Check 0:A arcs on lower side */
                 if (bin == EPSILON) {
                     /* mode -> 1 */
-                    if ((target_number = pair_hash_find(ph, a, machine_b->target, 1)) == -1) {
+                    if ((target_number = triplet_hash_find(th, a, machine_b->target, 1)) == -1) {
                         STACK_3_PUSH(1, machine_b->target,a);
-                        target_number = pair_hash_insert(ph, a, machine_b->target, 1);
+                        target_number = triplet_hash_insert(th, a, machine_b->target, 1);
                     }
                     
                     fsm_state_add_arc(current_state, EPSILON, bout, target_number, current_final, current_start);
@@ -806,9 +813,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 /* Check 0:A arcs on lower side */
                 if (bin == EPSILON && mode != 1) {
                     /* mode -> 1 */
-                    if ((target_number = pair_hash_find(ph, a, machine_b->target, 2)) == -1) {
+                    if ((target_number = triplet_hash_find(th, a, machine_b->target, 2)) == -1) {
                         STACK_3_PUSH(2, machine_b->target, a);
-                        target_number = pair_hash_insert(ph, a, machine_b->target, 2);
+                        target_number = triplet_hash_insert(th, a, machine_b->target, 2);
                     }
                     
                     fsm_state_add_arc(current_state, EPSILON, bout, target_number, current_final, current_start);
@@ -828,7 +835,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
 
     if (g_flag_is_epsilon)
         xxfree(is_flag);
-    pair_hash_free(ph);
+    triplet_hash_free(th);
     net1 = fsm_topsort(fsm_coaccessible(net1));
     return(fsm_coaccessible(net1));
 }
@@ -1736,7 +1743,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
   int i, a, b, current_state, current_start, current_final, target_number, symbol1, symbol2, epsilon = 0, unknown = 0;
   struct fsm_state *machine_a, *machine_b, *fsm;
   struct state_arr *point_a, *point_b;
-  struct pairhash *ph;
+  struct triplethash *th;
 
   /* Perform a cross product by running two machines in parallel */
   /* The approach here allows a state to stay, creating a a:0 or 0:b transition */
@@ -1772,8 +1779,8 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 
   STACK_2_PUSH(0,0);
 
-  ph = pair_hash_init();
-  pair_hash_insert(ph, 0, 0, 0);
+  th = triplet_hash_init();
+  triplet_hash_insert(th, 0, 0, 0);
 
   fsm_state_init(sigma_max(net1->sigma));
 
@@ -1789,7 +1796,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
     
    /* printf("Treating pair: {%i,%i}\n",a,b); */
 
-    current_state = pair_hash_find(ph, a, b, 0);
+    current_state = triplet_hash_find(th, a, b, 0);
     current_start = (((point_a+a)->start == 1) && ((point_b+b)->start == 1)) ? 1 : 0;
     current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 1)) ? 1 : 0;
 
@@ -1809,9 +1816,9 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 	}
 	/* Main check */
 	if (!((machine_a->target == -1) || (machine_b->target == -1))) {
-	    if ((target_number = pair_hash_find(ph, machine_a->target, machine_b->target, 0)) == -1) {
+	    if ((target_number = triplet_hash_find(th, machine_a->target, machine_b->target, 0)) == -1) {
               STACK_2_PUSH(machine_b->target, machine_a->target);
-              target_number = pair_hash_insert(ph, machine_a->target, machine_b->target, 0);
+              target_number = triplet_hash_insert(th, machine_a->target, machine_b->target, 0);
 	  }
 	  symbol1 = machine_a->in;
 	  symbol2 = machine_b->in;
@@ -1829,9 +1836,9 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 	if (machine_a->final_state == 1 && machine_b->target != -1) {
             
 	  /* Add 0:b i.e. stay in state A */
-	    if ((target_number = pair_hash_find(ph, machine_a->state_no, machine_b->target, 0)) == -1) {
+	    if ((target_number = triplet_hash_find(th, machine_a->state_no, machine_b->target, 0)) == -1) {
 		STACK_2_PUSH(machine_b->target, machine_a->state_no);
-		target_number = pair_hash_insert(ph, machine_a->state_no, machine_b->target, 0);
+		target_number = triplet_hash_insert(th, machine_a->state_no, machine_b->target, 0);
 	    }
 	  /* @:0 becomes ?:0 */
 	  symbol2 = machine_b->in == IDENTITY ? UNKNOWN : machine_b->in;
@@ -1841,9 +1848,9 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 	if (machine_b->final_state == 1 && machine_a->target != -1) {
 	  
 	  /* Add a:0 i.e. stay in state B */
-	    if ((target_number = pair_hash_find(ph, machine_a->target, machine_b->state_no, 0)) == -1) {
+	    if ((target_number = triplet_hash_find(th, machine_a->target, machine_b->state_no, 0)) == -1) {
               STACK_2_PUSH(machine_b->state_no, machine_a->target);
-              target_number = pair_hash_insert(ph, machine_a->target, machine_b->state_no, 0);
+              target_number = triplet_hash_insert(th, machine_a->target, machine_b->state_no, 0);
 	  }
 	  /* @:0 becomes ?:0 */
 	  symbol1 = machine_a->in == IDENTITY ? UNKNOWN : machine_a->in;
@@ -1877,7 +1884,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
   xxfree(point_a);
   xxfree(point_b);
   fsm_destroy(net2);
-  pair_hash_free(ph);
+  triplet_hash_free(th);
   return(fsm_coaccessible(net1));
 }
 
@@ -1893,7 +1900,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
   int a, b, current_state, current_start, current_final, target_number;
   struct fsm_state *machine_a, *machine_b;
   struct state_arr *point_a, *point_b;
-  struct pairhash *ph;
+  struct triplethash *th;
 
   /* Shuffle A and B by making alternatively A move and B stay at each or */
   /* vice versa at each step */
@@ -1913,8 +1920,8 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
 
   STACK_2_PUSH(0,0);
 
-  ph = pair_hash_init();
-  pair_hash_insert(ph, 0, 0, 0);
+  th = triplet_hash_init();
+  triplet_hash_insert(th, 0, 0, 0);
 
   fsm_state_init(sigma_max(net1->sigma));
 
@@ -1930,7 +1937,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
     
    /* printf("Treating pair: {%i,%i}\n",a,b); */
 
-    current_state = pair_hash_find(ph, a, b, 0);
+    current_state = triplet_hash_find(th, a, b, 0);
     current_start = (((point_a+a)->start == 1) && ((point_b+b)->start == 1)) ? 1 : 0;
     current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 1)) ? 1 : 0;
 
@@ -1941,9 +1948,9 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
 	if (machine_a->target == -1) {
 	  continue;
 	}
-	if ((target_number = pair_hash_find(ph, machine_a->target, b, 0)) == -1) {
+	if ((target_number = triplet_hash_find(th, machine_a->target, b, 0)) == -1) {
           STACK_2_PUSH(b, machine_a->target);
-	  target_number = pair_hash_insert(ph, machine_a->target, b, 0);
+	  target_number = triplet_hash_insert(th, machine_a->target, b, 0);
 	}
 
         fsm_state_add_arc(current_state, machine_a->in, machine_a->out, target_number, current_final, current_start);
@@ -1956,9 +1963,9 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
 	  continue;
 	}
 
-	if ((target_number = pair_hash_find(ph, a, machine_b->target, 0)) == -1) {
+	if ((target_number = triplet_hash_find(th, a, machine_b->target, 0)) == -1) {
               STACK_2_PUSH(machine_b->target, a);
-              target_number = pair_hash_insert(ph, a, machine_b->target, 0);
+              target_number = triplet_hash_insert(th, a, machine_b->target, 0);
 	  }
           fsm_state_add_arc(current_state, machine_b->in, machine_b->out, target_number, current_final, current_start);
       }
@@ -1972,7 +1979,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
   xxfree(point_a);
   xxfree(point_b);
   fsm_destroy(net2);
-  pair_hash_free(ph);
+  triplet_hash_free(th);
   return(net1);
 }
 
@@ -1981,7 +1988,7 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
     int a, b, target_number, matching_arc, equivalent;
     struct fsm_state *machine_a, *machine_b;
     struct state_arr *point_a, *point_b;
-    struct pairhash *ph;
+    struct triplethash *th;
     
     fsm_merge_sigma(net1, net2);
     
@@ -1995,8 +2002,8 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
     /* new state 0 = {0,0} */
     STACK_2_PUSH(0,0);
     
-    ph = pair_hash_init();
-    pair_hash_insert(ph, 0, 0, 0);
+    th = triplet_hash_init();
+    triplet_hash_insert(th, 0, 0, 0);
     
     point_a = init_state_pointers(machine_a);
     point_b = init_state_pointers(machine_b);
@@ -2023,9 +2030,9 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
 		}
 		if (machine_a->in == machine_b->in && machine_a->out == machine_b->out) {
 		    matching_arc = 1;
-		    if ((target_number = pair_hash_find(ph, machine_a->target, machine_b->target, 0)) == -1) {
+		    if ((target_number = triplet_hash_find(th, machine_a->target, machine_b->target, 0)) == -1) {
 			STACK_2_PUSH(machine_b->target, machine_a->target);
-			target_number = pair_hash_insert(ph, machine_a->target, machine_b->target, 0);
+			target_number = triplet_hash_insert(th, machine_a->target, machine_b->target, 0);
 		    }
 		    break;
 		}
@@ -2055,7 +2062,7 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
     xxfree(net1->states);
     xxfree(point_a);
     xxfree(point_b);
-    pair_hash_free(ph);
+    triplet_hash_free(th);
     return(equivalent);
 }
 
@@ -2064,7 +2071,7 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
     int a, b, current_state, current_start, current_final, target_number, b_has_trans, btarget, statecount;
     struct fsm_state *machine_a, *machine_b;
     struct state_arr *point_a, *point_b;
-    struct pairhash *ph;
+    struct triplethash *th;
     statecount = 0;
 
     net1 = fsm_minimize(net1);
@@ -2083,8 +2090,8 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
     int_stack_clear();
     STACK_2_PUSH(1,1);
 
-    ph = pair_hash_init();
-    pair_hash_insert(ph, 1, 1, 0);
+    th = triplet_hash_init();
+    triplet_hash_insert(th, 1, 1, 0);
 
     point_a = init_state_pointers(machine_a);
     point_b = init_state_pointers(machine_b);
@@ -2098,7 +2105,7 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
       a = int_stack_pop();
       b = int_stack_pop();
 
-      current_state = pair_hash_find(ph, a, b, 0);
+      current_state = triplet_hash_find(th, a, b, 0);
       a--;
       b--;
     
@@ -2119,9 +2126,9 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
           }
           if (b == -1) {
               /* b is dead */
-              if ((target_number = pair_hash_find(ph, (machine_a->target)+1, 0, 0)) == -1) {
+              if ((target_number = triplet_hash_find(th, (machine_a->target)+1, 0, 0)) == -1) {
                   STACK_2_PUSH(0, (machine_a->target)+1);
-                  target_number = pair_hash_insert(ph, (machine_a->target)+1, 0, 0);
+                  target_number = triplet_hash_insert(th, (machine_a->target)+1, 0, 0);
               }
           } else {
               /* b is alive */
@@ -2134,15 +2141,15 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
                   }
               }
               if (b_has_trans) {
-                  if ((target_number = pair_hash_find(ph, (machine_a->target)+1, btarget+1, 0)) == -1) {
+                  if ((target_number = triplet_hash_find(th, (machine_a->target)+1, btarget+1, 0)) == -1) {
                       STACK_2_PUSH(btarget+1, (machine_a->target)+1);
-		      target_number = pair_hash_insert(ph, (machine_a->target)+1, (machine_b->target)+1, 0);
+		      target_number = triplet_hash_insert(th, (machine_a->target)+1, (machine_b->target)+1, 0);
                   }
               } else {
                   /* b is dead */
-                  if ((target_number = pair_hash_find(ph, (machine_a->target)+1, 0, 0)) == -1) {
+                  if ((target_number = triplet_hash_find(th, (machine_a->target)+1, 0, 0)) == -1) {
                       STACK_2_PUSH(0, (machine_a->target)+1);
-		      target_number = pair_hash_insert(ph, (machine_a->target)+1, 0, 0);
+		      target_number = triplet_hash_insert(th, (machine_a->target)+1, 0, 0);
                   }
               }
           }
@@ -2156,7 +2163,7 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
   xxfree(point_a);
   xxfree(point_b);
   fsm_destroy(net2);
-  pair_hash_free(ph);
+  triplet_hash_free(th);
   return(fsm_minimize(net1));
 }
 
