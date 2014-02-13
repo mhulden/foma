@@ -952,10 +952,10 @@ void iface_substitute_defined (char *original, char *substitute) {
 	if ((subnet = find_defined(substitute)) == NULL) {
 	    printf("No defined network '%s'.\n",substitute);
 	} else {
-	    newnet = fsm_substitute_label(stack_find_top()->fsm, original, subnet);
-	    if (newnet == NULL) {
+	    if (fsm_symbol_occurs(stack_find_top()->fsm, original, M_UPPER + M_LOWER) == 0) {
 		printf("Symbol '%s' does not occur.\n", original);
 	    } else {
+		newnet = fsm_substitute_label(stack_find_top()->fsm, original, subnet);
 		stack_pop();
 		printf("Substituted network '%s' for '%s'.\n", substitute, original);
 		stack_add(fsm_topsort(fsm_minimize(newnet)));

@@ -304,6 +304,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 (_addsink\()         { return ADDSINK;         }
 (_leftrewr\()        { return LEFTREWR;        }
 (_flatten\()         { return FLATTEN;         }
+(_sublabel\()        { return SUBLABEL;        }
 
 ({NONRESERVED}+\() {
    yylval_param->string = xxstrdup(yytext);
