@@ -1625,6 +1625,18 @@ struct fsm *fsm_kleene_closure(struct fsm *net, int operation) {
     return(net);
 }
 
+char *fsm_network_to_char(struct fsm *net) {
+    struct sigma *sigma, *sigprev;
+    sigma = net->sigma;
+    if (sigma->number == -1) {
+        return NULL;
+    }
+    for (; sigma != NULL && sigma->number != -1 ; sigma = sigma->next) {
+	sigprev = sigma;
+    }
+    return(strdup(sigprev->symbol));
+}
+
 struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *substitute) {
    
     struct fsm *outnet, *subnet2;
@@ -1633,6 +1645,7 @@ struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *su
     char *subin, *subout;
     int i, repsym, source, target, in, out, addstate1, addstate2;
         
+    fsm_merge_sigma(net, substitute);
     addstate1 = net->statecount;
     addstate2 = substitute->statecount;
 
@@ -1641,7 +1654,7 @@ struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *su
     repsym = fsm_get_symbol_number(inh, original);
     if (repsym == -1) {
 	fsm_read_done(inh);
-	return(NULL);
+	return(net);
     }
     outh = fsm_construct_init(net->name);
     fsm_construct_copy_sigma(outh, net->sigma);
