@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -305,6 +305,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 (_leftrewr\()        { return LEFTREWR;        }
 (_flatten\()         { return FLATTEN;         }
 (_sublabel\()        { return SUBLABEL;        }
+(_close\()           { return CLOSESIGMA;      }
 
 ({NONRESERVED}+\() {
    yylval_param->string = xxstrdup(yytext);

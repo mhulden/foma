@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2012 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -147,6 +147,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 ^{SP}*apr(o(p(os?)?)?)?{SP}+/[^ ] {BEGIN(APROPOS); }
 ^{SP}*assert-stack{SP} {BEGIN(ASSERT_STACK);}
 ^{SP}*clear({SP}+st(a(ck?)?)?)? {  stack_clear();}
+^{SP}*close({SP}+si(g(ma?)?)?)? {  iface_close();}
 ^{SP}*comp(a(ct?)?){SP}+sig(ma?)? { iface_compact(); }
 ^{SP}*compl(e(te?)?)?({SP}+net?)?   { iface_complete();}
 ^{SP}*compo(se?)?({SP}+net?)? { iface_compose();}

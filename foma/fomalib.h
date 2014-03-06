@@ -237,6 +237,7 @@ FEXPORT struct fsm *fsm_add_loop(struct fsm *net, struct fsm *marker, int finals
 FEXPORT struct fsm *fsm_add_sink(struct fsm *net, int final);
 FEXPORT struct fsm *fsm_left_rewr(struct fsm *net, struct fsm *rewr);
 FEXPORT struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon);
+FEXPORT struct fsm *fsm_close_sigma(struct fsm *net);
 FEXPORT char *fsm_network_to_char(struct fsm *net);
 
 /* Remove those symbols from sigma that have the same distribution as IDENTITY */

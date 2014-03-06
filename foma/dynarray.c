@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -187,6 +187,7 @@ struct fsm_construct_handle *fsm_construct_init(char *name) {
     } else {
         handle->name = xxstrdup(name);
     }
+    handle->hasinitial = 0;
     return(handle);
 }
 
@@ -232,6 +233,7 @@ void fsm_construct_set_initial(struct fsm_construct_handle *handle, int state_no
 
     sl = handle->fsm_state_list;
     (sl+state_no)->is_initial = 1;
+    handle->hasinitial = 1;
 }
 
 void fsm_construct_add_arc(struct fsm_construct_handle *handle, int source, int target, char *in, char *out) {
@@ -421,20 +423,25 @@ struct sigma *fsm_construct_convert_sigma(struct fsm_construct_handle *handle) {
 }
 
 struct fsm *fsm_construct_done(struct fsm_construct_handle *handle) {
-    int i;
+    int i, emptyfsm;
     struct fsm *net;
     struct fsm_state_list *sl;
     struct fsm_trans_list *trans, *transnext;
     struct fsm_sigma_hash *sigmahash, *sigmahashnext;
 
     sl = handle->fsm_state_list;
-    if (handle->maxstate == -1 || handle->numfinals == 0) {
+    if (handle->maxstate == -1 || handle->numfinals == 0 || handle->hasinitial == 0) {
         return(fsm_empty_set());
     }
     fsm_state_init((handle->maxsigma)+1);
-    for (i=0; i <= handle->maxstate; i++) {
+
+    for (i=0, emptyfsm = 1; i <= handle->maxstate; i++) {
         fsm_state_set_current_state(i, (sl+i)->is_final, (sl+i)->is_initial);
+	if ((sl+i)->is_initial && (sl+i)->is_final)
+	    emptyfsm = 0; /* We want to keep track of if FSM has (a) something outgoing from initial, or (b) initial is final */
         for (trans = (sl+i)->fsm_trans_list; trans != NULL; trans = trans->next) {
+	    if ((sl+i)->is_initial)
+		emptyfsm = 0;
             fsm_state_add_arc(i, trans->in, trans->out, trans->target, (sl+i)->is_final, (sl+i)->is_initial);
         }
         fsm_state_end_state();
@@ -475,6 +482,10 @@ struct fsm *fsm_construct_done(struct fsm_construct_handle *handle) {
     xxfree(handle->fsm_state_list);
     xxfree(handle);
     sigma_sort(net);
+    if (emptyfsm) {
+	fsm_destroy(net);
+	return(fsm_empty_set());
+    }
     return(net);
 }
 
