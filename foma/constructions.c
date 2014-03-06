@@ -2986,7 +2986,8 @@ struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
     return(newnet);
 }
 
-struct fsm *fsm_close_sigma(struct fsm *net) {
+/* Removes IDENTITY and UNKNOWN transitions. If mode = 1, only removes UNKNOWNs */
+struct fsm *fsm_close_sigma(struct fsm *net, int mode) {
     struct fsm *newnet;
     struct fsm_construct_handle *newh;
     struct fsm_read_handle *inh;
@@ -2997,7 +2998,7 @@ struct fsm *fsm_close_sigma(struct fsm *net) {
     fsm_construct_copy_sigma(newh, net->sigma);
 
     while (fsm_get_next_arc(inh)) {
-	if (fsm_get_arc_num_in(inh) != UNKNOWN && fsm_get_arc_num_in(inh) != IDENTITY && fsm_get_arc_num_out(inh) != UNKNOWN && fsm_get_arc_num_out(inh) != IDENTITY)
+	if ((fsm_get_arc_num_in(inh) != UNKNOWN && fsm_get_arc_num_in(inh) != IDENTITY && fsm_get_arc_num_out(inh) != UNKNOWN && fsm_get_arc_num_out(inh) != IDENTITY) || (mode == 1 && fsm_get_arc_num_in(inh) != UNKNOWN && fsm_get_arc_num_out(inh) != UNKNOWN))
 	    fsm_construct_add_arc_nums(newh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
     }
     while ((i = fsm_get_next_final(inh)) != -1) {
