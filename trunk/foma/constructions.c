@@ -2985,3 +2985,29 @@ struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
     xxfree(epssym);
     return(newnet);
 }
+
+struct fsm *fsm_close_sigma(struct fsm *net) {
+    struct fsm *newnet;
+    struct fsm_construct_handle *newh;
+    struct fsm_read_handle *inh;
+    int i;
+
+    inh = fsm_read_init(net);
+    newh = fsm_construct_init(net->name);
+    fsm_construct_copy_sigma(newh, net->sigma);
+
+    while (fsm_get_next_arc(inh)) {
+	if (fsm_get_arc_num_in(inh) != UNKNOWN && fsm_get_arc_num_in(inh) != IDENTITY && fsm_get_arc_num_out(inh) != UNKNOWN && fsm_get_arc_num_out(inh) != IDENTITY)
+	    fsm_construct_add_arc_nums(newh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
+    }
+    while ((i = fsm_get_next_final(inh)) != -1) {
+	fsm_construct_set_final(newh, i);
+    }
+    while ((i = fsm_get_next_initial(inh)) != -1) {
+	fsm_construct_set_initial(newh, i);
+    }
+    fsm_read_done(inh);
+    newnet = fsm_construct_done(newh);
+    fsm_destroy(net);
+    return(fsm_minimize(newnet));
+}

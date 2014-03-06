@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2012 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -97,6 +97,7 @@ void iface_apply_med(char *word);
 void iface_apply_set_params(struct apply_handle *h);
 void iface_apply_up(char *word);
 void iface_apropos(char *s);
+void iface_close(void);
 void iface_compact(void);
 void iface_complete(void);
 void iface_compose(void);

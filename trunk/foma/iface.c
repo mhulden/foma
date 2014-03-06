@@ -104,6 +104,7 @@ struct global_help {
     {"apply med","enter apply med mode (Ctrl-D exits)","Short form: med\n"},
     {"apropos <string>","search help for <string>",""},
     {"clear stack","clears the stack",""},
+    {"close sigma","removes unknown symbols from FSM","" },
     {"compact sigma","removes redundant symbols from FSM","" },
     {"complete net","completes the FSM","" },
     {"compose net","composes networks on stack",""},
@@ -478,6 +479,12 @@ void iface_apply_up(char *word) {
         if (result == NULL)
             break;
         printf("%s\n",result);
+    }
+}
+
+void iface_close() {
+    if (iface_stack_check(1)) {
+        stack_add(fsm_topsort(fsm_minimize(fsm_close_sigma(stack_pop()))));
     }
 }
 

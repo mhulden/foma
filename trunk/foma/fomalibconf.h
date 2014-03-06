@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2012 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -57,6 +57,7 @@ struct fsm_construct_handle {
     int maxstate;
     int maxsigma;
     int numfinals;
+    int hasinitial;
     char *name;
 };
 
