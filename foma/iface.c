@@ -484,7 +484,7 @@ void iface_apply_up(char *word) {
 
 void iface_close() {
     if (iface_stack_check(1)) {
-        stack_add(fsm_topsort(fsm_minimize(fsm_close_sigma(stack_pop()))));
+      stack_add(fsm_topsort(fsm_minimize(fsm_close_sigma(stack_pop(),0))));
     }
 }
 
