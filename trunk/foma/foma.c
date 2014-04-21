@@ -161,8 +161,10 @@ int main(int argc, char *argv[]) {
         if (promptmode == PROMPT_A && apply_direction == AP_M)
             sprintf(prompt, "apply med> ");
         if (pipe_mode || quiet_mode)
-            prompt[0] = '\0';
+	    prompt[0] = '\0';
 
+	fflush(stdout);
+	
         command = rl_gets(prompt);
 
         if (command == NULL && promptmode == PROMPT_MAIN) {
