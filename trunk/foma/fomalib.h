@@ -28,7 +28,7 @@ extern "C" {
 /* Library version */
 #define MAJOR_VERSION 0
 #define MINOR_VERSION 9
-#define BUILD_VERSION 17
+#define BUILD_VERSION 18
 #define STATUS_VERSION "alpha"
 
 /* Special symbols on arcs */
@@ -78,6 +78,26 @@ extern "C" {
 
 #define APPLY_INDEX_INPUT 1
 #define APPLY_INDEX_OUTPUT 2
+
+/* Defined networks */
+struct defined_networks {
+  char *name;
+  struct fsm *net;
+  struct defined_networks *next;
+};
+
+/* Defined functions */
+struct defined_functions {
+    char *name;
+    char *regex;
+    int numargs;
+    struct defined_functions *next;
+};
+
+struct defined_quantifiers {
+    char *name;
+    struct defined_quantifiers *next;
+};
 
 /* Automaton structures */
 
@@ -157,6 +177,15 @@ struct sigma {
 
 #include "fomalibconf.h"
 
+/* Define functions */
+FEXPORT struct defined_networks *defined_networks_init(void);
+FEXPORT struct defined_functions *defined_functions_init(void);
+struct fsm *find_defined(struct defined_networks *def, char *string);
+char *find_defined_function(struct defined_functions *deff, char *name, int numargs);
+FEXPORT int add_defined(struct defined_networks *def, struct fsm *net, char *string);
+int add_defined_function (struct defined_functions *deff, char *name, char *regex, int numargs);
+int remove_defined (struct defined_networks *def, char *string);
+
 /********************/
 /* Basic operations */
 /********************/
@@ -173,7 +202,8 @@ FEXPORT void fsm_sort_arcs(struct fsm *net, int direction);
 FEXPORT struct fsm *fsm_mark_ambiguous(struct fsm *net);
 FEXPORT struct fsm *fsm_sequentialize(struct fsm *net);
 FEXPORT struct fsm *fsm_bimachine(struct fsm *net);
-FEXPORT struct fsm *fsm_parse_regex(char *regex);
+
+FEXPORT struct fsm *fsm_parse_regex(char *regex, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 FEXPORT struct fsm *fsm_reverse(struct fsm *net);
 FEXPORT struct fsm *fsm_invert(struct fsm *net);
 FEXPORT struct fsm *fsm_lower(struct fsm *net);
@@ -283,8 +313,6 @@ FEXPORT int fsm_sigma_destroy(struct sigma *sigma);
 /* Frees a FSM, associated data such as alphabet and confusion matrix */
 FEXPORT int fsm_destroy(struct fsm *net);
 
-
-
 /* IO functions */
 FEXPORT struct fsm *read_att(char *filename);
 FEXPORT int net_print_att(struct fsm *net, FILE *outfile);
@@ -296,11 +324,11 @@ FEXPORT fsm_read_binary_handle fsm_read_binary_file_multiple_init(char *filename
 FEXPORT struct fsm *fsm_read_text_file(char *filename);
 FEXPORT struct fsm *fsm_read_spaced_text_file(char *filename);
 FEXPORT int fsm_write_binary_file(struct fsm *net, char *filename);
-FEXPORT int load_defined(char *filename);
-FEXPORT int save_defined();
+FEXPORT int load_defined(struct defined_networks *def, char *filename);
+FEXPORT int save_defined(struct defined_networks *def, char *filename);
 FEXPORT int save_stack_att();
 FEXPORT int write_prolog(struct fsm *net, char *filename);
-FEXPORT int foma_net_print(struct fsm *net, gzFile *outfile);
+FEXPORT int foma_net_print(struct fsm *net, gzFile outfile);
 
 /* Lookups */
 

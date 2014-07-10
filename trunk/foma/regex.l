@@ -21,8 +21,16 @@
 %option yylineno
 %{
 #include <stdio.h>
-#include "regex.tab.h"
 #include "foma.h"
+#include "regex.tab.h"
+
+struct defs {
+    struct defined_networks *defined_nets;
+    struct defined_functions *defined_funcs;
+};
+
+#define YY_EXTRA_TYPE struct defs *
+
 #define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno; yylloc->first_column = yycolumn; yylloc->last_column = yycolumn+yyleng-1; yycolumn += yyleng;
 
 #define MAX_PARSE_DEPTH 100
@@ -52,82 +60,87 @@ extern struct fsm *current_parse;
 char *yyget_text(yyscan_t yyscanner);
 char *tempstr, *tempstr2;
 int yylex_init (yyscan_t* scanner);
+int yylex_init_extra (struct defs *defptr, yyscan_t *scanner);
 int yylex_destroy (yyscan_t scanner);
-int my_yyparse(char *my_string, int lineno);
+int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 
 int yywrap(yyscan_t scanner) {return 1; }
 
 int yyerror(YYLTYPE* yylloc, yyscan_t scanner, char *msg) {
    if(yylloc->first_line)
-     fprintf(stderr, "%d.%d-%d.%d: error: ", yylloc->first_line, yylloc->first_column, yylloc->last_line, yylloc->last_column);
-   printf("%s%s at '%s'.\n", "***", msg, yyget_text(scanner));
+       fprintf(stderr, "%d.%d-%d.%d: error: ", yylloc->first_line, yylloc->first_column, yylloc->last_line, yylloc->last_column);
+   fprintf(stderr, "%s%s at '%s'.\n", "***", msg, yyget_text(scanner));
    return 1;
 }
 
-struct fsm *fsm_parse_regex(char *regex) {
-  char *newregex;
-  current_parse = NULL;
-  newregex = xxmalloc(sizeof(char)*(strlen(regex)+2));
-  strcpy(newregex, regex);
-  strcat(newregex, ";");
-  if (my_yyparse(newregex,1) == 0) {
-    xxfree(newregex);
-    return(fsm_minimize(current_parse));
-  } else {
-    xxfree(newregex);
-    return(NULL);
-  }
+struct fsm *fsm_parse_regex(char *regex, struct defined_networks *defined_nets, struct defined_functions *defined_funcs) {
+    char *newregex;
+    current_parse = NULL;
+    newregex = xxmalloc(sizeof(char)*(strlen(regex)+2));
+    strcpy(newregex, regex);
+    strcat(newregex, ";");
+    if (my_yyparse(newregex, 1, defined_nets, defined_funcs) == 0) {
+	xxfree(newregex);
+	return(fsm_minimize(current_parse));
+    } else {
+	xxfree(newregex);
+	return(NULL);
+    }
 }
 
+/* Only used when reading regex from file */
 struct fsm *fsm_parse_regex_string(char *regex) {
-  current_parse = NULL;
-  if (my_yyparse(regex,1) == 0) {
-    xxfree(regex);
-    return(fsm_minimize(current_parse));
-  } else {
-    xxfree(regex);
-    return(NULL);
-  }
+    current_parse = NULL;
+    if (my_yyparse(regex,1,g_defines,g_defines_f) == 0) {
+	xxfree(regex);
+	return(fsm_minimize(current_parse));
+    } else {
+	xxfree(regex);
+	return(NULL);
+    }
 }
 
-void yyset_lineno (int line_number, yyscan_t yyscanner);
+void yyset_lineno(int line_number, yyscan_t yyscanner);
 
-int my_yyparse(char *my_string, int lineno) {
-   int yyp;
-   yyscan_t scanner;
-   
-   yylex_init(&scanner);
-   YY_BUFFER_STATE my_string_buffer;
-   my_string_buffer = yy_scan_string(my_string, scanner);
-   yyset_lineno(lineno, scanner);
-   if (g_parse_depth > 0) {
-      if (g_parse_depth >= MAX_PARSE_DEPTH) {
-        fprintf(stderr,"Exceeded parser stack depth.  Self-recursive call?\n");
-        return 1;
-      }
-      /* Save variables on stack */
-      parservarstack[g_parse_depth].rewrite = rewrite;
-      parservarstack[g_parse_depth].rule_direction = rule_direction;
-      parservarstack[g_parse_depth].contexts = contexts;
-      parservarstack[g_parse_depth].rules = rules;
-      parservarstack[g_parse_depth].rewrite_rules = rewrite_rules;     
-   }
-   g_parse_depth++;
-   yyp = yyparse(scanner);
-   g_parse_depth--;
-   if (g_parse_depth > 0) {
-     /* Restore parse variables */
-     rewrite        = parservarstack[g_parse_depth].rewrite;
-     rule_direction = parservarstack[g_parse_depth].rule_direction;
-     contexts       = parservarstack[g_parse_depth].contexts;
-     rules          = parservarstack[g_parse_depth].rules;
-     rewrite_rules  = parservarstack[g_parse_depth].rewrite_rules;
-   }
-   yy_delete_buffer(my_string_buffer, scanner);
-   yylex_destroy(scanner);
-   return yyp;
+int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs) {
+    int yyp;
+    yyscan_t scanner;
+    struct defs defsptr[1];
+    YY_BUFFER_STATE my_string_buffer;
+
+    defsptr->defined_nets = defined_nets;
+    defsptr->defined_funcs = defined_funcs;
+    yylex_init_extra(defsptr, &scanner);
+
+    my_string_buffer = yy_scan_string(my_string, scanner);
+    yyset_lineno(lineno, scanner);
+    if (g_parse_depth > 0) {
+	if (g_parse_depth >= MAX_PARSE_DEPTH) {
+	    fprintf(stderr,"Exceeded parser stack depth.  Self-recursive call?\n");
+	    return 1;
+	}
+	/* Save variables on stack */
+	parservarstack[g_parse_depth].rewrite = rewrite;
+	parservarstack[g_parse_depth].rule_direction = rule_direction;
+	parservarstack[g_parse_depth].contexts = contexts;
+	parservarstack[g_parse_depth].rules = rules;
+	parservarstack[g_parse_depth].rewrite_rules = rewrite_rules;
+    }
+    g_parse_depth++;
+    yyp = yyparse(scanner, defined_nets, defined_funcs);
+    g_parse_depth--;
+    if (g_parse_depth > 0) {
+	/* Restore parse variables */
+	rewrite        = parservarstack[g_parse_depth].rewrite;
+	rule_direction = parservarstack[g_parse_depth].rule_direction;
+	contexts       = parservarstack[g_parse_depth].contexts;
+	rules          = parservarstack[g_parse_depth].rules;
+	rewrite_rules  = parservarstack[g_parse_depth].rewrite_rules;
+    }
+    yy_delete_buffer(my_string_buffer, scanner);
+    yylex_destroy(scanner);
+    return yyp;
 }
-
 
 %}
 
@@ -145,73 +158,73 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
  /* we're matching braced strings */
 
 {BRACED} {
-  yylval_param->net = fsm_explode(yytext);
-  return NET;
+    yylval_param->net = fsm_explode(yytext);
+    return NET;
 }
 
  /* Read binary file */
 ([\100]["][^"]+[\042]) {
-  tempstr = xxstrndup(yytext+2,yyleng-3);
-  yylval_param->net = fsm_read_binary_file(tempstr);
-  xxfree(tempstr);
-  if (yylval_param->net != NULL) {
-    return NET;
-  }
+    tempstr = xxstrndup(yytext+2,yyleng-3);
+    yylval_param->net = fsm_read_binary_file(tempstr);
+    xxfree(tempstr);
+    if (yylval_param->net != NULL) {
+	return NET;
+    }
 }
 
  /* Read regex from file */
 ([\100]re["][^"]+[\042]) {
-  tempstr = xxstrndup(yytext+4,yyleng-5);
-  tempstr2 = file_to_mem(tempstr);
-  xxfree(tempstr);
-  if (tempstr2 != NULL) {
-    yylval_param->net = fsm_parse_regex_string(tempstr2);
-    if (yylval_param->net != NULL) {
-       return NET;
-     }  
-  }
+    tempstr = xxstrndup(yytext+4,yyleng-5);
+    tempstr2 = file_to_mem(tempstr);
+    xxfree(tempstr);
+    if (tempstr2 != NULL) {
+	yylval_param->net = fsm_parse_regex_string(tempstr2);
+	if (yylval_param->net != NULL) {
+	    return NET;
+	}  
+    }
 }
 
  /* Read text file */
 ([\100]txt["][^"]+[\042]) {
-  tempstr = xxstrndup(yytext+5,yyleng-6);
-  yylval_param->net = fsm_read_text_file(tempstr);
-  xxfree(tempstr);
-  if (yylval_param->net != NULL) {
-    return NET;
-  }
+    tempstr = xxstrndup(yytext+5,yyleng-6);
+    yylval_param->net = fsm_read_text_file(tempstr);
+    xxfree(tempstr);
+    if (yylval_param->net != NULL) {
+	return NET;
+    }
 }
 
  /* Read spaced text file */
 ([\100]stxt["][^"]+[\042]) {
-  tempstr = xxstrndup(yytext+6,yyleng-7);
-  yylval_param->net = fsm_read_spaced_text_file(tempstr);
-  xxfree(tempstr);
-  if (yylval_param->net != NULL) {
-    return NET;
-  }
+    tempstr = xxstrndup(yytext+6,yyleng-7);
+    yylval_param->net = fsm_read_spaced_text_file(tempstr);
+    xxfree(tempstr);
+    if (yylval_param->net != NULL) {
+	return NET;
+    }
 }
 
 (\^[0-9]+) {
-  //yylval_param->string = xxstrdup(yytext+1);
-  yylval_param->string = yytext+1;
-  return NCONCAT;
+    //yylval_param->string = xxstrdup(yytext+1);
+    yylval_param->string = yytext+1;
+    return NCONCAT;
 }
 
 (\^\{[0-9]+[ ]*,[ ]*[0-9]+\}) {
-  //yylval_param->string = xxstrdup(yytext+2);
-  yylval_param->string = yytext+2;
-  return MNCONCAT;
+    //yylval_param->string = xxstrdup(yytext+2);
+    yylval_param->string = yytext+2;
+    return MNCONCAT;
 }
 (\^\>[0-9]+) {
-  yylval_param->string = yytext+2;
+    yylval_param->string = yytext+2;
 //  yylval_param->string = xxstrdup(yytext+2);
-  return MORENCONCAT;
+    return MORENCONCAT;
 }
 (\^\<[0-9]+) {
-  //  yylval_param->string = xxstrdup(yytext+2);
- yylval_param->string = yytext+2;
-  return LESSNCONCAT;
+    //  yylval_param->string = xxstrdup(yytext+2);
+    yylval_param->string = yytext+2;
+    return LESSNCONCAT;
 }
 
 ((\ |\t)+) {
@@ -220,12 +233,12 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 
  /* Start of universal quantifier */
 [\050][\342][\210][\200]/(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+[\051] {
- BEGIN(UQ);
+    BEGIN(UQ);
 }
  
  /* Start of existential quantifier */
 [\050][\342][\210][\203]/(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+[\051] {
- BEGIN(EQ);
+    BEGIN(EQ);
 }
 
 
@@ -233,34 +246,34 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
  /* Add quantifier to quantifier symbol table */
 
  //yylval_param->string = xxstrdup(yytext);
- yylval_param->string = yytext;
- add_quantifier(yytext);
- BEGIN(ENDQ);
- return(UQUANT);
+    yylval_param->string = yytext;
+    add_quantifier(yytext);
+    BEGIN(ENDQ);
+    return(UQUANT);
 }
 
 <EQ>(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+/[\051] {
- /* Add quantifier to quantifier symbol table */
- //yylval_param->string = xxstrdup(yytext);
- yylval_param->string = yytext;
- add_quantifier(yytext);
- BEGIN(ENDQ);
- return(EQUANT);
+    /* Add quantifier to quantifier symbol table */
+    //yylval_param->string = xxstrdup(yytext);
+    yylval_param->string = yytext;
+    add_quantifier(yytext);
+    BEGIN(ENDQ);
+    return(EQUANT);
 }
 
 <ENDQ>[\051] {BEGIN(INITIAL);}
 
  /* Start of a quoted sequence of symbols */
 [\042]/([\300-\337].|[\340-\357]..|[\360-\367]...|[\001-\041]|[\043-\177])+[\042] {
-  BEGIN(QTD);
+    BEGIN(QTD);
 }
 
  /* Stuff that goes inside " ", including UTF8 \uHHHH sequences */
 <QTD>([\300-\337].|[\340-\357]..|[\360-\367]...|[\001-\041]|[\043-\177])+/[\042] {
-  decode_quoted(yytext);										  
-  yylval_param->net = fsm_symbol(yytext);
-  BEGIN(QTDEND);
-  return NET;
+    decode_quoted(yytext);										  
+    yylval_param->net = fsm_symbol(yytext);
+    BEGIN(QTDEND);
+    return NET;
 }
 
  /* Disregard end quote */
@@ -347,8 +360,8 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   }
   //  yylval_param->string = xxstrdup(yytext);
   yylval_param->string = yytext;
-  if(find_defined(yytext) != NULL) {
-    yylval_param->net = fsm_copy(find_defined(yytext));
+  if(find_defined(yyextra->defined_nets, yytext) != NULL) {
+    yylval_param->net = fsm_copy(find_defined(yyextra->defined_nets, yytext));
   } else if (find_quantifier(yytext) != NULL) {
       return VAR;
   } else {

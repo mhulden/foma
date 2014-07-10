@@ -51,7 +51,7 @@ extern int promptmode;
 extern int apply_direction;
 extern int g_list_limit;
 
-extern int my_yyparse(char *my_string, int lineno);
+extern int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 extern void my_cmatrixparse(struct fsm *net, char *my_string);
 extern struct fsm *current_parse;
 extern struct fsm *fsm_lexc_parse_string(char *string);
@@ -90,12 +90,12 @@ char *rep_func_arg(char *s) {
   struct func_args *fa;  
   char *argstr;
   for (fa = func_args; fa != NULL; fa = fa->next) {
-    if (strcmp(fa->arg,s) == 0) {      
+    if (strcmp(fa->arg,s) == 0) {
         argstr = xxmalloc(sizeof(char)*20);
         sprintf(argstr, "@ARGUMENT%02i@", fa->argno);
         return(argstr);
     }
-  }  
+  }
   return(strdup(s));
 }
 
@@ -310,11 +310,11 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 }
 
 <PUSH>{NONL}+ {
-  if (find_defined(interfacetext) == NULL)
-    printf("'%s' is not a defined symbol.\n",interfacetext);
-  else
-    stack_add(fsm_copy(find_defined(interfacetext)));
-  BEGIN(INITIAL);
+    if (find_defined(g_defines, interfacetext) == NULL)
+	printf("'%s' is not a defined symbol.\n",interfacetext);
+    else
+	stack_add(fsm_copy(find_defined(g_defines, interfacetext)));
+    BEGIN(INITIAL);
 }
 
 <APPLY_P>{NONL}+ {
@@ -348,14 +348,14 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 <RCOMMENT>{ANY}  { yymore(); }
 
 <REGEX>(;) {
-    if (my_yyparse(interfacetext, interfacelineno) == 0) {
+    if (my_yyparse(interfacetext, interfacelineno, g_defines, g_defines_f) == 0) {
       /* regex xxx line */
       if (pmode == RE) {
          stack_add(fsm_topsort(fsm_minimize(current_parse)));
       /* define XXX xxx line */
       } else if (pmode == DE) {
         tempnet = fsm_topsort(fsm_minimize(current_parse));
-        olddef = add_defined(tempnet,tempstr);
+        olddef = add_defined(g_defines, tempnet,tempstr);
         if (olddef) {
           printf("redefined %s: ",tempstr);
         } else {
@@ -416,7 +416,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 <FUNC_4>{BRACED}       { strcat(funcdef, interfacetext); }
 <FUNC_4>%{ANY}         { strcat(funcdef, interfacetext); }
 <FUNC_4>{QUOTED}       { strcat(funcdef, interfacetext); }
-<FUNC_4>;              { strcat(funcdef, interfacetext); add_defined_function(func_name, funcdef, (func_arg_no-1));clear_func_args(); xxfree(func_name); BEGIN(INITIAL); }
+<FUNC_4>;              { strcat(funcdef, interfacetext); add_defined_function(g_defines_f, func_name, funcdef, (func_arg_no-1));clear_func_args(); xxfree(func_name); BEGIN(INITIAL); }
 <FUNC_4>.|\.#\.        { strcat(funcdef, interfacetext); }
 
 
@@ -431,7 +431,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
    /* Define the top network on stack */
    if (iface_stack_check(1)) {
        tempnet = stack_pop();
-       olddef = add_defined(tempnet,remove_trailing(interfacetext,';'));
+       olddef = add_defined(g_defines, tempnet,remove_trailing(interfacetext,';'));
        if (olddef) {
          printf("redefined %s: ",interfacetext);
        } else {
@@ -443,7 +443,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 }
 
 <UNDEFINE>{NONL}+ {
-  remove_defined(remove_trailing(interfacetext,';'));
+    remove_defined(g_defines, remove_trailing(interfacetext,';'));
   BEGIN(INITIAL);
 }
 
@@ -573,8 +573,8 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 }
 
 <ECHO>{NONL}+ {
-  printf("%s\n",interfacetext);
-  BEGIN(INITIAL);
+    printf("%s\n",interfacetext);
+    BEGIN(INITIAL);
 }
 
 <ASSERT_STACK>{NONL} {
@@ -639,10 +639,10 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 
 <IGNORELINE>.? { BEGIN(INITIAL);  }
 
-
 <<EOF>> {
-  yypop_buffer_state();
-  if (!YY_CURRENT_BUFFER) {
-     yyterminate();
-  }
+    yypop_buffer_state();
+    if (!YY_CURRENT_BUFFER) {
+	yyterminate();
+    }
 }
+

@@ -631,7 +631,7 @@ void fsm_clear_contexts(struct fsmcontexts *contexts) {
 struct fsm *rewrite_pad(struct fsm *net) {
     struct fsm *pad;
     /* [? 0:"@>@" ? 0:"@<@"]* [? 0:"@>@" ?] */
-    pad = fsm_minimize(fsm_parse_regex("[? 0:\"@>@\" ? 0:\"@<@\"]* [? 0:\"@>@\" ?]"));
+    pad = fsm_minimize(fsm_parse_regex("[? 0:\"@>@\" ? 0:\"@<@\"]* [? 0:\"@>@\" ?]", NULL, NULL));
     return(fsm_minimize(fsm_lower(fsm_compose(net,pad))));
 }
 
