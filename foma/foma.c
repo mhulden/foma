@@ -15,7 +15,6 @@
 /*     You should have received a copy of the GNU General Public License     */
 /*     along with foma.  If not, see <http://www.gnu.org/licenses/>.         */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -53,7 +52,7 @@ extern int add_history (const char *);
 extern int my_yyparse(char *my_string);
 void print_help();
 void xprintf(char *string) { return ; printf("%s",string); }
-char disclaimer[] = "Foma, version 0.9.17alpha\nCopyright © 2008-2014 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
+char disclaimer[] = "Foma, version 0.9.18alpha\nCopyright © 2008-2014 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
 
 /* A static variable for holding the line. */
 
@@ -89,8 +88,7 @@ char *rl_gets(char *prompt) {
        save it on the history. */
     if (use_readline == 1) {
         if (line_read && *line_read)
-            add_history(line_read);
-        
+            add_history(line_read);        
     }
     return (line_read);
 }
@@ -103,6 +101,10 @@ int main(int argc, char *argv[]) {
     /*  YY_BUFFER_STATE flex_command; */
     stack_init();
     srand ((unsigned int)time(NULL));
+    /* Init defined_networks structures */
+    g_defines = defined_networks_init();
+    g_defines_f = defined_functions_init();
+
     while ((opt = getopt(argc, argv, "e:f:hl:pqrsv")) != -1) {
         switch(opt) {
         case 'e':
@@ -194,7 +196,6 @@ void print_help() {
     printf("-s\t\tstop execution and exit\n");
     printf("-v\t\tprint version number\n");
 }
-
 
 static char **my_completion(const char *text, int start, int end) {
     char **matches;

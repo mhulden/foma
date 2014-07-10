@@ -31,8 +31,7 @@
 #define YY_USER_ACTION lexccolumn += lexcleng;
 static int lexentries;
 extern int lexclex();
-extern struct defined *defines;
-static struct defined *olddefines;
+static struct defined_networks *olddefines;
 extern int my_yyparse(char *my_string, int lineno);
 extern struct fsm *current_parse;
 static char *tempstr;
@@ -40,7 +39,7 @@ int lexccolumn = 0;
 
 struct fsm *fsm_lexc_parse_string(char *string) {
 
-   olddefines = defines;
+   olddefines = g_defines;
    YY_BUFFER_STATE my_string_buffer;
    my_string_buffer = lexc_scan_string(string);
    lexentries = -1;
@@ -52,7 +51,7 @@ struct fsm *fsm_lexc_parse_string(char *string) {
      }       
    } 
    lexc_delete_buffer(my_string_buffer);
-   defines = olddefines;
+   g_defines = olddefines;
    return(lexc_to_fsm());
 }
 
@@ -212,7 +211,7 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
  /* \073 = ; */
 <DEFREGEX>[\073] {
     if (my_yyparse(lexctext, lexclineno) == 0) {
-      add_defined(fsm_topsort(fsm_minimize(current_parse)),tempstr);
+      add_defined(g_defines, fsm_topsort(fsm_minimize(current_parse)),tempstr);
     }
     xxfree(tempstr);
     BEGIN(DEF);

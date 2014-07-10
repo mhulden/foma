@@ -24,27 +24,8 @@
 #define PROMPT_MAIN 0 /* Regular prompt */
 #define PROMPT_A 1    /* Apply prompt   */
 
-/* Defined networks */
-
-struct defined {
-  char *name;
-  struct fsm *net;
-  struct defined *next;
-};
-
-/* Defined functions */
-
-struct definedf {
-    char *name;
-    char *regex;
-    int numargs;
-    struct definedf *next;
-};
-
-struct defined_quantifiers {
-    char *name;
-    struct defined_quantifiers *next;
-};
+struct defined_networks   *g_defines;
+struct defined_functions  *g_defines_f;
 
 /** User stack */
 struct stack_entry {
@@ -55,15 +36,6 @@ struct stack_entry {
   struct stack_entry *next;
   struct stack_entry *previous;    
 };
-
-/* Define functions */
-struct fsm *find_defined (char *string);
-char *find_defined_function(char *name, int numargs);
-int add_defined (struct fsm *net, char *string);
-int add_defined_function (char *name, char *regex, int numargs);
-int remove_defined (char *string);
-struct defined *get_defines();
-struct definedf *get_defines_f();
 
 /* Quantifier & Logic-related */
 char *find_quantifier(char *string);

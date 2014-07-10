@@ -2072,7 +2072,8 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
     }
     equivalent = 1;
  not_equivalent:
-    xxfree(net1->states);
+    fsm_destroy(net1);
+    fsm_destroy(net2);
     xxfree(point_a);
     xxfree(point_b);
     triplet_hash_free(th);

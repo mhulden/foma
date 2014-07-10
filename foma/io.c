@@ -5,7 +5,7 @@
 
 /*     Foma is free software: you can redistribute it and/or modify          */
 /*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation. */
+/*     published by the Free Software Foundation.                            */
 
 /*     Foma is distributed in the hope that it will be useful,               */
 /*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
@@ -44,6 +44,9 @@ struct binaryline {
 
 extern char *g_att_epsilon;
 
+extern struct defined_networks   *g_defines;
+extern struct defined_functions  *g_defines_f;
+
 struct io_buf_handle {
     char *io_buf;
     char *io_buf_ptr;
@@ -56,7 +59,7 @@ static size_t io_get_gz_file_size(char *filename);
 static size_t io_get_file_size(char *filename);
 static size_t io_get_regular_file_size(char *filename);
 size_t io_gz_file_to_mem (struct io_buf_handle *iobh, char *filename);
-int foma_net_print(struct fsm *net, gzFile *outfile);
+int foma_net_print(struct fsm *net, gzFile outfile);
 struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name);
 static inline int explode_line (char *buf, int *values);
 
@@ -507,7 +510,7 @@ struct fsm *fsm_read_text_file(char *filename) {
 }
 
 int fsm_write_binary_file(struct fsm *net, char *filename) {
-    gzFile *outfile;
+    gzFile outfile;
     if ((outfile = gzopen(filename,"wb")) == NULL) {
 	return(1);
     }
@@ -559,12 +562,11 @@ struct fsm *fsm_read_binary_file(char *filename) {
     return(net);
 }
 
-int save_defined(char *filename) {
-    gzFile *outfile;
-    struct defined *def;
-    def = get_defines();
+int save_defined(struct defined_networks *def, char *filename) {
+    struct defined_networks *d;
+    gzFile outfile;
     if (def == NULL) {
-        printf("No defined networks.\n");
+        fprintf(stderr, "No defined networks.\n");
         return(0);
     }
     if ((outfile = gzopen(filename, "wb")) == NULL) {
@@ -572,15 +574,15 @@ int save_defined(char *filename) {
         return(-1);
     }
     printf("Writing definitions to file %s.\n", filename);
-    for ( ; def != NULL; def = def->next) {
-        strcpy(def->net->name, def->name);
-        foma_net_print(def->net, outfile);
+    for (d = def; d != NULL; d = d->next) {
+        strcpy(d->net->name, d->name);
+        foma_net_print(d->net, outfile);
     }
     gzclose(outfile);
     return(1);
 }
 
-int load_defined(char *filename) {
+int load_defined(struct defined_networks *def, char *filename) {
     struct fsm *net;
     char *net_name;
     struct io_buf_handle *iobh;
@@ -588,20 +590,18 @@ int load_defined(char *filename) {
     iobh = io_init();
     printf("Loading definitions from %s.\n",filename);
     if (io_gz_file_to_mem(iobh, filename) == 0) {
-        printf("File error.\n");
+        fprintf(stderr, "File error.\n");
 	io_free(iobh);
         return 0;
     }
-
     while ((net = io_net_read(iobh, &net_name)) != NULL) {
-        add_defined(net, net_name);
+        add_defined(def, net, net_name);
     }
     io_free(iobh);
     return(1);
 }
 
 static inline int explode_line(char *buf, int *values) {
-
     int i, j, items;
     j = i = items = 0;
     for (;;) {
@@ -709,7 +709,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     *net_name = xxstrdup(buf);
     io_gets(iobh, buf);
 
-    net->is_completed = (extras & 3) ;
+    net->is_completed = (extras & 3);
     net->arcs_sorted_in = (extras & 12) >> 2;
     net->arcs_sorted_out = (extras & 48) >> 4;
 
@@ -835,7 +835,7 @@ static int io_gets(struct io_buf_handle *iobh, char *target) {
     return(i);
 }
 
-int foma_net_print(struct fsm *net, gzFile *outfile) {
+int foma_net_print(struct fsm *net, gzFile outfile) {
     struct sigma *sigma;
     struct fsm_state *fsm;
     int i, maxsigma, laststate, *cm, extras;
@@ -955,7 +955,7 @@ static size_t io_get_regular_file_size(char *filename) {
 
 
 static size_t io_get_file_size(char *filename) {
-    gzFile *FILE;
+    gzFile FILE;
     size_t size;
     FILE = gzopen(filename, "r");
     if (FILE == NULL) {
@@ -974,7 +974,7 @@ static size_t io_get_file_size(char *filename) {
 size_t io_gz_file_to_mem(struct io_buf_handle *iobh, char *filename) {
 
     size_t size;
-    gzFile *FILE;
+    gzFile FILE;
 
     size = io_get_file_size(filename);
     if (size == 0) {
@@ -990,7 +990,6 @@ size_t io_gz_file_to_mem(struct io_buf_handle *iobh, char *filename) {
 }
 
 char *file_to_mem(char *name) {
-
     FILE    *infile;
     size_t    numbytes;
     char *buffer;

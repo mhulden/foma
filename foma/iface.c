@@ -47,7 +47,10 @@ extern int g_med_limit ;
 extern int g_med_cutoff ;
 extern char *g_att_epsilon;
 
-extern int foma_net_print(struct fsm *net, gzFile *outfile);
+extern struct defined_networks   *g_defines;
+extern struct defined_functions  *g_defines_f;
+
+extern int foma_net_print(struct fsm *net, gzFile outfile);
 
 static char *sigptr(struct sigma *sigma, int number);
 static int print_dot(struct fsm *net, char *filename);
@@ -606,7 +609,7 @@ void iface_letter_machine() {
 }
 
 void iface_load_defined(char *filename) {
-    load_defined(filename);
+    load_defined(g_defines, filename);
 }
 
 void iface_load_stack(char *filename) {
@@ -696,7 +699,7 @@ void iface_print_dot(char *filename) {
 void iface_print_net(char *netname, char *filename) {
     struct fsm *net;
     if (netname != NULL) {
-        if ((net = find_defined(netname)) == NULL) {
+        if ((net = find_defined(g_defines, netname)) == NULL) {
             printf("No defined network %s.\n", netname);
             return;
         }
@@ -735,18 +738,22 @@ void iface_print_cmatrix() {
 }
 
 void iface_print_defined() {
-    struct defined  *defined;
-    struct definedf *defined_f;
-    if (get_defines() == NULL) {
+    struct defined_networks  *defined;
+    struct defined_functions *defined_f;
+    if (g_defines == NULL) {
         printf("No defined symbols.\n");
     }
-    for (defined = get_defines(); defined != NULL; defined = defined->next) {
-        printf("%s\t",defined->name);
-        print_stats(defined->net);
+    for (defined = g_defines; defined != NULL; defined = defined->next) {
+	if (defined->name != NULL) {
+	    printf("%s\t",defined->name);
+	    print_stats(defined->net);
+	}
     }
-    for (defined_f = get_defines_f(); defined_f != NULL; defined_f = defined_f->next) {
-        printf("%s@%i)\t",defined_f->name,defined_f->numargs);
-        printf("%s\n",defined_f->regex);
+    for (defined_f = g_defines_f; defined_f != NULL; defined_f = defined_f->next) {
+	if (defined_f->name != NULL) {
+		printf("%s@%i)\t",defined_f->name,defined_f->numargs);
+		printf("%s\n",defined_f->regex);
+	}
     }
 }
 
@@ -757,7 +764,7 @@ void iface_print_name() {
 
 void iface_quit() {
     struct fsm *net;
-    remove_defined(NULL);
+    remove_defined(g_defines, NULL);
     while (!(stack_isempty())) {
         net = stack_pop();
         fsm_destroy(net);
@@ -956,7 +963,7 @@ void iface_substitute_defined (char *original, char *substitute) {
     if (iface_stack_check(1)) {
         dequote_string(original);
         dequote_string(substitute);
-	if ((subnet = find_defined(substitute)) == NULL) {
+	if ((subnet = find_defined(g_defines, substitute)) == NULL) {
 	    printf("No defined network '%s'.\n",substitute);
 	} else {
 	    if (fsm_symbol_occurs(stack_find_top()->fsm, original, M_UPPER + M_LOWER) == 0) {
@@ -1002,11 +1009,11 @@ void iface_rotate() {
         stack_rotate();
 }
 void iface_save_defined(char *filename) {
-    save_defined(filename);
+    save_defined(g_defines, filename);
 }
 
 void iface_save_stack(char *filename) {
-    gzFile *outfile;
+    gzFile outfile;
     struct stack_entry *stack_ptr;
 
     if (iface_stack_check(1)) {
@@ -1419,7 +1426,7 @@ void print_mem_size(struct fsm *net) {
     } else if (s >= 1024 && s < 1048576) {
         sprintf(size, "%.1f kB. ", sf/1024);
     } else if (s >= 1048576 && s < 1073741824) {
-        sprintf(size, "%.1f MB. ", sf/1048576);        
+        sprintf(size, "%.1f MB. ", sf/1048576);
     } else if (s >= 1073741824) {
         sprintf(size, "%.1f GB. ", sf/1073741824);        
     }
