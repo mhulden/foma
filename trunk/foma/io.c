@@ -193,7 +193,7 @@ struct fsm *read_att(char *filename) {
     struct fsm_construct_handle *h;
     struct fsm *net;
     int i;
-    char inword[1024], delimiters[] = "\t", *tokens[5];
+    char inword[1024], delimiters[] = "\t", *tokens[6];
     FILE *INFILE;
 
     INFILE = fopen(filename, "r");

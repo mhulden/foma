@@ -731,11 +731,10 @@ void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net) {
 }
 
 void cmatrix_print_att(struct fsm *net, FILE *outfile) {
-    int lsymbol, i, j, *cm, maxsigma;
+    int i, j, *cm, maxsigma;
     maxsigma = sigma_max(net->sigma) + 1;
     cm = net->medlookup->confusion_matrix;
 
-    lsymbol = 0 ;
 
     for (i = 0; i < maxsigma ; i++) {        
         for (j = 0; j < maxsigma ; j++) {

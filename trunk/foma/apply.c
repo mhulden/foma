@@ -395,7 +395,7 @@ void apply_clear_index(struct apply_handle *h) {
 void apply_index(struct apply_handle *h, int inout, int densitycutoff, int mem_limit, int flags_only) {
     struct fsm_state *fsm;
     unsigned int cnt = 0;
-    int i, j, maxtrans, numtrans, laststate, sym, stateno;
+    int i, j, maxtrans, numtrans, laststate, sym;
     fsm = h->gstates;
 
     struct apply_state_index **indexptr, *iptr, *tempiptr;
@@ -501,7 +501,6 @@ void apply_index(struct apply_handle *h, int inout, int densitycutoff, int mem_l
 	    continue;
 	}
 	sym = inout == APPLY_INDEX_INPUT ? (fsm+i)->in : (fsm+i)->out;
-	stateno = (fsm+i)->state_no;
 
 	if (h->has_flags && (h->flag_lookup+sym)->type) {
 	    sym = EPSILON;
@@ -1185,12 +1184,8 @@ void apply_mark_flagstates(struct apply_handle *h) {
 
 void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
     struct sigma *sig;
-    struct fsm_state *fsm;
-    
     int i, maxsigma;
     
-    fsm = net->states;
-
     maxsigma = sigma_max(net->sigma);
     h->sigma_size = maxsigma+1;
     // Default size created at init, resized later if necessary

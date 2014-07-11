@@ -710,11 +710,11 @@ struct fsm *rewrite_cp_to_fst(struct fsm *net, char *lower_symbol, char *zero_sy
         _Bool crowded;
     } *state_link;
     
-    int i, j, t, lower, zero, mark_count, *targets, linecount, in, out, has_unk;
+    int i, j, t, lower, zero, *targets, linecount, in, out, has_unk;
     _Bool *useless_states;
     struct fsm_state *fsm, *fsm2, *tempfsm;
 
-    mark_count = 0; has_unk = 0;
+    has_unk = 0;
 
     if ((lower = sigma_find(lower_symbol, net->sigma)) == -1)
         return(net);
