@@ -191,7 +191,9 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
 
 %pure-parser
 %expect 686
-%parse-param { void     *scanner } { struct defined_networks *defined_nets } { struct defined_functions *defined_funcs } /* Assume yyparse is called with this argument */
+%parse-param { void *scanner }
+%parse-param { struct defined_networks *defined_nets }
+%parse-param { struct defined_functions *defined_funcs } /* Assume yyparse is called with this argument */
 %lex-param   { yyscan_t *scanner } /* Call flex functions with this argument      */
 %locations
 %initial-action {
