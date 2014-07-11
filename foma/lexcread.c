@@ -227,7 +227,7 @@ void lexc_add_network() {
     struct states **slist, *sourcestate, *deststate, *newstate;
     struct statelist *s;
     struct trans *newtrans;
-    int i, j, *sigreplace, signumber, maxstate, *finals, maxsigma, unknown_symbols, first_new_sigma, last_new_sigma, *unk = NULL;
+    int i, j, *sigreplace, signumber, maxstate, *finals, unknown_symbols, first_new_sigma, last_new_sigma, *unk = NULL;
 
     unknown_symbols = 0;
     first_new_sigma = last_new_sigma = 0;
@@ -236,7 +236,6 @@ void lexc_add_network() {
 
     net = current_regex_network;
     fsm = net->states;
-    maxsigma = sigma_max(net->sigma);
 
     sigreplace = xxcalloc(sigma_max(net->sigma)+1,sizeof(int));
 

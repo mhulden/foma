@@ -161,7 +161,7 @@ int fsm_isstarfree(struct fsm *net) {
 
 static struct fsm *fsm_subset(struct fsm *net, int operation) {
 
-    int T, U, tflag;
+    int T, U;
     
     if (net->is_deterministic == YES && operation != SUBSET_TEST_STAR_FREE) {
         return(net);
@@ -174,7 +174,6 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
     init(net);
     nhash_init((num_states < 12) ? 6 : num_states/2);
     
-    tflag = 0;
     T = initial_e_closure(net);
 
     int_stack_clear();

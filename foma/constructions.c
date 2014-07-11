@@ -604,9 +604,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
 
     if (g_flag_is_epsilon) {
         /* Create lookup table for quickly checking if a symbol is a flag */
-        int smax;
         struct sigma *sig1;
-        smax = sigma_max(net1->sigma);
         is_flag = xxmalloc(sizeof(_Bool)*(sigma_max(net1->sigma)+1));
         for (sig1 = net1->sigma; sig1 != NULL; sig1=sig1->next) {
             if (flag_check(sig1->symbol)) {
@@ -1235,8 +1233,7 @@ int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out
 
 void fsm_count(struct fsm *net) {
   struct fsm_state *fsm;
-  int i, linecount, arccount, oldstate, finalcount, maxstate, arity;
-  arity = 1;
+  int i, linecount, arccount, oldstate, finalcount, maxstate;
   linecount = arccount = finalcount = maxstate = 0;
 
   oldstate = -1;
@@ -1249,8 +1246,8 @@ void fsm_count(struct fsm *net) {
     linecount++;
     if ((fsm+i)->target != -1) {
         arccount++;
-        if (((fsm+i)->in != (fsm+i)->out) || ((fsm+i)->in == UNKNOWN) || ((fsm+i)->out == UNKNOWN))
-            arity = 2;
+	//        if (((fsm+i)->in != (fsm+i)->out) || ((fsm+i)->in == UNKNOWN) || ((fsm+i)->out == UNKNOWN))
+        //    arity = 2;
     }
     if ((fsm+i)->state_no != oldstate) {
         if ((fsm+i)->final_state) {
@@ -1265,7 +1262,6 @@ void fsm_count(struct fsm *net) {
   net->linecount = linecount;
   net->arccount = arccount;
   net->finalcount = finalcount;
-  //net->arity = arity;
 }
 
 static void fsm_add_to_states(struct fsm *net, int add) {

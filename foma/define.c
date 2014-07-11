@@ -119,8 +119,6 @@ int add_defined_function(struct defined_functions *deff, char *name, char *regex
 
 int add_defined(struct defined_networks *def, struct fsm *net, char *string) {
     struct defined_networks *d;
-    int redefine;
-    redefine = 0;
     if (net == NULL)
 	return 0;
     fsm_count(net);
