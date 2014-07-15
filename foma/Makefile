@@ -5,9 +5,9 @@ bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
 
 VERSION = 0.9.17
-CC = gcc
+CC = clang
 RANLIB = ranlib
-YACC = bison -d -t -v
+YACC = /usr/local/bin/bison -d -t -v
 LEX = flex -8
 LEXCLEX = flex -8 --prefix=lexc
 LEXIFACE = flex -8 --prefix=interface
