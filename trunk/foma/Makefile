@@ -7,7 +7,7 @@ includedir = $(prefix)/include
 VERSION = 0.9.17
 CC = gcc
 RANLIB = ranlib
-YACC = bison
+YACC = bison -d -t -v
 LEX = flex -8
 LEXCLEX = flex -8 --prefix=lexc
 LEXIFACE = flex -8 --prefix=interface
