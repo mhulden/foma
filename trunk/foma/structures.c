@@ -112,7 +112,6 @@ struct fsm *fsm_sigma_net(struct fsm *net) {
         return(fsm_empty_set());
     }
     
-    sig = net->sigma;
     fsm_state_init(sigma_max(net->sigma));
     fsm_state_set_current_state(0, 0, 1);
     pathcount = 0;
@@ -416,7 +415,7 @@ int fsm_isidentity(struct fsm *net) {
 
     struct state_array *state_array;
     struct fsm_state *curr_ptr;
-    int i, j, v, vp, num_states, factor = 0, newlength, startfrom;
+    int i, j, v, vp, num_states, factor = 0, newlength = 1, startfrom;
     short int in, out, *newstring;
     struct discrepancy *discrepancy, *currd, *targetd;
 
@@ -639,7 +638,7 @@ struct fsm *fsm_extract_nonidentity(struct fsm *net) {
     struct state_array *state_array;
     struct fsm_state *curr_ptr;
     struct fsm *net2;
-    int i, j, v, vp, num_states, factor = 0, newlength, startfrom, killnum;
+    int i, j, v, vp, num_states, factor = 0, newlength = 1, startfrom, killnum;
     short int in, out, *newstring;
     struct discrepancy *discrepancy, *currd, *targetd;
 

@@ -442,7 +442,6 @@ struct fsm_trie_handle {
 
 FEXPORT struct fsm_trie_handle *fsm_trie_init();
 FEXPORT struct fsm *fsm_trie_done(struct fsm_trie_handle *th);
-FEXPORT void fsm_trie_new_word(struct fsm_trie_handle *th);
 FEXPORT void fsm_trie_add_word(struct fsm_trie_handle *th, char *word);
 FEXPORT void fsm_trie_end_word(struct fsm_trie_handle *th);
 FEXPORT void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outsym);

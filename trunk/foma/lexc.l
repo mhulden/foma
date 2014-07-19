@@ -64,7 +64,6 @@ struct fsm *fsm_lexc_parse_file(char *filename) {
 void lexc_trim(char *s) {
   /* Remove trailing ; and = and space and initial space */
   int i,j;
-  i = strlen(s);
   for (i = strlen(s)-1; *(s+i) == ';' || *(s+i) == '=' || *(s+i) == ' ' || *(s+i) == '\t'; i--)
     *(s+i) = '\0';  
   for (i=0; *(s+i) == ' ' || *(s+i) == '\t' || *(s+i) == '\n'; i++) {

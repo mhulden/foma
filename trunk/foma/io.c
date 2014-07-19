@@ -615,7 +615,6 @@ static inline int explode_line(char *buf, int *values) {
             *(values+items) = atoi(buf+i);
             items++;
             j++;
-            i = j;
         }
     }
     return(items);
@@ -715,7 +714,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
 
     /* Sigma */
     while (strcmp(buf, "##sigma##") != 0) { /* Loop until we encounter ##sigma## */
-        if (buf == '\0') {
+        if (buf[0] == '\0') {
 	  printf("File format error at sigma definition!\n");
 	  fsm_destroy(net);
 	  return NULL;
@@ -846,7 +845,6 @@ int foma_net_print(struct fsm *net, gzFile outfile) {
     /* Properties */
     gzprintf(outfile, "%s","##props##\n");
 
-    extras = 0;
     extras = (net->is_completed) | (net->arcs_sorted_in << 2) | (net->arcs_sorted_out << 4);
  
     gzprintf(outfile, 
@@ -860,7 +858,6 @@ int foma_net_print(struct fsm *net, gzFile outfile) {
 
     /* State array */
     laststate = -1;
-    fsm = net->states;
     gzprintf(outfile, "%s","##states##\n");
     for (fsm = net->states; fsm->state_no !=-1; fsm++) {
         if (fsm->state_no != laststate) {
