@@ -50,7 +50,7 @@ char *trim(char *string) {
 }
 
 char *escape_string(char *string, char chr) {
-    int i,j;
+    size_t i,j;
     char *newstring;
     for (i=0,j=0; i < strlen(string); i++) {
         if (string[i] == chr) {

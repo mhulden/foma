@@ -314,7 +314,6 @@ char *apply_med(struct apply_med_handle *medh, char *word) {
                 break;
             }
             medh->lines++;
-            target = medh->curr_ptr->target;
             if (medh->curr_ptr->final_state && medh->curr_pos == medh->utf8len) {
                 if (medh->curr_node_has_match == 0) {
                     /* Found a match */

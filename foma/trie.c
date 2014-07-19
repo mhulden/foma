@@ -38,10 +38,10 @@ struct fsm *fsm_trie_done(struct fsm_trie_handle *th) {
     struct trie_hash *thash, *thashp;
     struct fsm *newnet;
     struct fsm_construct_handle *newh;
-    int i;
+    unsigned int i;
 
     newh = fsm_construct_init("name");
-    for (i=0; i < THASH_TABLESIZE; i++) {
+    for (i = 0; i < THASH_TABLESIZE; i++) {
 	thash = (th->trie_hash)+i;
 	for ( ; thash != NULL; thash = thash->next) {
 	    if (thash->insym != NULL) {
@@ -70,10 +70,6 @@ struct fsm *fsm_trie_done(struct fsm_trie_handle *th) {
     xxfree(th->trie_hash);
     xxfree(th);
     return(newnet);
-}
-
-void fsm_trie_new_word(struct fsm_trie_handle *th) {
-
 }
 
 void fsm_trie_add_word(struct fsm_trie_handle *th, char *word) {

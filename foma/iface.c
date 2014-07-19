@@ -1477,7 +1477,6 @@ static int print_dot(struct fsm *net, char *filename) {
     int i, j, linelen;
     short *finals, *printed;
     
-    stateptr = net->states;
     fsm_count(net);
     
     finals = xxmalloc(sizeof(short)*net->statecount);

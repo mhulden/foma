@@ -175,7 +175,7 @@ struct fsm *fsm_symbol(char *symbol) {
   fsm_update_flags(net, YES, YES, YES, YES, YES, NO);
   if (strcmp(symbol,"@_EPSILON_SYMBOL_@")==0) {
     /* Epsilon */
-      symbol_no = sigma_add_special(EPSILON,net->sigma);
+    (void)sigma_add_special(EPSILON, net->sigma);
     net->states = xxmalloc(sizeof(struct fsm_state)*2);
     add_fsm_arc(net->states, 0, 0, -1,-1,-1,1,1);
     add_fsm_arc(net->states, 1, -1,-1,-1,-1,-1,-1);
@@ -2039,7 +2039,7 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
 		}
 		if (machine_a->in == machine_b->in && machine_a->out == machine_b->out) {
 		    matching_arc = 1;
-		    if ((target_number = triplet_hash_find(th, machine_a->target, machine_b->target, 0)) == -1) {
+		    if ((triplet_hash_find(th, machine_a->target, machine_b->target, 0)) == -1) {
 			STACK_2_PUSH(machine_b->target, machine_a->target);
 			target_number = triplet_hash_insert(th, machine_a->target, machine_b->target, 0);
 		    }

@@ -227,10 +227,10 @@ void lexc_add_network() {
     struct states **slist, *sourcestate, *deststate, *newstate;
     struct statelist *s;
     struct trans *newtrans;
-    int i, j, *sigreplace, signumber, maxstate, *finals, unknown_symbols, first_new_sigma, last_new_sigma, *unk = NULL;
+    int i, j, *sigreplace, signumber, maxstate, *finals, unknown_symbols, first_new_sigma, *unk = NULL;
 
     unknown_symbols = 0;
-    first_new_sigma = last_new_sigma = 0;
+    first_new_sigma = 0;
     sourcestate = clexicon->state;
     deststate = ctarget->state;
 
@@ -244,7 +244,6 @@ void lexc_add_network() {
             /* Add to existing lexc sigma */
             signumber = sigma_add(sigma->symbol, lexsigma);
             first_new_sigma = first_new_sigma > 0 ? first_new_sigma : signumber;
-            last_new_sigma = signumber;
             lexc_add_sigma_hash(sigma->symbol, signumber);
             *(sigreplace+sigma->number) = signumber;
         } else {
