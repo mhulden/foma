@@ -363,6 +363,7 @@ FEXPORT void apply_set_show_flags(struct apply_handle *h, int value);
 FEXPORT void apply_set_obey_flags(struct apply_handle *h, int value);
 FEXPORT void apply_set_print_space(struct apply_handle *h, int value);
 FEXPORT void apply_set_print_pairs(struct apply_handle *h, int value);
+FEXPORT void apply_set_space_symbol(struct apply_handle *h, char *space);
 
 /* Minimum edit distance & spelling correction */
 FEXPORT void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net);
