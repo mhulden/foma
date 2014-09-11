@@ -79,6 +79,12 @@ void apply_set_show_flags(struct apply_handle *h, int value) {
 
 void apply_set_print_space(struct apply_handle *h, int value) {
     h->print_space = value;
+    h->space_symbol = " ";
+}
+
+void apply_set_space_symbol(struct apply_handle *h, char *space) {
+    h->space_symbol = space;
+    h->print_space = 1;
 }
 
 void apply_set_print_pairs(struct apply_handle *h, int value) {
@@ -1003,7 +1009,8 @@ int apply_append(struct apply_handle *h, int cptr, int sym) {
 
 	else if (sym == IDENTITY) {
 	    /* Apply up/down */
-	    idlen = utf8skip(h->instring+h->ipos)+1;
+	    //idlen = utf8skip(h->instring+h->ipos)+1;
+	    idlen = (h->sigmatch_array+h->ipos)->consumes; // here
 	    strncpy(h->outstring+h->opos, h->instring+h->ipos, idlen);
 	    strncpy(h->outstring+h->opos+idlen,"", 1);
 	    len = idlen;
@@ -1021,7 +1028,7 @@ int apply_append(struct apply_handle *h, int cptr, int sym) {
 	}
     }
     if (h->print_space && len > 0) {
-	strcpy(h->outstring+h->opos+len, " ");
+	strcpy(h->outstring+h->opos+len, h->space_symbol);
 	len++;
     }
     return(len);
@@ -1257,7 +1264,7 @@ void apply_create_sigarray(struct apply_handle *h, struct fsm *net) {
 void apply_create_sigmatch(struct apply_handle *h) {
     char *symbol;
     struct sigma_trie *st;
-    int i, j, inlen, lastmatch, consumes;
+    int i, j, inlen, lastmatch, consumes, cons;
     /* We create a sigmatch array only in case we match against a real string */
     if (((h->mode) & ENUMERATE) == ENUMERATE) {
 	return;
@@ -1270,6 +1277,8 @@ void apply_create_sigmatch(struct apply_handle *h) {
 	h->sigmatch_array = xxmalloc(sizeof(struct sigmatch_array)*(inlen));
 	h->sigmatch_array_size = inlen;
     }
+    /* Find longest match in alphabet at current position */
+    /* by traversing the trie of alphabet symbols         */
     for (i=0; i < inlen; i += consumes ) {
 	st = h->sigma_trie;
 	for (j=0, lastmatch = 0; ; j++) {
@@ -1291,13 +1300,27 @@ void apply_create_sigmatch(struct apply_handle *h) {
 	if (lastmatch != 0) {
 	    (h->sigmatch_array+i)->signumber = lastmatch;
 	    consumes = (h->sigs+lastmatch)->length;
-	    (h->sigmatch_array+i)->consumes = consumes;
 	} else {
-	    /* Not found */
+	    /* Not found in trie */
 	    (h->sigmatch_array+i)->signumber = IDENTITY;
 	    consumes = utf8skip(symbol+i)+1;
-	    (h->sigmatch_array+i)->consumes = consumes;
 	}
+
+	/* If we now find trailing unicode combining characters (0300-036F):      */
+	/* (1) Merge them all with current symbol                                 */
+	/* (2) Declare the whole sequence one ? (IDENTITY) symbol                 */
+        /*     Step 2 is motivated by the fact that                               */
+	/*     if the input is S(symbol) + D(diacritic)                           */
+        /*     and SD were a symbol in the alphabet, then this would have been    */
+        /*     found when searching the alphabet symbols earlier, so SD+ => ?     */
+        /*     Note that this means that a multi-char symbol followed by a        */
+        /*     diacritic gets converted to a single ?, e.g.                       */
+        /*     [TAG] + D => ? if [TAG] is in the alphabet, but [TAG]+D isn't.     */
+
+	for (  ; cons = utf8iscombining((unsigned char *)(symbol+i+consumes)); consumes += cons) {
+	    (h->sigmatch_array+i)->signumber = IDENTITY;
+	}
+	(h->sigmatch_array+i)->consumes = consumes;
     }
 }
 

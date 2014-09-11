@@ -154,6 +154,42 @@ int utf8strlen(char *str) {
     return j;
 }
 
+/* Checks if the next character in the string is a combining character     */
+/* according to Unicode 7.0                                                */
+/* i.e. codepoints 0300-036F  Combining Diacritical Marks                  */
+/*                 1AB0-1ABE  Combining Diacritical Marks Extended         */
+/*                 1DC0-1DFF  Combining Diacritical Marks Supplement       */
+/*                 20D0-20F0  Combining Diacritical Marks for Symbols      */
+/*                 FE20-FE2D  Combining Half Marks                         */
+/* Returns number of bytes of char. representation, or 0 if not combining  */
+
+int utf8iscombining(unsigned char *s) {
+    if (*s == '\0' || *(s+1) == '\0')
+	return 0;
+    if (!(*s == 0xcc || *s == 0xcd || *s == 0xe1 || *s == 0xe2 || *s == 0xef))
+	return 0;
+    /* 0300-036F */
+    if (*s == 0xcc && *(s+1) >= 0x80 && *(s+1) <= 0xbf)
+	return 2;
+    if (*s == 0xcd && *(s+1) >= 0x80 && *(s+1) <= 0xaf)
+	return 2;
+    if (*(s+2) == '\0')
+	return 0;
+    /* 1AB0-1ABE */
+    if (*s == 0xe1 && *(s+1) == 0xaa && *(s+2) >= 0xb0 && *(s+2) <= 0xbe)
+	return 3;
+    /* 1DC0-1DFF */
+    if (*s == 0xe1 && *(s+1) == 0xb7 && *(s+2) >= 0x80 && *(s+2) <= 0xbf)
+	return 3;
+    /* 20D0-20F0 */
+    if (*s == 0xe2 && *(s+1) == 0x83 && *(s+2) >= 0x90 && *(s+2) <= 0xb0)
+	return 3;
+    /* FE20-FE2D */
+    if (*s == 0xef && *(s+1) == 0xb8 && *(s+2) >= 0xa0 && *(s+2) <= 0xad)
+	return 3;
+    return 0;
+}
+
 int utf8skip(char *str) {
   unsigned char s;
 

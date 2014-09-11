@@ -148,6 +148,7 @@ struct apply_handle {
     int obey_flags;
     int show_flags;
     int print_space;
+    char *space_symbol;
     int print_pairs;
     int apply_stack_ptr;
     int apply_stack_top; 
@@ -276,6 +277,7 @@ void xprintf(char *string);
 
 /* UTF8 */
 unsigned char *utf8code16tostr(char *str);
+int utf8iscombining(unsigned char *s);
 int utf8skip(char *str);
 int utf8strlen(char *str);
 int ishexstr(char *str);
