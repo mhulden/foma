@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -32,7 +32,7 @@
 static int lexentries;
 extern int lexclex();
 static struct defined_networks *olddefines;
-extern int my_yyparse(char *my_string, int lineno);
+extern int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 extern struct fsm *current_parse;
 static char *tempstr;
 int lexccolumn = 0;
@@ -174,7 +174,7 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
  /* \076 = > */
 <REGEX>[\076] {
     *(lexctext+lexcleng-1) = ';';
-    if (my_yyparse(lexctext, lexclineno) == 0) {
+    if (my_yyparse(lexctext, lexclineno, g_defines, NULL) == 0) {
        lexc_set_network(current_parse);
     }    
     BEGIN(LEXENTRIES);
@@ -209,7 +209,7 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
 }
  /* \073 = ; */
 <DEFREGEX>[\073] {
-    if (my_yyparse(lexctext, lexclineno) == 0) {
+    if (my_yyparse(lexctext, lexclineno, g_defines, NULL) == 0) {
       add_defined(g_defines, fsm_topsort(fsm_minimize(current_parse)),tempstr);
     }
     xxfree(tempstr);
