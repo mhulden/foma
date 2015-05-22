@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2014 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -127,7 +127,7 @@ SP         [\040]|[\011]
 NOSP       [^ \t];
 NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\367]...
 
-%x REGEX DEFI DEF SOURCE APPLY_DOWN APPLY_FILE_IN APPLY_MED APPLY_UP APPLY_P ELIMINATE_FLAG UNDEFINE RPL RLEXC RCMATRIX READ_TEXT READ_SPACED_TEXT SHOW_VAR SET_VAR SET_VALUE SAVE_STACK SAVE_DEFINED LOAD_STACK LOAD_DEFINED IGNORELINE REGEXQ REGEXB PUSH NAME_NET ECHO SYSTEM FUNC_1 FUNC_2 FUNC_3 FUNC_4 APROPOS HELP PRINT_NET_FILE PRINT_NET_NAME PRINT_NET_NAME_FILE PRINT_NET_NAME_FILE2 PRINT_DOT_FILE PRINT_DOT_NAME SUBSTITUTE_SYMBOL SUBSTITUTE_SYMBOL_2 SUBSTITUTE_SYMBOL_3 SUBSTITUTE_DEFINED SUBSTITUTE_DEFINED_2 SUBSTITUTE_DEFINED_3 WRITE_ATT_FILE WRITE_PROLOG_FILE RCOMMENT APPLY_FILE_EATUP APPLY_FILE_OUT ATT EXCMATRIX ASSERT_STACK WORDS_FILE UPPER_WORDS_FILE LOWER_WORDS_FILE
+%x REGEX DEFI DEF SOURCE APPLY_DOWN APPLY_FILE_IN APPLY_MED APPLY_UP APPLY_P ELIMINATE_FLAG UNDEFINE RPL RLEXC RCMATRIX READ_TEXT READ_SPACED_TEXT SHOW_VAR SET_VAR SET_VALUE SAVE_STACK SAVE_DEFINED LOAD_STACK LOAD_DEFINED IGNORELINE REGEXQ REGEXB PUSH NAME_NET ECHO SYSTEM FUNC_1 FUNC_2 FUNC_3 FUNC_4 APROPOS HELP PRINT_NET_FILE PRINT_NET_NAME PRINT_NET_NAME_FILE PRINT_NET_NAME_FILE2 PRINT_DOT_FILE PRINT_DOT_NAME SUBSTITUTE_SYMBOL SUBSTITUTE_SYMBOL_2 SUBSTITUTE_SYMBOL_3 SUBSTITUTE_DEFINED SUBSTITUTE_DEFINED_2 SUBSTITUTE_DEFINED_3 WRITE_ATT_FILE WRITE_PROLOG_FILE RCOMMENT APPLY_FILE_EATUP APPLY_FILE_OUT ATT EXCMATRIX ASSERT_STACK WORDS_FILE PAIRS_FILE UPPER_WORDS_FILE LOWER_WORDS_FILE
 
 %%
 %{ 
@@ -205,9 +205,12 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 ^{SP}*(pr(i(nt?)?)?{SP}+)?stack-size? { printf("STACK SIZE: %d\n", stack_size()); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?upp(e(r(\-(w(o(r(ds?)?)?)?)?)?)?)? { iface_upper_words(-1); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?upp(e(r(\-(w(o(r(ds?)?)?)?)?)?)?)?{SP}+[0-9]+ { iface_upper_words(iface_extract_number(interfacetext)); }
+^{SP}*(pr(i(nt?)?)?{SP}+)?pairs { iface_pairs(-1);}
+^{SP}*(pr(i(nt?)?)?{SP}+)?random\-pairs { iface_random_pairs(-1);}
 ^{SP}*(pr(i(nt?)?)?{SP}+)?words { iface_words(-1);}
 ^{SP}*(pr(i(nt?)?)?{SP}+)?words{SP}+[0-9]+ { iface_words(iface_extract_number(interfacetext));}
 ^{SP}*(pr(i(nt?)?)?{SP}+)?words{SP}*>{SP}* { BEGIN(WORDS_FILE); }
+^{SP}*(pr(i(nt?)?)?{SP}+)?pairs{SP}*>{SP}* { BEGIN(PAIRS_FILE); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?low(e(r\-(w(o(r(ds?)?)?)?)?)?)?{SP}*>{SP}* { BEGIN(LOWER_WORDS_FILE); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?upp(e(r\-(w(o(r(ds?)?)?)?)?)?)?{SP}*>{SP}* { BEGIN(UPPER_WORDS_FILE); }
 ^{SP}*((pr(i(nt?)?)?{SP}+)?shortest-string|pss) { iface_print_shortest_string();}
@@ -518,6 +521,11 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 
 <WORDS_FILE>{NONL}+ {
   iface_words_file(trim(interfacetext),0);
+  BEGIN(INITIAL);
+}
+
+<PAIRS_FILE>{NONL}+ {
+  iface_pairs_file(trim(interfacetext));
   BEGIN(INITIAL);
 }
 

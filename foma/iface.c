@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2014 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -144,9 +144,12 @@ struct global_help {
     {"print lower-words > filename","prints words on the lower side of top FSM to file",""},
     {"print name","prints the name of the top FSM","" },
     {"print net","prints all information about top FSM","Short form: net\n" },
+    {"print pairs","prints input-output pairs from top FSM","Short form: pairs\n"},
+    {"print pairs > filename","prints input-output pairs from top FSM to file","Short form: pairs\n"},
     {"print random-lower","prints random words from lower side","Short form: random-lower\n" },
     {"print random-upper","prints random words from upper side","Short form: random-upper" },
     {"print random-words","prints random words from top FSM","Short form: random-words\n"},
+    {"print random-pairs","prints random input-output pairs from top FSM","Short form: random-pairs\n"},
     {"print sigma","prints the alphabet of the top FSM","Short form: sigma\n"},
     {"print size","prints size information about top FSM","Short form: size\n"},
     {"print shortest-string","prints the shortest string of the top FSM","Short form: pss\n"},
@@ -154,7 +157,7 @@ struct global_help {
     {"print upper-words","prints words on the upper side of top FSM","Short form: upper-words"},
     {"print upper-words > filename","prints words on the upper side of top FSM to file","Short form:upper-words"},
     {"print words","prints words of top FSM","Short form: words"},
-    {"print words > filename","prints words of top FSM to file","Short form: words"},
+    {"print words > filename","prints words of top FSM to file","Short form: words"},    
     {"prune net","makes top network coaccessible",""},
     {"push (defined) <name>","adds a defined FSM to top of stack",""},
     {"quit","exit foma",""},
@@ -1260,6 +1263,131 @@ void iface_words(int limit) {
             printf("%s\n",result);
         }
         apply_reset_enumerator(ah);
+    }
+}
+
+/* Splits string of upper:lower pairs with space separator into two strings */
+/* e.g. a:b c:d e 0:g => ace,bdeg  */
+
+void iface_split_string(char *result, char *string) {
+    int i;
+    char space = '\001', epsilon = '\002', separator = '\003';
+    /* Simulate: SEPARATOR \SPACE+ @-> 0 .o. SPACE|SEPARATOR|EPSILON -> 0 */
+    /*           to extract only upper side of string                     */
+    for (i = 0 ; ; ) {
+    zero:
+	if (result[i] == '\0') {
+	    break;
+	} else if (result[i] == space || result[i] == epsilon) {
+	    i++;
+	    goto zero;
+	} else if (result[i] == separator) {
+	    i++;
+	    goto one;
+	} else {
+	    strncat(string, result+i, 1);
+	    i++;
+	    goto zero;
+	}
+    one:
+	if (result[i] == '\0') {
+	    break;
+	} else if (result[i] == space) {
+	    i++;
+	    goto zero;
+	} else {
+	    i++;
+	    goto one;
+	}
+    }
+}
+
+void iface_split_result(char *result, char **upper, char **lower) {
+    *upper = calloc(strlen(result), sizeof(char));
+    *lower = calloc(strlen(result), sizeof(char));
+    /* Split string into upper by filtering input side */
+    /* and lower by the same filter, but reversed      */
+    iface_split_string(result, *upper);
+    xstrrev(result);
+    iface_split_string(result, *lower);
+    xstrrev(*lower);
+    xstrrev(result);
+}
+
+
+void iface_pairs_call(int limit, int random) {
+    char *result, *upper, *lower;
+    struct apply_handle *ah;
+    int i;
+    limit = (limit == -1) ? g_list_limit : limit;
+    if (iface_stack_check(1)) {
+        ah = stack_get_ah();
+	apply_set_show_flags(ah, g_show_flags);
+	apply_set_obey_flags(ah, g_obey_flags);	
+	apply_set_space_symbol(ah, "\001");
+	apply_set_epsilon(ah, "\002");
+	apply_set_separator(ah, "\003");
+        for (i = limit; i > 0; i--) {
+	    if (random == 1)		
+		result = apply_random_words(ah);
+	    else
+		result = apply_words(ah);		
+            if (result == NULL)
+                break;
+	    iface_split_result(result, &upper, &lower);
+            printf("%s\t%s\n",upper, lower);
+	    xxfree(upper);
+	    xxfree(lower);
+        }
+	apply_set_space_symbol(ah, " ");
+	apply_set_epsilon(ah, "0");
+	apply_set_separator(ah, ":");	
+        apply_reset_enumerator(ah);
+    }
+}
+
+void iface_random_pairs(int limit) {
+    iface_pairs_call(limit, 1);
+}
+
+void iface_pairs(int limit) {
+    iface_pairs_call(limit, 0);
+}
+
+void iface_pairs_file(char *filename) {
+    FILE *outfile;
+    char *result, *upper, *lower;
+    struct apply_handle *ah;
+    if (iface_stack_check(1)) {
+	if (stack_find_top()->fsm->pathcount == PATHCOUNT_CYCLIC) {
+	    printf("FSM is cyclic: can't write all pairs to file.\n");
+	    return;
+	}
+	printf("Writing to %s.\n",filename);
+	if ((outfile = fopen(filename, "w")) == NULL) {
+	    perror("Error opening file");
+	    return;
+	}
+	ah = stack_get_ah();
+	apply_set_show_flags(ah, g_show_flags);
+	apply_set_obey_flags(ah, g_obey_flags);	
+	apply_set_space_symbol(ah, "\001");
+	apply_set_epsilon(ah, "\002");
+	apply_set_separator(ah, "\003");
+        for (;;) {
+	    result = apply_words(ah);		
+            if (result == NULL)
+                break;
+	    iface_split_result(result, &upper, &lower);
+	    fprintf(outfile, "%s\t%s\n", upper, lower);
+	    xxfree(upper);
+	    xxfree(lower);
+        }
+	apply_set_space_symbol(ah, " ");
+	apply_set_epsilon(ah, "0");
+	apply_set_separator(ah, ":");	
+        apply_reset_enumerator(ah);
+	fclose(outfile);
     }
 }
 

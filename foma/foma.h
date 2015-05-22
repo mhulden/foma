@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2014 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -111,6 +111,9 @@ void iface_apply_random(char *(*applyer)(), int limit);
 void iface_random_lower(int limit);
 void iface_random_upper(int limit);
 void iface_random_words(int limit);
+void iface_pairs(int limit);
+void iface_pairs_file(char *filename);
+void iface_random_pairs(int limit);
 void iface_print_sigma(void);
 void iface_print_stats(void);
 void iface_shuffle(void);

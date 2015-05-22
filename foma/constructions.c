@@ -1994,7 +1994,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
 
 int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
     /* Test path equivalence of two FSMs by traversing both in parallel */
-    int a, b, target_number, matching_arc, equivalent;
+    int a, b, matching_arc, equivalent;
     struct fsm_state *machine_a, *machine_b;
     struct state_arr *point_a, *point_b;
     struct triplethash *th;
@@ -2041,7 +2041,7 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
 		    matching_arc = 1;
 		    if ((triplet_hash_find(th, machine_a->target, machine_b->target, 0)) == -1) {
 			STACK_2_PUSH(machine_b->target, machine_a->target);
-			target_number = triplet_hash_insert(th, machine_a->target, machine_b->target, 0);
+			triplet_hash_insert(th, machine_a->target, machine_b->target, 0);
 		    }
 		    break;
 		}
