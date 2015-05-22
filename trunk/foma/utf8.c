@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2010 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -47,6 +47,19 @@ char *trim(char *string) {
         *(string+i) = '\0';
     }
     return(string);
+}
+
+/* Reverses string in-place */
+char *xstrrev(char *str) {
+      char *p1, *p2;
+      if (! str || ! *str)
+            return str;
+      for (p1 = str, p2 = str + strlen(str) - 1; p2 > p1; ++p1, --p2) {
+            *p1 ^= *p2;
+            *p2 ^= *p1;
+            *p1 ^= *p2;
+      }
+      return str;
 }
 
 char *escape_string(char *string, char chr) {

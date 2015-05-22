@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2014 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -364,7 +364,9 @@ FEXPORT void apply_set_obey_flags(struct apply_handle *h, int value);
 FEXPORT void apply_set_print_space(struct apply_handle *h, int value);
 FEXPORT void apply_set_print_pairs(struct apply_handle *h, int value);
 FEXPORT void apply_set_space_symbol(struct apply_handle *h, char *space);
-
+FEXPORT void apply_set_separator(struct apply_handle *h, char *symbol);
+FEXPORT void apply_set_epsilon(struct apply_handle *h, char *symbol);
+    
 /* Minimum edit distance & spelling correction */
 FEXPORT void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net);
 FEXPORT void cmatrix_init(struct fsm *net);

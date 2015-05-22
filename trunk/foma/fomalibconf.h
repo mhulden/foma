@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2014 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -149,6 +149,8 @@ struct apply_handle {
     int show_flags;
     int print_space;
     char *space_symbol;
+    char *separator;
+    char *epsilon_symbol;
     int print_pairs;
     int apply_stack_ptr;
     int apply_stack_top; 
@@ -285,6 +287,7 @@ void decode_quoted(char *s);
 void dequote_string(char *s);
 char *remove_trailing(char *s, char c);
 char *escape_string(char *string, char chr);
+char *xstrrev(char *str);
 
 /* Flag-related */
 int flag_check(char *sm);
