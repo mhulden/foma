@@ -1,0 +1,5 @@
+#summary Compilation of two-way automata.
+
+= Introduction =
+
+= Details =
