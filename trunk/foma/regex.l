@@ -22,7 +22,7 @@
 %{
 #include <stdio.h>
 #include "foma.h"
-#include "regex.tab.h"
+#include "regex.h"
 
 struct defs {
     struct defined_networks *defined_nets;
