@@ -41,7 +41,7 @@ int sort_cmp(const void *a, const void *b) {
   return (((const struct fsm_state *)a)->state_no - ((const struct fsm_state *)b)->state_no);
 }
 
-inline int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out, int target, int final_state, int start_state);
+INLINE int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out, int target, int final_state, int start_state);
 
 struct fsm *fsm_kleene_closure(struct fsm *net, int optionality);
 

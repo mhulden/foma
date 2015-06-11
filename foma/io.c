@@ -61,7 +61,7 @@ static size_t io_get_regular_file_size(char *filename);
 size_t io_gz_file_to_mem (struct io_buf_handle *iobh, char *filename);
 int foma_net_print(struct fsm *net, gzFile outfile);
 struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name);
-static inline int explode_line (char *buf, int *values);
+static INLINE int explode_line (char *buf, int *values);
 
 
 void escape_print(FILE *stream, char* string) {
@@ -79,7 +79,7 @@ void escape_print(FILE *stream, char* string) {
     }
 }
 
-int write_prolog (struct fsm *net, char *filename) {
+int foma_write_prolog (struct fsm *net, char *filename) {
   struct fsm_state *stateptr;
   int i, *finals, *used_symbols, maxsigma;
   FILE *out;
@@ -601,7 +601,7 @@ int load_defined(struct defined_networks *def, char *filename) {
     return(1);
 }
 
-static inline int explode_line(char *buf, int *values) {
+static INLINE int explode_line(char *buf, int *values) {
     int i, j, items;
     j = i = items = 0;
     for (;;) {

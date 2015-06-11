@@ -54,7 +54,7 @@ extern int g_list_limit;
 extern int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 extern void my_cmatrixparse(struct fsm *net, char *my_string);
 extern struct fsm *current_parse;
-extern struct fsm *fsm_lexc_parse_string(char *string);
+extern struct fsm *fsm_lexc_parse_string(char *string, int verbose);
 extern int interfacelex();
 extern struct fsm *current_parse;
 extern void lexc_trim(char *s);
@@ -606,7 +606,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 
 <RLEXC>{NONL}+ {
   if ((lexcfilein = file_to_mem(trim(interfacetext))) != NULL) {
-     stack_add(fsm_lexc_parse_string(lexcfilein));
+     stack_add(fsm_lexc_parse_string(lexcfilein, 1));
      xxfree(lexcfilein); 
   } else {
     printf("Error opening file '%s'.\n", interfacetext);

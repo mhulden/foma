@@ -107,11 +107,10 @@ static unsigned int lexc_suffix_hash(int offset) {
 
 static unsigned int lexc_symbol_hash(char *s) {
     register unsigned int hash;
-    hash = 0;
-
-    while (*s != '\0') {
-        hash = hash * 101  +  *s++;
-    }
+    int c;
+    hash = 5381;
+    while ((c = *s++))
+	hash = ((hash << 5) + hash) + c;
     return (hash % SIGMA_HASH_TABLESIZE);
 }
 
@@ -463,7 +462,7 @@ void lexc_set_current_word(char *name) {
 void lexc_pad() {
     int i, pad;
     /* Pad the shorter of current in, out words in cwordin, cwordout with EPSILON */
-    /* A MED option would be nice here to minimize different symbol pairs */
+    /* A MED option would be nice here to minimize different symbol pairs         */
 
     if (*cwordin == -1 && *cwordout == -1) {
 	*cwordin = *cwordout = EPSILON;
@@ -694,7 +693,7 @@ void lexc_number_states() {
         for (s = statelist; s != NULL; s = s->next) {        
             if (s->next == NULL) {
                 s->state->number = 0;
-                printf("*Warning: no Root lexicon, using '%s' as Root.\n",s->state->lexstate->name);
+                fprintf(stderr,"*Warning: no Root lexicon, using '%s' as Root.\n",s->state->lexstate->name);
                 s->start = 1;
                 n++;
             }
@@ -721,11 +720,11 @@ void lexc_number_states() {
     lexc_statecount = n+1;
     for (l = lexstates; l != NULL ; l = l->next) {
         if (l->targeted == 0 && l->state->number != 0) {
-            printf("*Warning: lexicon '%s' defined but not used\n",l->name);
+	    fprintf(stderr,"*Warning: lexicon '%s' defined but not used\n",l->name);
             fflush(stdout);
         }
         if (l->has_outgoing == 0 && strcmp(l->name, "#") != 0) {
-            printf("***Warning: lexicon '%s' used but never defined\n",l->name);
+	    fprintf(stderr,"***Warning: lexicon '%s' used but never defined\n",l->name);
             fflush(stdout);
         }
     }
@@ -886,7 +885,7 @@ struct fsm *lexc_to_fsm() {
     struct trans *t;
     int i, j,  linecount;
 
-    printf("Building lexicon...\n");
+    fprintf(stderr,"Building lexicon...\n");
     fflush(stdout);
     lexc_merge_states();
     net = fsm_create("");
@@ -894,7 +893,7 @@ struct fsm *lexc_to_fsm() {
     net->sigma = lexsigma;
     lexc_number_states();
     if (hasfinal == 0) {
-        printf("Warning: # is never reached!!!\n");
+        fprintf(stderr,"Warning: # is never reached!!!\n");
         return(fsm_empty_set());
     }
     sa = xxmalloc(sizeof(struct statelist)*lexc_statecount);
@@ -932,13 +931,13 @@ struct fsm *lexc_to_fsm() {
     sigma_cleanup(net,0);
     sigma_sort(net);
     
-    printf("Determinizing...\n");
+    fprintf(stderr,"Determinizing...\n");
     fflush(stdout);
     net = fsm_determinize(net);
-    printf("Minimizing...\n");
+    fprintf(stderr,"Minimizing...\n");
     fflush(stdout);
     net = fsm_topsort(fsm_minimize(net));
-    printf("Done!\n");
+    fprintf(stderr,"Done!\n");
     return(net);
 }
 

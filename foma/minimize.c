@@ -83,12 +83,12 @@ static struct p *P, *Phead, *Pnext, *current_w;
 static struct e *E;
 static struct agenda *Agenda_head, *Agenda_top, *Agenda_next, *Agenda;
 
-static inline int refine_states(int sym);
+static INLINE int refine_states(int sym);
 static void init_PE();
 static void agenda_add(struct p *pptr, int start);
 static void sigma_to_pairs(struct fsm *net);
 /* static void single_symbol_to_symbol_pair(int symbol, int *symbol_in, int *symbol_out); */
-static inline int symbol_pair_to_single_symbol(int in, int out);
+static INLINE int symbol_pair_to_single_symbol(int in, int out);
 static void generate_inverse(struct fsm *net);
 
 struct fsm *fsm_minimize(struct fsm *net) {
@@ -305,7 +305,7 @@ static struct fsm *rebuild_machine(struct fsm *net) {
   return(net);
 }
 
-static inline int refine_states(int invstates) {
+static INLINE int refine_states(int invstates) {
     int i, selfsplit;
     struct e *thise;
     struct p *tP, *newP = NULL;
@@ -668,6 +668,6 @@ static void sigma_to_pairs(struct fsm *net) {
   num_symbols = x;
 }
 
-static inline int symbol_pair_to_single_symbol(int in, int out) {
+static INLINE int symbol_pair_to_single_symbol(int in, int out) {
   return(*(double_sigma_array+maxsigma*in+out));
 }
