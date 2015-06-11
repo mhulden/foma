@@ -37,7 +37,7 @@ extern struct fsm *current_parse;
 static char *tempstr;
 int lexccolumn = 0;
 
-struct fsm *fsm_lexc_parse_string(char *string) {
+struct fsm *fsm_lexc_parse_string(char *string, int verbose) {
 
    olddefines = g_defines;
    YY_BUFFER_STATE my_string_buffer;
@@ -55,10 +55,10 @@ struct fsm *fsm_lexc_parse_string(char *string) {
    return(lexc_to_fsm());
 }
 
-struct fsm *fsm_lexc_parse_file(char *filename) {
+struct fsm *fsm_lexc_parse_file(char *filename, int verbose) {
   char *mystring;
   mystring = file_to_mem(filename);
-  return(fsm_lexc_parse_string(mystring));					       
+  return(fsm_lexc_parse_string(mystring, verbose));
 }
 
 void lexc_trim(char *s) {
@@ -240,6 +240,6 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
   BEGIN(DEFREGEX);
   yymore();
 }
-<*>((!).*[\015]?(\n)) { /* printf ("Comment: [%s]\n",lexctext); */ }
+<*>((!).*[\015]?(\n)) {  /* printf ("Comment: [%s]\n",lexctext); */  }
 
 <*>(.) { printf("\n***Syntax error on line %i column %i at '%s'\n",lexclineno,lexccolumn,lexctext); return 1;}

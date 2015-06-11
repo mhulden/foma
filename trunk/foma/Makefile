@@ -5,9 +5,9 @@ bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
 
 VERSION = 0.9.18
-CC = gcc
+CC = /usr/local/bin/gcc
 RANLIB = ranlib
-YACC = bison -d -t -v
+YACC = bison -v
 LEX = flex -8
 LEXCLEX = flex -8 --prefix=lexc
 LEXIFACE = flex -8 --prefix=interface
@@ -17,7 +17,7 @@ LDFLAGS = -lreadline -lz -ltermcap
 FLOOKUPLDFLAGS = libfoma.a -lz
 CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
 FOMAOBJS = foma.o stack.o iface.o lex.interface.o
-LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.tab.o
+LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.o
 
 all: libfoma foma flookup cgflookup
 
@@ -90,7 +90,7 @@ $(OBJS): foma.h
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
-lex.yy.c: regex.l regex.tab.h
+lex.yy.c: regex.l regex.h
 	$(LEX) regex.l
 
 lex.lexc.c: lexc.l
@@ -102,8 +102,8 @@ lex.interface.c: interface.l
 lex.cmatrix.c: cmatrix.l
 	$(LEXCMATRIX) $<
 
-regex.tab.c regex.tab.h: regex.y
-	$(YACC) $<
+regex.c regex.h: regex.y
+	$(YACC) --defines=$*.h --output=$*.c $<
 
 clean:
-	$(RM) foma flookup cgflookup $(FOMAOBJS) $(LIBOBJS) flookup.o cgflookup.o regex.tab.h regex.tab.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a
+	$(RM) foma flookup cgflookup $(FOMAOBJS) $(LIBOBJS) flookup.o cgflookup.o regex.h regex.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a

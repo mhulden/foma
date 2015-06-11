@@ -79,8 +79,8 @@ static struct nhash_list *table;
 extern int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out, int target, int final_state, int start_state);
 
 static void init(struct fsm *net);
-inline static int e_closure(int states);
-inline static int set_lookup(int *lookup_table, int size);
+INLINE static int e_closure(int states);
+INLINE static int set_lookup(int *lookup_table, int size);
 static int initial_e_closure(struct fsm *network);
 static void memoize_e_closure(struct fsm_state *fsm);
 static int next_unmarked(void);
@@ -88,7 +88,7 @@ static void single_symbol_to_symbol_pair(int symbol, int *symbol_in, int *symbol
 static int symbol_pair_to_single_symbol(int in, int out);
 static void sigma_to_pairs(struct fsm *net);
 static int nhash_find_insert(int *set, int setsize);
-inline static int hashf(int *set, int setsize);
+INLINE static int hashf(int *set, int setsize);
 static int nhash_insert(int hashval, int *set, int setsize);
 static void nhash_rebuild_table ();
 static void nhash_init (int initial_size);
@@ -433,7 +433,7 @@ static void init_trans_array(struct fsm *net) {
     }
 }
 
-inline static int e_closure(int states) {
+INLINE static int e_closure(int states) {
 
     int i, set_size;
     struct e_closure_memo *ptr;
@@ -492,7 +492,7 @@ inline static int e_closure(int states) {
     return(set_lookup(temp_move, set_size));
 }
 
-inline static int set_lookup (int *lookup_table, int size) {
+INLINE static int set_lookup (int *lookup_table, int size) {
 
   /* Look up a set and its corresponding state number */
   /* if it doesn't exist from before, assign a state number */
@@ -741,7 +741,7 @@ static int nhash_find_insert(int *set, int setsize) {
     }
 }
 
-inline static int hashf(int *set, int setsize) {
+INLINE static int hashf(int *set, int setsize) {
   int i;
   unsigned int hashval, sum = 0;
   hashval = 6703271;

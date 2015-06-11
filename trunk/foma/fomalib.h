@@ -23,6 +23,8 @@ extern "C" {
 #include <string.h>
 #include "zlib.h"
 
+#define INLINE inline
+
 #define FEXPORT __attribute__((visibility("default")))
 
 /* Library version */
@@ -273,6 +275,8 @@ FEXPORT char *fsm_network_to_char(struct fsm *net);
 /* Remove those symbols from sigma that have the same distribution as IDENTITY */
 FEXPORT void fsm_compact(struct fsm *net);
 
+FEXPORT int flag_build(int ftype, char *fname, char *fvalue, int fftype, char *ffname, char *ffvalue);
+
 /* Eliminate flag diacritics and return equivalent FSM          */
 /* with name = NULL the function eliminates all flag diacritics */
 FEXPORT struct fsm *flag_eliminate(struct fsm *net, char *name);
@@ -327,7 +331,7 @@ FEXPORT int fsm_write_binary_file(struct fsm *net, char *filename);
 FEXPORT int load_defined(struct defined_networks *def, char *filename);
 FEXPORT int save_defined(struct defined_networks *def, char *filename);
 FEXPORT int save_stack_att();
-FEXPORT int write_prolog(struct fsm *net, char *filename);
+FEXPORT int foma_write_prolog(struct fsm *net, char *filename);
 FEXPORT int foma_net_print(struct fsm *net, gzFile outfile);
 
 /* Lookups */
@@ -378,8 +382,8 @@ FEXPORT void cmatrix_print(struct fsm *net);
 FEXPORT void cmatrix_print_att(struct fsm *net, FILE *outfile);
 
 /* Lexc */
-FEXPORT struct fsm *fsm_lexc_parse_file(char *myfile);
-FEXPORT struct fsm *fsm_lexc_parse_string(char *mystring);
+  FEXPORT struct fsm *fsm_lexc_parse_file(char *myfile, int verbose);
+  FEXPORT struct fsm *fsm_lexc_parse_string(char *mystring, int verbose);
 
 /*************************/
 /* Construction routines */

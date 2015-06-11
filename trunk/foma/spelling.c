@@ -34,7 +34,7 @@
 #define BITCLEAR(a,b) ((a)[BITSLOT(b)] &= ~BITMASK(b))
 #define BITTEST(a,b) ((a)[BITSLOT(b)] & BITMASK(b))
 #define BITNSLOTS(nb) ((nb + CHAR_BIT - 1) / CHAR_BIT)
-#define min(X, Y)  ((X) < (Y) ? (X) : (Y))
+#define min_(X, Y)  ((X) < (Y) ? (X) : (Y))
 
 static int calculate_h(struct apply_med_handle *medh, int *intword, int currpos, int state);
 static struct astarnode *node_delete_min();
@@ -617,7 +617,7 @@ void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net) {
         letterbits_union(v, vp, medh->letterbits,medh->bytes_per_letter_array);         /* add v' target bits to v */
         letterbits_add(v, curr_ptr->in, medh->letterbits,medh->bytes_per_letter_array); /* add current arc label to v */
 
-        (sccinfo+v)->lowlink = min((sccinfo+v)->lowlink,(sccinfo+vp)->lowlink);
+        (sccinfo+v)->lowlink = min_((sccinfo+v)->lowlink,(sccinfo+vp)->lowlink);
 
         if ((curr_ptr+1)->state_no != curr_ptr->state_no) {
             goto l4;
@@ -651,7 +651,7 @@ void fsm_create_letter_lookup(struct apply_med_handle *medh, struct fsm *net) {
             /* if v' visited */
             /* T: v.lowlink = min(v.lowlink, v'.lowlink), union v.list with e, move to next edge in v, goto loop */
         } else if ((sccinfo+vp)->on_t_stack) {
-            (sccinfo+v)->lowlink = min((sccinfo+v)->lowlink,(sccinfo+vp)->lowlink);
+            (sccinfo+v)->lowlink = min_((sccinfo+v)->lowlink,(sccinfo+vp)->lowlink);
         }
         /* If node is visited, copy its bits */
         letterbits_union(v,vp,medh->letterbits,medh->bytes_per_letter_array);

@@ -27,7 +27,6 @@
 
 static struct flags *flag_extract (struct fsm *net);
 static char *flag_type_to_char (int type);
-static int flag_build(int ftype, char *fname, char *fvalue, int fftype, char *ffname, char *ffvalue);
 static void flag_purge (struct fsm *net, char *name);
 static struct fsm *flag_create_symbol(int type, char *name, char *value);
 
@@ -78,7 +77,7 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
                 found = 1;
         }
         if (found == 0) {
-            printf("Flag attribute '%s' does not occur in the network.\n",name);
+	    fprintf(stderr,"Flag attribute '%s' does not occur in the network.\n",name);
             return(net);
         }
     }

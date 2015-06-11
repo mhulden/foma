@@ -72,11 +72,11 @@ unsigned int round_up_to_power_of_two(unsigned int v) {
     return(v);
 }
 
-inline void *xxmalloc(size_t size) {
+INLINE void *xxmalloc(size_t size) {
     return(malloc(size));
 }
 
-inline void xxfree(void *ptr) {
+INLINE void xxfree(void *ptr) {
     free(ptr);
 }
 
@@ -84,11 +84,11 @@ void *xxrealloc(void *ptr, size_t size) {
     return(realloc(ptr, size));
 }
 
-inline void *xxcalloc(size_t nmemb, size_t size) {
+INLINE void *xxcalloc(size_t nmemb, size_t size) {
     return(calloc(nmemb,size));
 }
 
-inline char *xxstrdup(const char *s) {
+INLINE char *xxstrdup(const char *s) {
     return(strdup(s));
 }
 

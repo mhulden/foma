@@ -1417,7 +1417,7 @@ int iface_write_att(char *filename) {
 
 void iface_write_prolog(char *filename) {
   if (iface_stack_check(1))       
-    write_prolog(stack_find_top()->fsm, filename);
+    foma_write_prolog(stack_find_top()->fsm, filename);
 }
 
 void iface_zero_plus() {
