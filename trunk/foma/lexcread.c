@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2014 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -25,6 +25,8 @@
 
 #define WORD_ENTRY 1
 #define REGEX_ENTRY 2
+
+extern int g_lexc_align;
 
 struct multichar_symbols {
     char *symbol;
@@ -78,13 +80,14 @@ static struct sigma *lexsigma = NULL;
 static struct lexc_hashtable *hashtable;
 static struct fsm *current_regex_network;
 
-static int cwordin[1000], cwordout[1000], carity, lexc_statecount, maxlen, hasfinal, current_entry, net_has_unknown;
+static int cwordin[1000], cwordout[1000], medcwordin[2000], medcwordout[2000], carity, lexc_statecount, maxlen, hasfinal, current_entry, net_has_unknown;
 static _Bool *mchash;
 static struct lexstates *clexicon, *ctarget;
 
 static char *mystrncpy(char *dest, char *src, int len);
 static void lexc_string_to_tokens(char *string, int *intarr);
 static void lexc_pad();
+static void lexc_medpad();
 static void lexc_number_states();
 static void lexc_cleanup();
 static unsigned int lexc_suffix_hash(int offset);
@@ -449,20 +452,118 @@ void lexc_set_current_word(char *name) {
     lexc_string_to_tokens(instring, cwordin);
     if (carity == 2) {
         lexc_string_to_tokens(outstring, cwordout);
-        lexc_pad();
+	if (g_lexc_align)
+	    lexc_medpad();
+	else
+	    lexc_pad();
     } else {
         for (i=0; *(cwordin+i) != -1; i++) {
             *(cwordout+i) = *(cwordin+i);
         }
         *(cwordout+i) = -1;
+
     }
     current_entry = WORD_ENTRY;
+}
+
+
+#define LEV_DOWN 0
+#define LEV_LEFT 1
+#define LEV_DIAG 2
+    
+void lexc_medpad() {
+    int i, j, x, y, s1len, s2len, left, down, diag, dir;
+
+    if (*cwordin == -1 && *cwordout == -1) {
+	*cwordin = *cwordout = EPSILON;
+	*(cwordin+1) = *(cwordout+1) = -1;
+	return;
+    }
+    
+    for (i = 0, j = 0; cwordin[i] != -1; i++) {
+    	if (cwordin[i] == EPSILON) {
+    	    continue;
+    	}
+    	cwordin[j] = cwordin[i];
+    	j++;
+    }
+    cwordin[j] = -1;
+
+    for (i = 0, j = 0; cwordout[i] != -1; i++) {
+    	if (cwordout[i] == EPSILON) {
+    	    continue;
+    	}
+    	cwordout[j] = cwordout[i];
+    	j++;
+    }
+    cwordout[j] = -1;
+    
+    for (i = 0; cwordin[i] != -1; i++) { }
+    s1len = i;
+    for (i = 0; cwordout[i] != -1; i++) { }
+    s2len = i;
+    
+    int matrix[s1len+2][s2len+2];
+    int dirmatrix[s1len+2][s2len+2];
+
+    matrix[0][0] = 0;
+    dirmatrix[0][0] = 0;
+    for (x = 1; x <= s1len; x++) {
+        matrix[x][0] = matrix[x-1][0] + 1;
+	dirmatrix[x][0] = LEV_LEFT;
+    }
+    for (y = 1; y <= s2len; y++) {
+        matrix[0][y] = matrix[0][y-1] + 1;
+	dirmatrix[0][y] = LEV_DOWN;
+    }
+    for (x = 1; x <= s1len; x++) {
+        for (y = 1; y <= s2len; y++) {
+    	    diag = matrix[x-1][y-1] + (cwordin[x-1] == cwordout[y-1] ? 0 : 100);
+    	    down =  matrix[x][y-1] + 1;
+    	    left = matrix[x-1][y] + 1;
+    	    if (diag <= left && diag <= down) {
+    		matrix[x][y] = diag;
+    		dirmatrix[x][y] = LEV_DIAG;
+    	    } else if (left <= diag && left <= down) {
+    		matrix[x][y] = left;
+    		dirmatrix[x][y] = LEV_LEFT;
+    	    } else {
+    		matrix[x][y] = down ;
+    		dirmatrix[x][y] = LEV_DOWN;
+    	    }
+    	}
+    }
+
+    for (x = s1len, y = s2len, i = 0; (x > 0) || (y > 0); i++) {
+	dir = dirmatrix[x][y];
+    	if (dir == LEV_DIAG) {
+    	    medcwordin[i] = cwordin[x-1];
+    	    medcwordout[i] = cwordout[y-1];
+    	    x--;
+    	    y--;
+    	}
+    	else if (dir == LEV_DOWN) {
+    	    medcwordin[i] = EPSILON;
+    	    medcwordout[i] = cwordout[y-1];
+    	    y--;
+    	}
+    	else {
+    	    medcwordin[i] = cwordin[x-1];
+	    medcwordout[i] = EPSILON;
+    	    x--;
+    	}
+    }
+    for (j = 0, i-= 1; i >= 0; j++, i--) {
+    	cwordin[j] = medcwordin[i];
+    	cwordout[j] = medcwordout[i];
+    }
+    cwordin[j] = -1;
+    cwordout[j] = -1;
 }
 
 void lexc_pad() {
     int i, pad;
     /* Pad the shorter of current in, out words in cwordin, cwordout with EPSILON */
-    /* A MED option would be nice here to minimize different symbol pairs         */
 
     if (*cwordin == -1 && *cwordout == -1) {
 	*cwordin = *cwordout = EPSILON;

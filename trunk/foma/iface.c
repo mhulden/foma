@@ -45,6 +45,7 @@ extern int g_list_random_limit;
 extern int g_compose_tristate;
 extern int g_med_limit ;
 extern int g_med_cutoff ;
+extern int g_lexc_align ;
 extern char *g_att_epsilon;
 
 extern struct defined_networks   *g_defines;
@@ -86,11 +87,12 @@ struct g_v {
     {&g_compose_tristate, "compose-tristate", FVAR_BOOL},
     {&g_med_limit,        "med-limit",        FVAR_INT},
     {&g_med_cutoff,       "med-cutoff",       FVAR_INT},
+    {&g_lexc_align,       "lexc-align",       FVAR_BOOL},
     {&g_att_epsilon,      "att-epsilon",      FVAR_STRING},
     {NULL, NULL, 0}
 };
 
-char warranty[] = "\nThis program is free software; you can redistribute it and/or modify\nit under the terms of the GNU General Public License version 2 as published by\nthe Free Software Foundation.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <http://www.gnu.org/licenses/>.\n\n";
+char warranty[] = "\nLicensed under the Apache License, Version 2.0 (the \"License\")\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\n";
  
 struct global_help {
     char *name;
@@ -213,6 +215,7 @@ struct global_help {
     {"variable med-limit","the limit on number of matches in apply med","Default value: 3\n"},
     {"variable med-cutoff","the cost limit for terminating a search in apply med","Default value: 3\n"},
     {"variable att-epsilon","the EPSILON symbol when reading/writing AT&T files","Default value: @0@\n"},
+    {"variable lexc-align","Forces X:0 X:X of 0:X alignment of lexicon entry symbols","Default value: OFF\n"},
     {"write prolog (> filename)","writes top network to prolog format file/stdout","Short form: wpl"},
     {"write att (> <filename>)","writes top network to AT&T format file/stdout","Short form: watt"},
     {"re operator: (∀<var name>)(F)","universal quantification","Example: $.A is equivalent to:\n(∃x)(x ∈ A ∧ (∀y)(¬(y ∈ A ∧ ¬(x = y))))"},
@@ -1558,7 +1561,8 @@ void print_mem_size(struct fsm *net) {
     } else if (s >= 1073741824) {
         sprintf(size, "%.1f GB. ", sf/1073741824);        
     }
-    printf("%s", size);
+    fprintf(stdout, "%s", size);
+    fflush(stdout);
 }
 
 int print_stats(struct fsm *net) {
