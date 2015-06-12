@@ -1,5 +1,5 @@
 /*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2011 Mans Hulden                                     */
+/*     Copyright © 2008-2015 Mans Hulden                                     */
 
 /*     This file is part of foma.                                            */
 
@@ -39,6 +39,7 @@ int g_list_limit = 100;
 int g_list_random_limit = 15;
 int g_med_limit  = 3;
 int g_med_cutoff = 15;
+int g_lexc_align = 0;
 char *g_att_epsilon = "@0@";
 
 char *xxstrndup(const char *s, size_t n) {
