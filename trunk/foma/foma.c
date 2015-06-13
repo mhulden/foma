@@ -52,7 +52,12 @@ extern int add_history (const char *);
 extern int my_yyparse(char *my_string);
 void print_help();
 void xprintf(char *string) { return ; printf("%s",string); }
-char disclaimer[] = "Foma, version 0.9.18alpha\nCopyright © 2008-2014 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
+char disclaimer1[] = "Foma, version ";
+char disclaimer2[] = "\nCopyright © 2008-2015 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
+
+#ifndef SVN_REV
+#define SVN_REV 0
+#endif
 
 /* A static variable for holding the line. */
 
@@ -149,7 +154,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!pipe_mode && !quiet_mode) 
-        printf("%s",disclaimer);
+      printf("%s%i.%i.%i%s (svn r%i)%s",disclaimer1,MAJOR_VERSION,MINOR_VERSION,BUILD_VERSION,STATUS_VERSION,SVN_REV,disclaimer2);
     rl_basic_word_break_characters = " >";
 
     rl_attempted_completion_function = my_completion;
