@@ -1,19 +1,19 @@
-/*     Foma: a finite-state toolkit and library.                             */
-/*     Copyright © 2008-2014 Mans Hulden                                     */
+/*   Foma: a finite-state toolkit and library.                                 */
+/*   Copyright © 2008-2015 Mans Hulden                                         */
 
-/*     This file is part of foma.                                            */
+/*   This file is part of foma.                                                */
 
-/*     Foma is free software: you can redistribute it and/or modify          */
-/*     it under the terms of the GNU General Public License version 2 as     */
-/*     published by the Free Software Foundation.                            */
+/*   Licensed under the Apache License, Version 2.0 (the "License");           */
+/*   you may not use this file except in compliance with the License.          */
+/*   You may obtain a copy of the License at                                   */
 
-/*     Foma is distributed in the hope that it will be useful,               */
-/*     but WITHOUT ANY WARRANTY; without even the implied warranty of        */
-/*     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         */
-/*     GNU General Public License for more details.                          */
+/*      http://www.apache.org/licenses/LICENSE-2.0                             */
 
-/*     You should have received a copy of the GNU General Public License     */
-/*     along with foma.  If not, see <http://www.gnu.org/licenses/>.         */
+/*   Unless required by applicable law or agreed to in writing, software       */
+/*   distributed under the License is distributed on an "AS IS" BASIS,         */
+/*   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  */
+/*   See the License for the specific language governing permissions and       */
+/*   limitations under the License.                                            */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,12 +52,7 @@ extern int add_history (const char *);
 extern int my_yyparse(char *my_string);
 void print_help();
 void xprintf(char *string) { return ; printf("%s",string); }
-char disclaimer1[] = "Foma, version ";
-char disclaimer2[] = "\nCopyright © 2008-2015 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
-
-#ifndef SVN_REV
-#define SVN_REV 0
-#endif
+char disclaimer[] = "Foma, version 0.9.18alpha\nCopyright © 2008-2014 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
 
 /* A static variable for holding the line. */
 
@@ -154,7 +149,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!pipe_mode && !quiet_mode) 
-      printf("%s%i.%i.%i%s (svn r%i)%s",disclaimer1,MAJOR_VERSION,MINOR_VERSION,BUILD_VERSION,STATUS_VERSION,SVN_REV,disclaimer2);
+        printf("%s",disclaimer);
     rl_basic_word_break_characters = " >";
 
     rl_attempted_completion_function = my_completion;
