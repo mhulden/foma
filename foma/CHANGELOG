@@ -1,3 +1,13 @@
+0.9.18alpha (20150612)
+
+- Many bugfixes and speedups
+- Corrects handling of some rare unicode composing diacritics
+- Python bindings
+- Adds _closeu()-builtin function which closes sigma
+- Adds _sublabel(L1,symbol,L2)-builtin function: substitute all instances of symbol in L1 with L2
+- Adds separate pairs, pairs > file, random-pairs commands in interface
+- Adds possibility to automatically align lexc-entries
+
 0.9.17alpha (20121117)
 
 - Many bugfixes in foma, flookup (apply code)
