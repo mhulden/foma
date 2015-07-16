@@ -1,26 +1,25 @@
 # -*- coding: utf-8 -*-
 
-#     Foma: a finite-state toolkit and library.                             #
-#     Copyright © 2008-2014 Mans Hulden                                     #
+#   Foma: a finite-state toolkit and library.                                 #
+#   Copyright © 2008-2015 Mans Hulden                                         #
 
-#     This file is part of foma.                                            #
+#   This file is part of foma.                                                #
 
-#     Foma is free software: you can redistribute it and/or modify          #
-#     it under the terms of the GNU General Public License version 2 as     #
-#     published by the Free Software Foundation.                            #
+#   Licensed under the Apache License, Version 2.0 (the "License");           #
+#   you may not use this file except in compliance with the License.          #
+#   You may obtain a copy of the License at                                   #
 
-#     Foma is distributed in the hope that it will be useful,               #
-#     but WITHOUT ANY WARRANTY; without even the implied warranty of        #
-#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         #
-#     GNU General Public License for more details.                          #
+#      http://www.apache.org/licenses/LICENSE-2.0                             #
 
-#     You should have received a copy of the GNU General Public License     #
-#     along with foma.  If not, see <http://www.gnu.org/licenses/>.         #
+#   Unless required by applicable law or agreed to in writing, software       #
+#   distributed under the License is distributed on an "AS IS" BASIS,         #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+#   See the License for the specific language governing permissions and       #
+#   limitations under the License.                                            #
 
 from sys import maxint
 from ctypes import *
 from ctypes.util import find_library
-#import os
 
 fomalibpath = find_library('foma')
 foma = cdll.LoadLibrary(fomalibpath)
@@ -44,6 +43,7 @@ foma_apply_down = foma.apply_down
 foma_apply_down.restype = c_char_p
 foma_apply_up = foma.apply_up
 foma_apply_up.restype = c_char_p
+foma_apply_set_space_symbol = foma.apply_set_space_symbol
 foma_fsm_count = foma.fsm_count
 foma_fsm_topsort = foma.fsm_topsort
 foma_fsm_topsort.restype = POINTER(FSTstruct)
@@ -76,10 +76,16 @@ foma_fsm_isempty = foma.fsm_isempty
 foma_fsm_isempty.restype = c_int
 foma_fsm_flatten = foma.fsm_flatten
 foma_fsm_flatten.restype = POINTER(FSTstruct)
+foma_apply_set_space_symbol = foma.apply_set_space_symbol
+foma_fsm_read_binary_file = foma.fsm_read_binary_file
+foma_fsm_read_binary_file.restype = POINTER(FSTstruct)
+
 
 """Define functions."""
 foma_add_defined = foma.add_defined
 foma_add_defined.restype = c_int
+foma_add_defined_function = foma.add_defined_function
+foma_add_defined_function.restype = c_int
 defined_networks_init = foma.defined_networks_init
 defined_networks_init.restype = c_void_p
 defined_functions_init = foma.defined_functions_init
@@ -119,6 +125,21 @@ class FST(object):
             retval = foma.add_defined(c_void_p(cls.networkdefinitions.defhandle), foma_fsm_parse_regex(c_char_p(regex), c_void_p(cls.networkdefinitions.defhandle), c_void_p(cls.functiondefinitions.deffhandle)), c_char_p(name))
         else:
             raise ValueError("Expected str, unicode, or FSM")
+
+    @classmethod
+    def definef(cls, prototype, definition):
+        """Defines an FSM function."""
+        # Prototype is a 2-tuple (name, (arg1name, ..., argname))
+        # Definition is regex using prototype variables
+        name = cls.encode(prototype[0] + '(')
+        if isinstance(definition, basestring):
+            numargs = len(prototype[1])
+            for i in xrange(numargs):
+                definition = definition.replace(prototype[1][i], "@ARGUMENT0%i@" % (i+1))
+            regex = cls.encode(definition + ';')
+            retval = foma.add_defined_function(c_void_p(cls.functiondefinitions.deffhandle), c_char_p(name), c_char_p(regex), c_int(numargs))
+        else:
+            raise ValueError("Expected regex as definition")
          
     @classmethod
     def wordlist(cls, wordlist, minimize = True):
@@ -134,16 +155,24 @@ class FST(object):
             fsm.fsthandle = foma_fsm_minimize(fsm.fsthandle)
         return fsm
 
+    @classmethod
+    def load(cls, filename):
+        """Load binary FSM from file."""
+        fsm = cls()
+        fsm.fsthandle = foma_fsm_read_binary_file(c_char_p(filename))
+        if not fsm.fsthandle:
+            raise ValueError("File error.")
+        return fsm
+
     @staticmethod
     def encode(string):
         """Makes sure str and unicode are converted."""
         if isinstance(string, unicode):
-            return string.decode('utf-8')
+            return string.encode('utf8')
         elif isinstance(string, str):
             return string
         else:
             return str(string)
-            #raise ValueError("Expected str or unicode")
             
     def __init__(self, regex = False):
         if regex:
@@ -171,7 +200,6 @@ class FST(object):
             
     def __del__(self):
         if self.fsthandle:
-            #print "DESTROY"
             foma_fsm_destroy(self.fsthandle)
 
     def __str__(self):
@@ -252,12 +280,15 @@ class FST(object):
         return new
 
     def __iter__(self):
-        return self._apply(foma_apply_upper_words)
+        return self._apply(foma_apply_upper_words, word = None, tokenize = False)
     
-    def _apply(self, applyf, word = None):
+    def _apply(self, applyf, word = None, tokenize = False):
         if not self.fsthandle:
             raise ValueError('FST not defined')
         applyerhandle = foma_apply_init(self.fsthandle)
+        if tokenize:
+            toksym = '\x07'
+            foma_apply_set_space_symbol(c_void_p(applyerhandle), c_char_p(toksym))
         if word:
             output = applyf(c_void_p(applyerhandle), c_char_p(self.encode(word)))
         else:
@@ -267,27 +298,30 @@ class FST(object):
                 foma_apply_clear(c_void_p(applyerhandle))
                 return
             else:
-                yield output
+                if tokenize:
+                    yield output[:-1].split('\x07')
+                else:
+                    yield output
             if word:
                 output = applyf(c_void_p(applyerhandle), None)
             else:
                 output = applyf(c_void_p(applyerhandle))
                     
-    def words(self):
-        return self._apply(foma_apply_words)
+    def words(self, tokenize = False):
+        return self._apply(foma_apply_words, word = None, tokenize = tokenize)
 
-    def lowerwords(self):
-        return self._apply(foma_apply_lower_words)
+    def lowerwords(self, tokenize = False):
+        return self._apply(foma_apply_lower_words, word = None, tokenize = tokenize)
                     
-    def upperwords(self):
-        return self._apply(foma_apply_upper_words)
+    def upperwords(self, tokenize = False):
+        return self._apply(foma_apply_upper_words, word = None, tokenize = tokenize)
         
-    def apply_down(self, word):
-        return self._apply(foma_apply_down, word)
+    def apply_down(self, word, tokenize = False):
+        return self._apply(foma_apply_down, word = word, tokenize = tokenize)
 
-    def apply_up(self, word):
+    def apply_up(self, word, tokenize = False):
         if self.fsthandle:
-            return self._apply(foma_apply_up, word)
+            return self._apply(foma_apply_up, word = word, tokenize = tokenize)
         else:
             raise ValueError('Undefined FST')
 
@@ -350,3 +384,112 @@ class FST(object):
         new.fsthandle = foma_fsm_flatten(foma_fsm_copy(self.fsthandle), foma_fsm_copy(eps_sym.fsthandle))
         return new
     
+class MTFSM(FST):
+
+    def __init__(self, regex = False, numtapes = 2):
+        if isinstance(regex, str) or isinstance(regex, unicode):
+            FST.__init__(self, regex)
+            eps_sym = FST('□')
+            self.fsthandle = foma_fsm_flatten(foma_fsm_copy(self.fsthandle), foma_fsm_copy(eps_sym.fsthandle))
+            self.numtapes = numtapes
+        elif isinstance(regex, FST):
+            self.fsthandle = foma_fsm_copy(regex.fsthandle)
+            self.regex = None
+            self.numtapes = numtapes
+        else:
+            self.fsthandle = None
+            self.regex = None
+        
+        
+    def __str__(self):
+        if not self.fsthandle:
+            raise ValueError('FSM not defined')
+        foma_fsm_count(self.fsthandle)
+        s  = 'Name: %s\n' % self.fsthandle.contents.name
+        s += 'States: %i\n' % self.fsthandle.contents.statecount
+        s += 'Transitions: %i\n' % self.fsthandle.contents.arccount
+        s += 'Final states: %i\n' % self.fsthandle.contents.finalcount
+        s += 'Deterministic: %i\n' % self.fsthandle.contents.is_deterministic
+        s += 'Minimized: %i\n' % self.fsthandle.contents.is_minimized
+        s += 'Numtapes: %i\n' % self.numtapes
+        return s
+    
+    def parse(self, word):
+        #[word/□ .o. [0:?^(numtapes-1) ?]*].l & Grammar ;
+        m = self.numtapes
+        regx = (u'[{' + word + u'}/□ .o. [0:?^' + str(m-1) + u' ?]*].l')
+        reg = FST(regx)
+        gr = FST()
+        gr.fsthandle = foma_fsm_copy(self.fsthandle)
+        res = MTFSM(reg.intersect(gr), numtapes = m)        
+        return res
+    
+    def join(self, other):
+        """Joins two multitape FSMs by composition. E.g.
+            [ a d ]     [ c □ □ ]                  [ a d □ ]
+        A = [ b e ] B = [ d f g ], and A.join(B) = [ b e □ ]
+            [ c □ ]     [ e f g ]                  [ c □ □ ]
+                                                   [ d f g ]
+                                                   [ e f g ] """
+
+        m = self.numtapes        
+        n = other.numtapes
+        pada = FST('[0:□^' + str(m) +' [0:?^' + str(n-1) + ' - 0:□^' + str(n-1) + '] | ?^' + str(m) + ' 0:?^' + str(n-1) + ']*')
+        padb = FST('[[0:?^' + str(m-1) + ' - 0:□^' + str(m-1) + ' ] 0:□^' + str(n) + '| 0:?^' + str(m-1) + ' ?^' + str(n) + ']*')
+        extenda = self.compose(pada).lower()
+        extendb = other.compose(padb).lower()
+        flt = FST('~[?^' + str(m+n-1) +'* [□^' + str(m) + ' ?^' + str(n-1) + ' [?^' + str(m-1) + ' □^' + str(n) + ' |[?^' + str(m-1) +' - □^' + str(m-1) + ' ] □ [?^' + str(n-1) + ' - □^' + str(n-1) + ' ]] | ?^' + str(m-1) + ' □^' + str(n) + ' [□^' + str(m) + ' ?^' + str(n-1) + ' |[?^' + str(m-1) + ' - □^' + str(m-1) + ' ] □ [?^' + str(n-1) + ' - □^' + str(n-1) + ' ]]] ?*]')
+        res = extenda & extendb & flt
+        result = MTFSM(res, m + n - 1)
+        return result
+
+    def _apply(self, applyf, word = None):
+        if not self.fsthandle:
+            raise ValueError('FST not defined')
+        applyerhandle = foma_apply_init(self.fsthandle)
+        output = applyf(c_void_p(applyerhandle))
+        while True:
+            if output == None:
+                foma_apply_clear(c_void_p(applyerhandle))
+                return
+            else:
+                yield output
+            if word:
+                output = applyf(c_void_p(applyerhandle), None)
+            else:
+                output = applyf(c_void_p(applyerhandle))
+
+    def __iter__(self):
+        return self._mtwords()
+
+    def __add__(self, other):
+        return self.join(other)
+
+    def _fmt(self, word):
+        cols = word
+        colchunks = [map(lambda z: len(z), word[x:x+self.numtapes]) for x in xrange(0, len(word), self.numtapes)]
+        col_widths = [max(x) for x in colchunks]
+        format = '  '.join(['%%-%ds' % width for width in col_widths])
+        # string to rows
+        rows = [[word[y] for y in xrange(x, len(word), self.numtapes)] for x in xrange(self.numtapes)]
+        s = ''
+        for row in rows:
+            #s += format % tuple(row) + '\n'
+            s += ''.join(row) + '\n'
+        return s
+
+    def _mtwords(self):
+        applyf = foma_apply_upper_words
+        if not self.fsthandle:
+            raise ValueError('FST not defined')
+        applyerhandle = foma_apply_init(self.fsthandle)
+        toksym = '\x07'
+        foma_apply_set_space_symbol(c_void_p(applyerhandle), c_char_p(toksym))
+        output = applyf(c_void_p(applyerhandle))
+        while True:
+            if output == None:
+                foma_apply_clear(c_void_p(applyerhandle))
+                return
+            else:
+                yield self._fmt(output[:-1].split('\x07'))
+            output = applyf(c_void_p(applyerhandle))
