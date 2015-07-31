@@ -185,7 +185,7 @@ FEXPORT struct defined_functions *defined_functions_init(void);
 struct fsm *find_defined(struct defined_networks *def, char *string);
 char *find_defined_function(struct defined_functions *deff, char *name, int numargs);
 FEXPORT int add_defined(struct defined_networks *def, struct fsm *net, char *string);
-int add_defined_function (struct defined_functions *deff, char *name, char *regex, int numargs);
+FEXPORT int add_defined_function (struct defined_functions *deff, char *name, char *regex, int numargs);
 int remove_defined (struct defined_networks *def, char *string);
 
 /********************/
