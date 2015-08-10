@@ -52,7 +52,7 @@ extern int add_history (const char *);
 extern int my_yyparse(char *my_string);
 void print_help();
 void xprintf(char *string) { return ; printf("%s",string); }
-char disclaimer[] = "Foma, version 0.9.18alpha\nCopyright © 2008-2014 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
+char disclaimer[] = "Foma, version 0.9.18alpha\nCopyright © 2008-2015 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
 
 /* A static variable for holding the line. */
 

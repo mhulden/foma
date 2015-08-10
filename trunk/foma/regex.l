@@ -319,7 +319,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 (_flatten\()         { return FLATTEN;         }
 (_sublabel\()        { return SUBLABEL;        }
 (_close\()           { return CLOSESIGMA;      }
-(_closeu\()           { return CLOSESIGMAUNK;   }
+(_closeu\()          { return CLOSESIGMAUNK;   }
 
 ({NONRESERVED}+\() {
    yylval_param->string = xxstrdup(yytext);
@@ -423,6 +423,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 (\/\/) {                     yylval_param->type = OP_RIGHTWARD_REPLACE; return DIRECTION; }
 (\\\\) {                     yylval_param->type = OP_LEFTWARD_REPLACE;  return DIRECTION; }
 (\\\/) {                     yylval_param->type = OP_DOWNWARD_REPLACE;  return DIRECTION; }
+(\|\|\|) {                   yylval_param->type = OP_TWO_LEVEL_REPLACE; return DIRECTION; }
 (:) {                        return HIGH_CROSS_PRODUCT;  }
 (\.x\.|[\303][\227]) {       return CROSS_PRODUCT;       }
 (,) {                        return COMMA;               }

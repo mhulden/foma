@@ -232,6 +232,8 @@ void sigma_cleanup (struct fsm *net, int force) {
 
 int sigma_max(struct sigma *sigma) {
   int i;
+  if (sigma == NULL)
+      return -1;
   for (i=-1; sigma != NULL; sigma = sigma->next)
       i = sigma->number > i ? sigma->number : i;
   return(i);
@@ -320,7 +322,7 @@ int sigma_substitute(char *symbol, char *sub, struct sigma *sigma) {
 
 int sigma_find(char *symbol, struct sigma *sigma) {
     
-    if (sigma->number == -1) {
+    if (sigma == NULL || sigma->number == -1) {
         return -1;
     }
     for (; sigma != NULL && sigma->number != -1 ; sigma = sigma->next) {

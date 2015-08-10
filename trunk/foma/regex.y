@@ -106,6 +106,7 @@ void clear_rewrite_ruleset(struct rewrite_set *rewrite_rules) {
 	    fsm_destroy(r->left);
 	    fsm_destroy(r->right);
 	    fsm_destroy(r->right2);
+	    fsm_destroy(r->cross_product);
 	    rp = r->next;
 	    xxfree(r);
 	}
@@ -133,7 +134,6 @@ void add_rewrite_rule() {
         new_rewrite_rule->rewrite_contexts = contexts;
         new_rewrite_rule->next = rewrite_rules;
         new_rewrite_rule->rule_direction = rule_direction;
-        new_rewrite_rule->cpunion = NULL;
 
         rewrite_rules = new_rewrite_rule;
         rules = NULL;
@@ -142,6 +142,18 @@ void add_rewrite_rule() {
     }
 }
 
+void add_eprule(struct fsm *R, struct fsm *R2, int type) {
+    struct fsmrules *newrule;
+    rewrite = 1;
+    newrule = xxmalloc(sizeof(struct fsmrules));
+    newrule->left = fsm_empty_string();
+    newrule->right = R;
+    newrule->right2 = R2;
+    newrule->arrow_type = type;
+    newrule->next = rules;
+    rules = newrule;
+}
+ 
 void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
     struct fsm *test;
     struct fsmrules *newrule;
@@ -266,11 +278,11 @@ n0: network1 { }
 | n0 ARROW               { add_rule($1,NULL,NULL,$2); }
 
 | LDOT n0 RDOT ARROW n0  { add_rule($2,$5,NULL,$4|ARROW_DOTTED); if ($5 == NULL) { YYERROR;}}
-| LDOT RDOT ARROW n0  { add_rule(fsm_empty_string(),$4,NULL,$3|ARROW_DOTTED); if ($4 == NULL) { YYERROR;}}
+| LDOT RDOT ARROW n0  { add_eprule($4,NULL,$3|ARROW_DOTTED); if ($4 == NULL) { YYERROR;}}
 | LDOT n0 RDOT ARROW n0 COMMA n0 { add_rule($2,$5,NULL,$4|ARROW_DOTTED);}
-| LDOT RDOT ARROW n0 COMMA n0 { add_rule(fsm_empty_string(),$4,NULL,$3|ARROW_DOTTED);}
+| LDOT RDOT ARROW n0 COMMA n0 { add_eprule($4,NULL,$3|ARROW_DOTTED);}
 | LDOT n0 RDOT ARROW n0 DIRECTION n0 { add_rule($2,$5,NULL,$4|ARROW_DOTTED); rule_direction = $6;}
-| LDOT RDOT ARROW n0 DIRECTION n0 { add_rule(fsm_empty_string(),$4,NULL,$3|ARROW_DOTTED); rule_direction = $5;}
+| LDOT RDOT ARROW n0 DIRECTION n0 { add_eprule($4,NULL,$3|ARROW_DOTTED); rule_direction = $5;}
 | n0 ARROW n0 COMMA n0 { add_rule($1,$3,NULL,$2);}
 | n0 ARROW COMMA n0 { add_rule($1,NULL,NULL,$2);}
 | n0 ARROW n0 DIRECTION n0 { add_rule($1,$3,NULL,$2); rule_direction = $4;}

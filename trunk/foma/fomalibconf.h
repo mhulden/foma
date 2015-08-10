@@ -231,10 +231,6 @@ FEXPORT void fsm_count(struct fsm *net);
 void fsm_sort_lines(struct fsm *net);
 void fsm_update_flags(struct fsm *net, int det, int pru, int min, int eps, int loop, int completed);
 
-/* Rewrite-related functions */
-struct fsm *rewrite_cp_to_fst(struct fsm *net, char *lower_symbol, char *zero_symbol);
-struct fsm *rewrite_cp(struct fsm *U, struct fsm *L);
-
 int sort_cmp(const void *a, const void *b);
 
 int find_arccount(struct fsm_state *fsm);
