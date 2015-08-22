@@ -73,7 +73,7 @@ struct fsm *rewrite_two_level(struct rewrite_batch *rb, struct fsm *lang, int ri
 struct fsm *rewr_context_restrict(struct rewrite_batch *rb, struct fsm *X, struct fsmcontexts *LR);
 struct fsm *rewr_contains(struct rewrite_batch *rb, struct fsm *lang);
 struct fsm *rewr_unrewritten(struct rewrite_batch *rb, struct fsm *lang);
-struct fsm *rewr_notleftmost(struct rewrite_batch *rb, struct fsm *lang, int rule_number);
+struct fsm *rewr_notleftmost(struct rewrite_batch *rb, struct fsm *lang, int rule_number, int arrow_type);
 struct fsm *rewr_notshortest(struct rewrite_batch *rb, struct fsm *lang, int rule_number);
 struct fsm *rewr_notlongest(struct rewrite_batch *rb, struct fsm *lang, int rule_number, int arrow_type);
 struct fsm *rewrite_tape_m_to_n_of_k(struct fsm *lang, int m, int n, int k);
@@ -211,21 +211,21 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
 	    }
 	    if (rules->arrow_type & ARROW_LONGEST_MATCH) {
 		if (rules->arrow_type & ARROW_RIGHT) {
-		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_upper(rb, fsm_copy(rules->left)), rule_number));
+		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_upper(rb, fsm_copy(rules->left)), rule_number, rules->arrow_type));
 		    C = fsm_union(C, rewr_notlongest(rb, rewrite_upper(rb, fsm_copy(rules->left)), rule_number, rules->arrow_type));
 		}
 		if (rules->arrow_type & ARROW_LEFT) {
-		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_lower(rb, fsm_copy(rules->right)), rule_number));
+		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_lower(rb, fsm_copy(rules->right)), rule_number, rules->arrow_type));
 		    C = fsm_union(C, rewr_notlongest(rb, rewrite_lower(rb, fsm_copy(rules->right)), rule_number, rules->arrow_type));
 		}
 	    }
 	    if (rules->arrow_type & ARROW_SHORTEST_MATCH) {
 		if (rules->arrow_type & ARROW_RIGHT) {		
-		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_upper(rb, fsm_copy(rules->left)), rule_number));
+		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_upper(rb, fsm_copy(rules->left)), rule_number, rules->arrow_type));
 		    C = fsm_union(C, rewr_notshortest(rb, rewrite_upper(rb, fsm_copy(rules->left)), rule_number));
 		}
 		if (rules->arrow_type & ARROW_LEFT) {
-		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_lower(rb, fsm_copy(rules->right)), rule_number));
+		    C = fsm_union(C, rewr_notleftmost(rb, rewrite_lower(rb, fsm_copy(rules->right)), rule_number, rules->arrow_type));
 		    C = fsm_union(C, rewr_notshortest(rb, rewrite_lower(rb, fsm_copy(rules->right)), rule_number));
 		}
 	    }
@@ -318,14 +318,18 @@ struct fsm *rewr_notshortest(struct rewrite_batch *rb, struct fsm *lang, int rul
     return fsm_minimize(fsm_intersect(ns, fsm_copy(lang)));
 }
 
-struct fsm *rewr_notleftmost(struct rewrite_batch *rb, struct fsm *lang, int rule_number) {
+struct fsm *rewr_notleftmost(struct rewrite_batch *rb, struct fsm *lang, int rule_number, int arrow_type) {
     struct fsm *nl, *flt, *rulenum;
     /* define Leftmost(X)   [Upper/Lower(X) & Tape1of4("@O@" Tape1Sig* IOpen Tape1Sig*) ] */
     nl = fsm_parse_regex("\"@O@\" [\"@O@\"]* [\"@I[@\"|\"@I[]@\"] [\"@I[@\"|\"@I[]@\"|\"@I]@\"|\"@I@\"|\"@O@\"]*", NULL, NULL);
     nl = rewrite_tape_m_to_n_of_k(nl, 1, 1, 4);
     rulenum = fsm_minimize(fsm_concat(fsm_concat(fsm_symbol("@O@"), fsm_concat(fsm_identity(), fsm_concat(fsm_identity(), fsm_identity()))), fsm_concat(fsm_kleene_star(fsm_concat(fsm_symbol("@O@"), fsm_concat(fsm_identity(), fsm_concat(fsm_identity(), fsm_identity())))), fsm_concat(fsm_union(fsm_symbol("@I[@"), fsm_symbol("@I[]@")), fsm_concat(fsm_symbol(rb->namestrings[rule_number-1]), fsm_universal())))));
     nl = fsm_intersect(nl, rulenum);
-    flt = fsm_parse_regex("[? ? ? ?]* [? ? [?-\"@0@\"] ?]", NULL, NULL);
+    if (arrow_type & ARROW_RIGHT) {
+	flt = fsm_parse_regex("[? ? ? ?]* [? ? [?-\"@0@\"] ?]", NULL, NULL); 
+    } else {
+	flt = fsm_parse_regex("[? ? ? ?]* [? ? ? [?-\"@0@\"]]", NULL, NULL);
+    }
     return fsm_minimize(fsm_intersect(fsm_intersect(nl, fsm_copy(lang)), flt));
 }
 
