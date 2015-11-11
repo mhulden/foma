@@ -699,6 +699,8 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
             currtail = (index+asearch)->tail + 1;
             for ( ; iptr != currtail && iptr->mainloop == mainloop ; iptr++) {
                 
+                ain = machine_a->in;
+                aout = machine_a->out;
                 bin = iptr->symin;
                 bout = iptr->symout;
                 
