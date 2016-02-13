@@ -187,8 +187,8 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 ^{SP}*(pr(i(nt?)?)?{SP}+)?dot{SP}* { iface_print_dot(NULL); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?dot{SP}*>{SP}*/[^ >] { BEGIN(PRINT_DOT_FILE); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?dot{SP}+/[^ >] { BEGIN(PRINT_DOT_NAME); }
-^{SP}*(pr(i(nt?)?)?{SP}+)?low(e(r\-(w(o(r(ds?)?)?)?)?)?)? { iface_lower_words(-1); }
-^{SP}*(pr(i(nt?)?)?{SP}+)?low(e(r\-(w(o(r(ds?)?)?)?)?)?)?{SP}+[0-9]+ { iface_lower_words(iface_extract_number(interfacetext)); }
+^{SP}*(pr(i(nt?)?)?{SP}+)?low(e(r(\-(w(o(r(ds?)?)?)?)?)?)?)? { iface_lower_words(-1); }
+^{SP}*(pr(i(nt?)?)?{SP}+)?low(e(r(\-(w(o(r(ds?)?)?)?)?)?)?)?{SP}+[0-9]+ { iface_lower_words(iface_extract_number(interfacetext)); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?na(me?)? { iface_print_name(); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?net{SP}* { iface_print_net(NULL,NULL); }
 ^{SP}*(pr(i(nt?)?)?{SP}+)?net{SP}*>{SP}*/[^ >] { BEGIN(PRINT_NET_FILE);      }
