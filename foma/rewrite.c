@@ -230,7 +230,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
 		}
 	    }
 	    if (!ruleset->rewrite_contexts) {
-		if (rules->arrow_type & ARROW_DOTTED) {
+		if (rules->arrow_type & ARROW_DOTTED && !(rules->arrow_type & ARROW_OPTIONAL)) {
 		    Base = fsm_minus(Base, rewr_contains(rb, fsm_concat(rewrite_epextend(rb), rewrite_epextend(rb))));
 		} else {
 		    Base = fsm_minus(Base, rewr_contains(rb, fsm_copy(C)));
@@ -239,7 +239,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
 	    for (contexts = ruleset->rewrite_contexts; contexts != NULL; contexts = contexts->next) {
 		/* Constraints: running intersect w/ Base */
 		/* NotContain(LC [Unrewritten|LM|...] RC) */
-		if (rules->arrow_type & ARROW_DOTTED) {
+		if (rules->arrow_type & ARROW_DOTTED && !(rules->arrow_type & ARROW_OPTIONAL)) {
 		    /* Extend left and right */
 		    LeftExtend = fsm_minimize(fsm_intersect(fsm_concat(rewrite_any_4tape(rb), fsm_copy(contexts->cpleft)), fsm_concat(rewrite_any_4tape(rb), rewrite_epextend(rb))));
 		    RightExtend = fsm_minimize(fsm_intersect(fsm_concat(rewrite_epextend(rb), rewrite_any_4tape(rb)), fsm_concat(fsm_copy(contexts->cpright), rewrite_any_4tape(rb))));
