@@ -219,7 +219,7 @@ void fsm_state_set_current_state(int state_no, int final_state, int start_state)
 void fsm_state_add_arc(int state_no, int in, int out, int target, int final_state, int start_state);
 
 /* Call fsm_state_close() when done with arcs to a state */
-void fsm_state_close();
+void fsm_state_close(struct fsm *net);
 
 /* Call this when done with entire FSM */
 void fsm_state_end_state();
