@@ -141,7 +141,7 @@ class ATTFST:
             cost, negpos, output, state, final_included = heappop(heap)
             if final_included == True:
                 if return_joined == True:
-                    yield (''.join(output), cost)
+                    yield(''.join(output), cost)
                 else:
                     yield(output, cost)
             else:
@@ -159,8 +159,8 @@ class ATTFST:
                     for ns in nextsym:
                         for outsym, target, weight in self.states[state].get_transitions(ns, dir = dir):
                             if outsym == self.identity_symbol:
-                                outsym = w[-(negpos)]
-                            if outsym == self.unknown_symbol:
+                                outsym = w[-negpos]
+                            elif outsym == self.unknown_symbol:
                                 outsym = u'?'
                             heappush(heap, (cost + weight, negpos - 1, output + [outsym], target, False))
                     for outsym, target, weight in self.states[state].get_transitions('', dir = dir): # Epsilons
