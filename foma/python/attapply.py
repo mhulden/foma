@@ -125,7 +125,7 @@ class ATTFST:
     def apply(self, word, dir = 'down', tokenizer = None, return_joined = True):
         
         """Main apply function. Tokenizer func can be passed to the function.
-        If not tokenizer is given, the alphabet of the FSM is used for
+        If no tokenizer is given, the alphabet of the FSM is used for
         tokenization of the input string, longest-match (as in foma).
         By default, the dir = 'down'. The output is by default joined,
         but a list of tokens can also be produced if return_joined is
