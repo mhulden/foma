@@ -278,7 +278,7 @@ First create a transducer `Lexicon` that does the following: maps `c a t [Sg]` t
 
     regex Lexicon .o. EInsert ;
 
-You should get a resulting transducer that maps `b u s [Pl]` to `b u s e s` and `c a t [Pl]`.  Now, you can create a third transducer `Cleanup` that always deletes all `+`-symbols and compose that in last.
+You should get a resulting transducer that maps `b u s [Pl]` to `b u s e s` and `c a t [Pl]` to `c a t s`.  Now, you can create a third transducer `Cleanup` that always deletes all `+`-symbols and compose that in last.
 
     regex Lexicon .o. EInsert .o. Cleanup ;
 
