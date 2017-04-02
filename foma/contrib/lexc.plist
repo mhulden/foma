@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+	"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+
+<!--  Textwrangler codeless language module for .lexc files
+      
+      Copyright (c) 2017 Lane Schwartz
+      This file is may be redistributed under the same license as Foma.
+      
+      For TextWrangler, copy this file to:
+          ~/Library/Application Support/TextWrangler/Language Modules/
+      and then restart TextWrangler.
+-->
+		
+<dict>
+	<!-- You must identify the plist as a CLM: -->
+	<key>BBEditDocumentType</key>
+	<string>CodelessLanguageModule</string>
+	
+	<!-- You must identify your language: -->
+	<key>BBLMLanguageDisplayName</key>
+	<string>Lexc</string>
+	
+	<key>BBLMLanguageCode</key>
+	<string>lexc</string>
+	
+	<key>BBLMPreferredFilenameExtension</key>
+	<string>lexc</string>
+	
+	<key>BBLMSuffixMap</key>
+	<array>
+		<dict>
+			<key>BBLMLanguageSuffix</key>
+			<string>.lexc</string>
+		</dict>
+	</array>
+	
+	<!-- Specify a comment-out string: -->
+	<key>BBLMCommentLineDefault</key>   
+	<string>!</string>
+		
+	<!-- Not required, but there’s not much point to
+	     a language module if it doesn’t color syntax: -->
+	<key>BBLMColorsSyntax</key>
+	<true/>
+	
+	<key>BBLMSupportsTextCompletion</key>
+	<true/>
+
+	
+	<!-- Specify some keywords. This isn’t required, either,
+             but it provides something to color: -->
+	<key>BBLMKeywordList</key>
+	<array>
+		<string>Multichar_Symbols</string>
+		<string>Definitions</string>
+		<string>LEXICON</string>
+	</array>
+	
+	<!-- You must specify the character set for
+             keywords and identifiers. Substitute your own:  -->
+	<key>Language Features</key>
+	<dict>
+		<key>Identifier and Keyword Character Class</key>
+		<string>A-Za-z0-9_\?!.</string>
+		
+		<key>Comment Pattern</key>
+        <string>(!).+$</string>
+        
+        <key>String Pattern</key>
+		<string><![CDATA[
+		(?x:
+			(?>	"	(
+						[^"\r\\]	(?# match anything potential ending quote, new line, or start of escape sequence)
+					|	\\.			(?# match any escape sequence pair)
+					)*?
+				"
+			)
+		)
+		]]></string>
+	</dict> 
+</dict>
+</plist>
