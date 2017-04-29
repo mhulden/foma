@@ -131,6 +131,7 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
     flag_purge(newnet, name);
     newnet = fsm_minimize(newnet);
     sigma_cleanup(newnet,0);
+    sigma_sort(newnet);
     xxfree(flags);
     return(fsm_topsort(newnet));
 }
