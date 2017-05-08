@@ -1,0 +1,141 @@
+# hixkaryana-ot-verification.foma
+
+# Copyright (C) 2016 Mans Hulden
+
+# This is the complete program code that performs a "formal comparison"
+# of an OT and a rule-based account of Hixkaryana stress as documented in the paper:
+
+# Hulden, M. (2017). "Formal and Computational Verification of Phonological Analyses". Phonology 34.
+
+# Run with foma -l hixkaryana-ot-verification.foma
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+# The first analysis is the rule-based one presented in Kager's
+# "Optimality Theory" (1999), p. 149:
+
+# Step 1: Syllabify.
+# Step 2: Mark the final syllable of each word as extrametrical.
+# Step 3: Assign iambs {(L[H]),(L[L]),([H])} iteratively from left to right. [] is stressed
+# Step 4: When the entire metrical domain is a single light syllable, assign ([L]) to it.
+# Step 5: Lengthen the vowel of each strong open syllable.
+
+def V   [a|e|i|o|u];  # Vowels 
+def SV  [á|é|í|ó|ú];  # Stressed Vowels
+def LSV SV ":";       # Long stressed vowels
+def LV  [SV|V] ":";   # Long vowels
+
+def C [b|c|d|f|g|h|j|k|l|m|n|p|q|r|s|t|v|w|x|z|tʃ]; # Consonants
+
+def E .#. | "." ;                         # Edges
+def Light C* [V|SV] ;                     # Light syllables
+def Heavy C* [[V|SV] C+|C* [LSV|LV] C*] ; # Heavy syllables
+
+def Syllable Light | Heavy;
+
+def Syllabify C* V+ C* @> ... "." || _ (C) V ; # A leftmost-shortest rule
+                                               # provides classical MaxOnset behavior
+def MarkFinal \E* -> %< ... %> || E _ .#. ;    # Mark final syllable as extrametrical
+def Stress [a:á|e:é|i:í|o:ó|u:ú];              # Stressed counterparts of vowels
+def Iambs  ( Light %. ) Heavy | Light %. Light @-> %( ... %) || E _ E .o. Stress -> || _ \V* %) ;
+def OnlyL  0:%( C* Stress 0:%) -> || .#. _ [%. %< | .#.] ; # Single light syllable stress
+
+def Lengthen [..] -> {:} || [á|é|í|ó|ú] _ %) ;  # Vowel lengthening
+
+regex [C|V]* .o. Syllabify .o. MarkFinal .o. Iambs .o. OnlyL .o. Lengthen .o. %<|%> -> 0;
+
+echo Testing words with rule-based account
+
+down atʃowowo
+down kaja
+down tohkurehona
+down torono
+down kananihno
+
+def Rule;
+
+# What follows is the OT analysis given in Kager (pp. 150-160), with the UnevenIamb 
+# constraint fixed to only treat syllables with long vowels as heavy, 
+# which yields precisely the same transducer as the above rule-based account.
+
+def S \"."*;
+def Scan S ["." S]* (->) %( ... %) || E _ E;
+
+def Length      [V|SV] (->) ... {:};
+# We rig the stress to be assigned only on rightmost syllables in feet   
+def Stress      a (->) á, e (->) é, i (->) í , o (->) ó , u (->) ú || _ C* %) ;
+# The syllabification is given to our Gen:
+def Gen         [C|V]* .o. Syllabify .o. Scan .o. Stress .o. Length;
+
+# General helper macros
+def AddViol   [?* 0:"*" ?*]+;
+def Worsen [Gen.i .o. Gen]/{*} .o. AddViol;
+def Markup %(|%)|"."|":";
+def Str    a (->) á, e (->) é, i (->) í , o (->) ó , u (->) ú;
+# Undo Gen, add at least one violation, then redo Gen arbitrarily 
+def Worsen Markup -> 0 .o. Str.i .o. [?* 0:{*} ?*]+ .o. 0 -> Markup .o. Str;
+
+# Eval macro
+def Eval(X)     X .o. ~[[X .o. Worsen].l] .o. {*} -> 0;
+
+# CONSTRAINTS
+# "A grammatical word must be a prosodic word" (Kager, p. 152)
+def GrWd=PrWd [..] -> {*} || .#. _ \"("* .#. ;
+
+# "Feet are binary under moraic or syllabic analysis" (Kager, p. 156)
+def FtBin [..] -> {*} || %( [\["."|")"]* "."]^>1 \["."|")"]* %) _ , %( Light %) _;
+
+# "No foot is final in PrWd" (Kager, p. 151)
+def NonFinality [..] -> {*} || %) _ .#.;
+
+# "Heavy syllables are stressed" (Kager, p. 155)
+def WSP [Heavy & ~$SV] -> ... {*};
+
+# "(LH) > (LL,H)" (Kager, p. 151)
+def UnevenIamb  [%( Light "." Light %) | %( [Heavy-[(C) [SV|V] C+]] %) ] -> ... {*} ;
+
+# Uncomment the below line to get original OT behavior. The above line is the fix
+# which says a syllable is H only if it has a long vowel in it (i.e. CVC doesn't count).
+# This fix produces equivalence with the rule-based account.
+# def UnevenIamb  [%( Light "." Light %) | %( Heavy %) ] -> ... {*} ;
+
+# "Feet are parsed by feet" (Kager, p. 153)
+def ParseSyl Syllable -> ... {*} || E _ E; 
+
+# Worsener helper for All-Feet-Left
+def WorsenFeet %)|%.|":" -> 0 .o. [?+ 0:%( [?|0:%(]*] | [?* [%(:0 ?+ 0:%(] ?*]+ .o.
+               0 -> %)|%.|":" .o. Str.i .o. Str ;
+
+# A macro to handle the All-Feet-Left worsening elegantly.
+def EvalAllFeetLeft(X) X .o. ~[X .o. WorsenFeet].l ;
+
+# "Output moras have input correspondents" (Kager, p. 156)
+def DepMuIO ":" -> ... {*};
+
+# This is the complete ranking:
+# NonFinality >> GrWd=PrWd >> FtBin >> WSP >> UnevenIamb >> ParseSyl >> AllFeetLeft >> DepMuIO
+
+regex Eval(EvalAllFeetLeft(Eval(Eval(Eval(Eval(Eval(Eval(Gen .o. NonFinality) .o. GrWd=PrWd) .o. FtBin) .o. WSP) .o. UnevenIamb) .o. ParseSyl)) .o. DepMuIO);
+
+echo Testing words with OT-based account
+
+down atʃowowo
+down kaja
+down tohkurehona
+down torono
+down kananihno
+
+def OT;
+
+echo Testing (structural) equivalence of OT and rule-based account with fixed Uneven-Iamb constraint
+
+regex OT;
+regex Rule;
+test equivalent
