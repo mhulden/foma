@@ -1,0 +1,361 @@
+# finnish-ot-verification.foma
+
+# Parts Copyright (C) 2016 Mans Hulden
+# Parts Copyright (C) 2004 Lauri Karttunen
+
+# This is the complete program code that performs a "formal comparison"
+# of three accounts of Finnish prosody as documented in the paper:
+
+# Hulden, M. (2017). "Formal and Computational Verification of Phonological Analyses". Phonology 34.
+
+# Run with foma	-l finnish-ot-verification.foma
+
+# The three accounts are:
+
+# (1) Lauri Karttunen's implementation of the "traditional" analysis = Karttunen
+# (2) Paul Kiparsky's (2003) OT analysis = Kiparsky
+# (3) Nine Elenbaas's (1999) OT analysis = Elenbaas
+
+# The formal verification re-uses LK's existing code for the traditional analysis
+# and also part of the markup used in his implementation of (2) and (3).
+# A fourth "provably correct" OT analysis is also provided, together
+# with an equivalence proof.  That grammar only changes one constraint *(LH)
+# in Elenbaas' analysis.
+
+# The comments below are prefixed LK or MH to signal who wrote them.
+
+# As the original program code, this is released under the GPL:
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#######################################################################
+# MH: Part 1: compiles LK's "traditional" analysis with minor changes #
+#     creating a transducer called "Karttunen"                        #
+#######################################################################
+
+def HighV [u | y | i];                  # LK: High vowel
+def MidV  [e | o | ö];                  # LK: Mid vowel
+def LowV  [a | ä] ;                     # LK: Low vowel
+def USV   [HighV | MidV | LowV];        # LK: Unstressed Vowel
+
+define C [b | c | d | f | g | h | j | k | l | m |
+          n | p | q | r | s | t | v | w | x | z];  # LK: Consonant
+
+def MSV [á | é | í | ó | ú | ý | "ä́" | "ö́"];   # MH: vowel with main stress
+def SSV [à | è | ì | ò | ù | "ỳ" | "ä̀" | "ö̀"]; # MH: vowel with sec. stress
+def SV [MSV | SSV];                     # LK: Stressed vowel
+def V [USV | SV] ;                      # LK: Vowel
+
+def P [V | C];                          # LK: Phone
+def B [[\P+] | .#.];                    # LK: Boundary
+def E .#. | ".";                        # LK: Edge
+def SB [~$"." "." ~$"."];               # LK: At most one syllable boundary
+
+def Light [C* V];                       # LK: Light syllable
+def Heavy [Light P+];                   # LK: Heavy syllable
+
+def S [Heavy | Light];                  # LK: Syllable
+def SS [S & $SV];                       # LK: Stressed syllable
+def US [S & ~$SV];                      # LK: Unstressed syllable
+def MSS [S & $MSV] ;                    # LK: Syllable with main stress
+
+def BF [S "." S];                       # LK: Binary foot
+
+def MarkNonDiphthongs [ [..] -> "." || [HighV | MidV] _ LowV,     # i.a, e.a
+                                           i _ [MidV - e],        # i.o, i.ö
+                                           u _ [MidV - o],        # u.e
+                                           y _ [MidV - ö] ];      # y.e
+
+def Syllabify C* V+ C* @-> ... "." || _ C V ;
+def TernaryFeet BF "." Light @-> "(" ... ")"
+                                    // [{).} | .#.] [BF "."]*  _
+                                       ["." Heavy "." S ] | .#. ;
+
+# LK: Scan all the unfooted material into binary feet.
+def BinaryFeet BF @-> "(" ... ")" || .#.|"." _ .#.|".";
+
+# LK: Assign the primary stress to the first vowel of the first syllable.
+# MH: I've modified this to also stress monosyllabic words which aren't
+#     footed.  This in order to produce equivalence with the OT grammars.
+
+def MainStress a -> á, e -> é, i -> í, o -> ó,
+               u -> ú, y -> ý, ä -> "ä́", ö -> "ö́" || .#. "(" C* _ , .#. C* _ V* C* .#.;
+
+# LK: Assign secondary stress to all initial vowels of non-initial syllables.
+def SecondaryStress a -> à, e -> è, i -> ì, o -> ò,
+                    u -> ù, y -> "ỳ", ä -> "ä̀", ö -> "ö̀" || "(" C* _ ;
+
+# LK: Assign an optional secondary stress to an unfooted final syllable 
+# if it is heavy.
+def OptFinalStress a (->) à, e (->) è, i (->) ì,
+                   o (->) ò, u (->) ù, y (->) "ỳ",
+                   ä (->) "ä̀", ö (->) "ö̀" || "." C* _ P .#.;
+
+# MH: We'll use the Collapse transducer later to convert all the footed
+#     and stressed material into words over the alphabet {L,H,Ĺ,H́}
+#     for ease of analysis
+
+def Collapse [Heavy &  $SV]  -> H́ || E _ E ,, 
+             [Heavy & ~$SV]  -> H || E _ E ,,
+             [Light &  $SV]  -> Ĺ || E _ E ,,
+             [Light & ~$SV]  -> L || E _ E ;
+
+# MH: We combine everything, making sure that the input side can contain only
+# unstressed Finnish letters (otherwise our formal comparisons won't work)
+
+def Karttunen [[C|USV]* & $USV] .o. [ MarkNonDiphthongs
+                        .o.
+                     Syllabify
+                        .o.
+                     TernaryFeet
+                        .o.
+                     BinaryFeet
+                        .o.
+                     MainStress
+                        .o.
+                    SecondaryStress
+#                        .o.
+#                    OptFinalStress
+                    ];
+
+# MH: uncomment above to get opt final stress (which OT doesn't model)
+
+def KarttunenCollapsed  [Karttunen .o. %(|%) -> 0 .o. Collapse .o. "." -> 0].l;
+
+###################################################################
+# MH: Part 2: compiles three OT analyses                          #
+#             (1) Kiparsky                                        #
+#             (2) Elenbaas                                        #
+#             (3) OtNew = fixed version of Elenbaas               #
+###################################################################
+
+# MH: The ranking for all are the same. They only differ in one constraint.
+# (1) MainStress >> Clash >> AlignLeft >> FootBin >> Lapse >> NonFinal >> 
+#     StressToWeight >> Parse-σ >> All-Feet-Left
+# (2) MainStress >> Clash >> AlignLeft >> FootBin >> Lapse >> NonFinal >> 
+#     *(ĹH) >> Parse-σ >> All-Feet-Left
+# (3) MainStress >> Clash >> AlignLeft >> FootBin >> Lapse >> NonFinal >> 
+#     *(LH)... >> Parse-σ >> All-Feet-Left
+
+# This part reuses most of the definitions from the above rule-based analysis.
+
+# MH: assign stress arbitrarily (used for the Gen transducer)
+def Stress a (->) á|à, e (->) é|è, i (->) í|ì, o (->) ó|ò,
+              u (->) ú|ù, y (->) ý|ỳ, ä (->) ä́ | ä̀ , ö (->) ö́ | ö̀  || E C* _ ;
+# MH: assign feet arbitrarily (used in Gen)
+def Scan [[S ("." S ("." S)) & $SS] (->) "(" ... ")" || E _ E] ;
+
+# MH: This is Gen. Note that Gen has a syllabifier pre-built into it saving
+#     us the trouble of coming up with syllabification constraints and 
+#     allowing us to focus on the prosody.
+#     We also filter the input side to only accept unstressed Finnish 
+#     letter sequences (we did the same above for Karttunen) in order for our
+#     formal equivalence tests to work (this forces the domain of all
+#     transducers to be equivalent).
+
+def Gen [[C|USV]* .o. MarkNonDiphthongs .o. Syllabify .o. Stress .o. Scan];
+
+###########################
+# Constraint markup rules #
+###########################
+
+# MH: MainStress can be assumed to be an unviolable constraint:
+#     main stress always falls on the first syllable
+def MainStress [B MSS ~$MSS];
+
+# LK: Clash: No stress on adjacent syllables.
+def Clash SS -> ... {*} || SS B _ ;
+
+# LK: Align-Left: The stressed syllable is initial in the foot.
+def AlignLeft SV -> ... {*} || .#. ~[?* "(" C*] _ ;
+
+# LK: Foot-Bin: Feet are minimally bimoraic and maximally bisyllabic.
+def FootBin ["(" Light ")" | "(" S ["." S]^>1] -> ... {*} ;
+
+# LK: Lapse: Every unstressed syllable must be adjacent to a stressed
+# syllable or the word edge.
+def Lapse US -> ... {*} || [B US B] _ [B US B];
+
+# LK: Non-Final: The final syllable is not stressed.
+def NonFinal SS -> ... {*} || _ ~$S .#.;
+
+# LK: Stress-To-Weight: Stressed syllables are heavy.
+def StressToWeight [SS & Light] -> ... {*} || _ ")" | E;
+
+# MH: LH (used by Elenbaas), avoid *(Ĺ.H)-feet
+def LHfoot %( Light "." Heavy %) ;
+def LH     [..] -> {*} || LHfoot   _ ;
+
+# MH: the modified LH-constraint that fixes the grammar to achieve
+#     equivalence with the traditional analysis *(LH)...:
+#     no non-final LH-feet.
+def LH2    [..] -> {*} || LHfoot ? _ ;
+
+# LK: License-σ: Syllables are parsed into feet.
+def Parse S -> ... {*} || E _ E;
+
+# LK: All-Ft-Left: Every foot starts at the beginning of a
+#     prosodic word.
+# MH: This can't be modeled with the current OT approach by marking up
+#     violations with *, since it's a gradient constraint.  Instead, we'll
+#     simulate it below with a worsening transducer, and we can tell the
+#     simulation is exact by doing "test functional" on the resulting
+#     Kiparsky and Elenbaas transducers.
+
+# MH: AddViol adds a violation marker to each candidate
+def AddViol   [?* 0:"*" ?*]+;
+
+# MH: Permute moves the markers around (needed for Stress-To-Weight)
+def Permute   [?* ["*":0 \"*"* 0:"*"|0:"*" \"*"* "*":0]* ?*]*;
+
+# MH: a helper to undo/redo stress marks
+def Str  a (->) á|à, e (->) é|è, i (->) í|ì, o (->) ó|ò, u (->) ú|ù, 
+         y (->) ý|ỳ, ä (->) ä́ | ä̀ , ö (->) ö́ | ö̀ ;
+
+# MH: The Worsen transducer undoes the stress markings, redoes them
+#     arbitrarily, removes syllable and foot markup, adds at least one
+#     violation, a redoes syllable and foot markup arbitrarily.
+
+def Markup %( | %) | %.;
+def Worsen Str.i .o. Str .o. Markup -> 0 .o. AddViol .o. 0 -> Markup;
+
+# MH: Eval is a wrapper for evaluating a single constraint.
+# MH: EvalP1 is identical, except it also permutes markers after adding them.
+def Eval(X)     X .o. ~[[X .o. Worsen].l] .o. {*} -> 0;
+def EvalP1(X)   X .o. ~[[X .o. Worsen .o. Permute].l] .o. {*} -> 0 ;
+
+# MH: WorsenFeet is used for the simulation of the gradient constraint
+#     All-Feet-Left. First, we remove right parentheses and syllable boundaries
+#     then we (1) add a left parenthesis or (2) move one rightward, or (3) both
+#     one or more times.  This allows us to, from candidates like (1), create
+#     the suboptimal candidates (2) and (3).
+
+#       (1) > (jä́r.jes).(tèl.mäl).(lìs.tä).mä.(tö̀n.tä)
+#       (2)   (jä́r.jes).(tèl.mäl).lis.(tä̀.mä).(tö̀n.tä)
+#       (3)   (jä́r.jes).tel.(mä̀l.lis).(tä̀.mä).(tö̀n.tä)
+
+def WorsenFeet %)|%. -> 0 .o. [?+ 0:%( [?|0:%(]*] | [?* [%(:0 ?+ 0:%(] ?*]+ .o.
+               0 -> %)|%. .o. Str.i .o. Str;
+
+# MH: A macro to handle the All-Feet-Left worsening elegantly.
+def EvalAllFeetLeft(X) X .o. ~[X .o. WorsenFeet].l ;
+
+# MH: Here we define the main OT transducers which capture the entire
+#     grammar, mapping input forms in Finnish to footed, stressed, and
+#     syllabified output forms. We also define versions that only contain the
+#     stress markings to be able to compare with the rule-based analysis which
+#     uses different footings by allowing for "ternary" feet.
+
+#     The EvalP1 is used for the Stress-To-Weight constraint. The way we know
+#     that it is necessary and sufficient is by compiling the constraints up
+#     to that point, maintaining the violations, then composing with
+#     \"*" -> 0, and issuing "test functional", which yielded functional
+#     for one permutation, and non-functional for no permutations.
+
+def Kiparsky  EvalAllFeetLeft(Eval(EvalP1(Eval(Eval(Eval(Eval(Eval(
+              Gen .o. MainStress .o. Clash) .o. AlignLeft) .o. FootBin)
+              .o. Lapse) .o. NonFinal) .o. StressToWeight) .o. Parse));
+
+def KiparskyS [Kiparsky .o. Markup -> 0];
+
+def Elenbaas  EvalAllFeetLeft(Eval(Eval(Eval(Eval(Eval(Eval(Eval(
+              Gen .o. MainStress .o. Clash) .o. AlignLeft) .o. FootBin) 
+              .o. Lapse) .o. NonFinal) .o. LH) .o. Parse));
+
+def ElenbaasS [Elenbaas .o. Markup -> 0];
+
+def OTnew     EvalAllFeetLeft(Eval(EvalP1(Eval(Eval(Eval(Eval(Eval(
+              Gen .o. MainStress .o. Clash) .o. AlignLeft) .o. FootBin)
+              .o. Lapse) .o. NonFinal) .o. LH2) .o. Parse));
+
+def OTnewS    [OTnew .o. Markup -> 0];
+
+def KarttunenS [Karttunen .o. Markup -> 0];
+
+######################
+# Tests and analysis #
+######################
+
+# MH: (I) a simple equivalence test, is Kiparsky or Elenbaas == Karttunen?
+
+regex [KarttunenS.i .o. KiparskyS];
+echo *** Is Kiparsky == Karttunen? ***
+test identity
+
+regex [KarttunenS.i .o. ElenbaasS];
+echo *** Is Elenbaas == Karttunen? ***
+test identity
+
+# MH: here is the proof that the new OT grammar with the constraint
+#      *(LH)...: no non-final LH-feet captures the generalization expressed
+#      in the rule-based grammar perfectly, no matter how long the input word.
+
+regex [KarttunenS.i .o. OTnewS];
+echo *** Is OTnew == Karttunen? ***
+test identity
+
+# MH: (II) We know Kiparsky & Elenbaas differ from Karttunen and can calculate
+#          the set of inputs for which they differ. To make the results clearer
+#          we first map all output syllables to the alphabet {H́,Ĺ,H,L}.
+
+def KarttunenC  [Karttunen .o. %(|%) -> 0 .o. Collapse .o. %. -> 0].l;
+def KiparskyC   [Kiparsky  .o. %(|%) -> 0 .o. Collapse .o. %. -> 0].l;
+def ElenbaasC   [Elenbaas  .o. %(|%) -> 0 .o. Collapse .o. %. -> 0].l;
+
+# MH: the set of words for which Kiparsky differs from Karttunen
+def KKdiff  [KarttunenC - KiparskyC] | [KiparskyC - KarttunenC];
+
+# MH: the set of words for which Elenbaas differs from Karttunen
+def KEdiff  [KarttunenC - ElenbaasC] | [ElenbaasC - KarttunenC];
+
+# MH: we now have the complete set of patterns where Elenbaas and Kiparsky
+#     differ from the traditional analysis and can print out, e.g. the 
+#     shortest such pattern:
+	  
+regex KKdiff;
+echo ** Shortest pattern where Kiparsky differs from Karttunen **
+print shortest-string
+
+regex KEdiff;
+echo ** Shortest pattern where Elenbaas differs from Karttunen **
+print shortest-string
+
+# MH: (III) We can do some more collapsing and remove the stress marks from the
+#           diffs, allowing us to see just the plain L/H-patterns for whose
+#           that are incorrect:
+			
+def KKdiffC [KKdiff .o. H́ -> H , Ĺ -> L].l;
+def KEdiffC [KEdiff .o. H́ -> H , Ĺ -> L].l;
+
+regex KKdiffC & ?^6;
+echo *** Patterns of length 6 where Kiparsky differs from Karttunen ***
+words
+regex KKdiffC & ?^7;
+echo *** Patterns of length 7 where Kiparsky differs from Karttunen ***
+words
+regex KKdiffC & ?^8;
+echo *** Patterns of length 8 where Kiparsky differs from Karttunen ***
+words
+regex KKdiffC & ?^9;
+echo *** Patterns of length 9 where Kiparsky differs from Karttunen ***
+words
+
+regex KEdiffC & ?^6;
+echo *** Patterns of length 6 where Elenbaas differs from Karttunen ***
+words
+regex KEdiffC & ?^7;
+echo *** Patterns of length 7 where Elenbaas differs from Karttunen ***
+words
+regex KEdiffC & ?^8;
+echo *** Patterns of length 8 where Elenbaas differs from Karttunen ***
+words
+regex KEdiffC & ?^9;
+echo *** Patterns of length 9 where Elenbaas differs from Karttunen ***
+words
