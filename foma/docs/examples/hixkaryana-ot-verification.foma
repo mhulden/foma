@@ -21,7 +21,7 @@
 # The first analysis is the rule-based one presented in Kager's
 # "Optimality Theory" (1999), p. 149:
 
-# See also, section 8.2.1 in Phonology article
+# See also, section 7.2.1 in Phonology article
 # Step 1: Syllabify.
 # Step 2: Mark the final syllable of each word as extrametrical.
 # Step 3: Assign iambs {(L[H]),(L[L]),([H])} iteratively from left to right. [] is stressed
