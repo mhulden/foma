@@ -37,7 +37,7 @@
 
 #######################################################################
 # MH: Part 1: compiles LK's "traditional" analysis with minor changes #
-#     creating a transducer called "Karttunen"                        #
+#     creating a transducer called "Karttunen" (section 8.1.2)        #
 #######################################################################
 
 def HighV [u | y | i];                  # LK: High vowel
@@ -130,10 +130,10 @@ def Karttunen [[C|USV]* & $USV] .o. [ MarkNonDiphthongs
 def KarttunenCollapsed  [Karttunen .o. %(|%) -> 0 .o. Collapse .o. "." -> 0].l;
 
 ###################################################################
-# MH: Part 2: compiles three OT analyses                          #
+# MH: Part 2: compiles three OT analyses (section 8.1.3)          #
 #             (1) Kiparsky                                        #
 #             (2) Elenbaas                                        #
-#             (3) OtNew = fixed version of Elenbaas               #
+#             (3) OtNew = fixed version of Elenbaas (8.1.4)       #
 ###################################################################
 
 # MH: The ranking for all are the same. They only differ in one constraint.
