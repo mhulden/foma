@@ -107,7 +107,7 @@ def UnevenIamb  [%( Light "." Light %) | %( [Heavy-[(C) [SV|V] C+]] %) ] -> ... 
 # This fix produces equivalence with the rule-based account.
 # def UnevenIamb  [%( Light "." Light %) | %( Heavy %) ] -> ... {*} ;
 
-# "Feet are parsed by feet" (Kager, p. 153)
+# "Syllables are parsed by feet" (Kager, p. 153)
 def ParseSyl Syllable -> ... {*} || E _ E; 
 
 # Worsener helper for All-Feet-Left
