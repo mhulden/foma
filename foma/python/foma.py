@@ -17,7 +17,7 @@
 #   See the License for the specific language governing permissions and       #
 #   limitations under the License.                                            #
 
-from sys import maxint
+from sys import maxsize
 from ctypes import *
 from ctypes.util import find_library
 
@@ -222,7 +222,7 @@ class FST(object):
             if self.fsthandle.contents.pathcount == -1: # CYCLIC
                 raise ValueError("FSM is cyclic")
             if self.fsthandle.contents.pathcount == -2: # OVERFLOW
-                return maxint
+                return maxsize
             return self.fsthandle.contents.pathcount
         else:
             raise ValueError("FSM not defined")
