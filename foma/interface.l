@@ -250,7 +250,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 ^{SP}*(test{SP}+null|tnu) {  iface_test_null(); }
 ^{SP}*(test{SP}+lower-universal|tlu) {  iface_test_lower_universal(); }
 ^{SP}*(test{SP}+sequential|tseq) {  iface_test_sequential(); }
-^{SP}*(test{SP}+upper-univesal|tuu) {  iface_test_upper_universal(); }
+^{SP}*(test{SP}+upper-universal|tuu) {  iface_test_upper_universal(); }
 ^{SP}*tu(rn?)?({SP}+st(a(ck?)?)?)? {  iface_turn(); }
 ^{SP}*(twosided{SP}+flag-diacritics|tfd) {  iface_twosided_flags(); }
 ^{SP}*und(e(f(i(ne?)?)?)?)?{SP}+ {BEGIN(UNDEFINE);}
