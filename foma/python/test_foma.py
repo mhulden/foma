@@ -19,6 +19,11 @@ def test_apply_fst(eat_fst):
     assert result == 'eat+V+Past'
 
 
+def test_apply_down(eat_fst):
+    result, = eat_fst.apply_down('eat+V+3P+Sg')
+    assert result == 'eats'
+
+
 @pytest.fixture
 def eat_fst():
     return FST.load('ate.fsm')
