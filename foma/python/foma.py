@@ -180,7 +180,7 @@ class FST(object):
     def load(cls, filename):
         """Load binary FSM from file."""
         fsm = cls()
-        fsm.fsthandle = foma_fsm_read_binary_file(c_char_p(filename))
+        fsm.fsthandle = foma_fsm_read_binary_file(c_char_p(FST.encode(filename)))
         if not fsm.fsthandle:
             raise ValueError("File error.")
         return fsm
@@ -195,6 +195,17 @@ class FST(object):
             return string
         else:
             return FST.encode(str(string))
+
+    @staticmethod
+    def decode(text):
+        if text is None:
+            return None
+        elif isinstance(text, six.binary_type):
+            # Assume output is UTF-8 encoded:
+            return text.decode('UTF-8')
+        else:
+            assert isinstance(text, six.text_type)
+            return text
 
     def __init__(self, regex = False):
         if regex:
@@ -323,7 +334,7 @@ class FST(object):
                 if tokenize:
                     yield output[:-1].split('\x07')
                 else:
-                    yield output
+                    yield self.decode(output)
             if word:
                 output = applyf(c_void_p(applyerhandle), None)
             else:
