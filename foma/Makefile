@@ -5,7 +5,6 @@ bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
 
 VERSION = 0.9.18
-SVN_REV = $(shell svn info | grep "Last Changed Rev" | cut -f4 -d\ )
 CC = gcc
 RANLIB = ranlib
 YACC = bison -v
@@ -16,7 +15,7 @@ LEXCMATRIX = flex -8 --prefix=cmatrix
 RM = /bin/rm -f
 LDFLAGS = -lreadline -lz -ltermcap
 FLOOKUPLDFLAGS = libfoma.a -lz
-CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC -DSVN_REV=$(SVN_REV)
+CFLAGS = -O3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC
 FOMAOBJS = foma.o stack.o iface.o lex.interface.o
 LIBOBJS = int_stack.o define.o determinize.o apply.o rewrite.o lexcread.o topsort.o flags.o minimize.o reverse.o extract.o sigma.o io.o structures.o constructions.o coaccessible.o utf8.o spelling.o dynarray.o mem.o stringhash.o trie.o lex.lexc.o lex.yy.o lex.cmatrix.o regex.o
 

@@ -1,0 +1,10 @@
+lex.*.[co]
+.*.sw[pon]
+*.o
+*.a
+*.so.*
+foma/foma
+flookup
+cgflookup
+regex.*
+!regex.l
