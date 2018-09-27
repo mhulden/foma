@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+	"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+
+<!--  Textwrangler codeless language module for .foma files
+      
+      Copyright (c) 2017 Lane Schwartz
+      This file is may be redistributed under the same license as Foma.
+      
+      For TextWrangler, copy this file to:
+          ~/Library/Application Support/TextWrangler/Language Modules/
+      and then restart TextWrangler.
+-->
+		
+<dict>
+	<!-- You must identify the plist as a CLM: -->
+	<key>BBEditDocumentType</key>
+	<string>CodelessLanguageModule</string>
+	
+	<!-- You must identify your language: -->
+	<key>BBLMLanguageDisplayName</key>
+	<string>Foma</string>
+	
+	<key>BBLMLanguageCode</key>
+	<string>foma</string>
+	
+	<key>BBLMPreferredFilenameExtension</key>
+	<string>foma</string>
+	
+	<key>BBLMSuffixMap</key>
+	<array>
+		<dict>
+			<key>BBLMLanguageSuffix</key>
+			<string>.foma</string>
+		</dict>
+	</array>
+	
+	<!-- Specify a comment-out string: -->
+	<key>BBLMCommentLineDefault</key>   
+	<string>!</string>
+		
+	<!-- Not required, but there’s not much point to
+	     a language module if it doesn’t color syntax: -->
+	<key>BBLMColorsSyntax</key>
+	<true/>
+	
+	<key>BBLMSupportsTextCompletion</key>
+	<true/>
+
+	
+	<!-- Specify some keywords. This isn’t required, either,
+             but it provides something to color: -->
+	<key>BBLMKeywordList</key>
+	<array>
+		<string>OFF</string>
+		<string>ON</string>
+		<string>ambiguous</string>
+		<string>apply</string>
+		<string>apropos</string>
+		<string>att</string>
+		<string>att-epsilon</string>
+		<string>clear</string>
+		<string>close</string>
+		<string>cmatrix</string>
+		<string>compact</string>
+		<string>complete</string>
+		<string>compose</string>
+		<string>compose-tristate</string>
+		<string>concatenate</string>
+		<string>crossproduct</string>
+		<string>def</string>
+		<string>define</string>
+		<string>defined</string>
+		<string>determinize</string>
+		<string>dot</string>
+		<string>down</string>
+		<string>echo</string>
+		<string>eliminate</string>
+		<string>equivalent</string>
+		<string>export</string>
+		<string>extract</string>
+		<string>flag</string>
+		<string>flag-diacritics</string>
+		<string>flags</string>
+		<string>for</string>
+		<string>functional</string>
+		<string>help</string>
+		<string>hopcroft-min</string>
+		<string>identity</string>
+		<string>ignore</string>
+		<string>in</string>
+		<string>intersect</string>
+		<string>invert</string>
+		<string>label</string>
+		<string>letter</string>
+		<string>lexc</string>
+		<string>lexc-align</string>
+		<string>license</string>
+		<string>load</string>
+		<string>lower-side</string>
+		<string>lower-universal</string>
+		<string>lower-words</string>
+		<string>machine</string>
+		<string>med</string>
+		<string>med-cutoff</string>
+		<string>med-limit</string>
+		<string>minimal</string>
+		<string>minimize</string>
+		<string>name</string>
+		<string>negate</string>
+		<string>net</string>
+		<string>non-null</string>
+		<string>null</string>
+		<string>obey-flags</string>
+		<string>one-plus</string>
+		<string>out</string>
+		<string>pairs</string>
+		<string>pop</string>
+		<string>print</string>
+		<string>print-pairs</string>
+		<string>print-sigma</string>
+		<string>print-space</string>
+		<string>prolog</string>
+		<string>prune</string>
+		<string>push</string>
+		<string>quit</string>
+		<string>quit-on-fail</string>
+		<string>random-lower</string>
+		<string>random-pairs</string>
+		<string>random-upper</string>
+		<string>random-words</string>
+		<string>read</string>
+		<string>recursive-define</string>
+		<string>re</string>
+		<string>regex</string>
+		<string>reverse</string>
+		<string>rotate</string>
+		<string>save</string>
+		<string>sequential</string>
+		<string>set</string>
+		<string>shortest-string</string>
+		<string>shortest-string-size</string>
+		<string>show</string>
+		<string>show-flags</string>
+		<string>shuffle</string>
+		<string>sigma</string>
+		<string>size</string>
+		<string>sort</string>
+		<string>source</string>
+		<string>spaced-text</string>
+		<string>stack</string>
+		<string>star-free</string>
+		<string>substitute</string>
+		<string>symbol</string>
+		<string>system</string>
+		<string>test</string>
+		<string>text</string>
+		<string>turn</string>
+		<string>twosided</string>
+		<string>unambiguous</string>
+		<string>undefine</string>
+		<string>union</string>
+		<string>up</string>
+		<string>upper</string>
+		<string>upper-side</string>
+		<string>upper-universal</string>
+		<string>upper-words</string>
+		<string>variable</string>
+		<string>variables</string>
+		<string>verbose</string>
+		<string>view</string>
+		<string>warranty</string>
+		<string>words</string>
+		<string>write</string>
+		<string>zero-plus</string>
+		<string>.#.</string>
+
+	</array>
+	
+	
+	<!-- You must specify the character set for
+             keywords and identifiers. Substitute your own:  -->
+	<key>Language Features</key>
+	<dict>
+		<key>Identifier and Keyword Character Class</key>
+		<string>A-Za-z0-9_\?!.</string>
+		
+		<key>Comment Pattern</key>
+        <string>(^#|[^.]#|#[^.]|!).+$</string>
+        
+        <key>String Pattern</key>
+		<string><![CDATA[
+		(?x:
+			(?>	"	(
+						[^"\r\\]	(?# match anything potential ending quote, new line, or start of escape sequence)
+					|	\\.			(?# match any escape sequence pair)
+					)*?
+				"
+			)
+		)
+		]]></string>
+	</dict> 
+</dict>
+</plist>
