@@ -103,7 +103,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
     rb = xxcalloc(1, sizeof(struct rewrite_batch));
     rb->rewrite_set = all_rules;
     rb->num_rules = num_rules;
-    rb->namestrings = xxmalloc(sizeof rb->namestrings * num_rules);
+    rb->namestrings = xxmalloc(sizeof *rb->namestrings * num_rules);
     for (i = 0; i < rb->num_rules; i++) {
 	sprintf(rb->namestrings[i], "@#%04i@", i+1);
     }
