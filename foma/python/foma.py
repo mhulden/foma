@@ -21,13 +21,35 @@ from sys import maxsize
 from ctypes import *
 from ctypes.util import find_library
 
+import six_1_11_0 as six
+
 fomalibpath = find_library('foma')
 foma = cdll.LoadLibrary(fomalibpath)
 
-class FSTstruct(Structure):
 
-    _fields_ = [("name", c_char * 40), ("arity", c_int), ("arccount", c_int), ("statecount", c_int), ("linecount", c_int), ("finalcount", c_int), ("pathcount", c_longlong), ("is_deterministic", c_int), ("is_pruned", c_int), ("is_minimized", c_int), ("is_epsilon_free", c_int), ("is_loop_free", c_int), ("is_completed", c_int), ("arcs_sorted_in", c_int), ("arcs_sorted_out", c_int), ("fsm_state", c_void_p), ("sigma", c_void_p), ("medlookup", c_void_p)]
-        
+class FSTstruct(Structure):
+    _fields_ = [
+        ("name", c_char * 40),
+        ("arity", c_int),
+        ("arccount", c_int),
+        ("statecount", c_int),
+        ("linecount", c_int),
+        ("finalcount", c_int),
+        ("pathcount", c_longlong),
+        ("is_deterministic", c_int),
+        ("is_pruned", c_int),
+        ("is_minimized", c_int),
+        ("is_epsilon_free", c_int),
+        ("is_loop_free", c_int),
+        ("is_completed", c_int),
+        ("arcs_sorted_in", c_int),
+        ("arcs_sorted_out", c_int),
+        ("fsm_state", c_void_p),
+        ("sigma", c_void_p),
+        ("medlookup", c_void_p)
+    ]
+
+
 foma_fsm_parse_regex = foma.fsm_parse_regex
 foma_fsm_parse_regex.restype = POINTER(FSTstruct)
 foma_apply_init = foma.apply_init
@@ -98,19 +120,18 @@ fsm_trie_add_word = foma.fsm_trie_add_word
 fsm_trie_done = foma.fsm_trie_done
 fsm_trie_done.restype = POINTER(FSTstruct)
 
-class FSTnetworkdefinitions(object):
 
+class FSTnetworkdefinitions(object):
     def __init__(self):
         self.defhandle = defined_networks_init(None)
 
-class FSTfunctiondefinitions(object):
 
+class FSTfunctiondefinitions(object):
     def __init__(self):
         self.deffhandle = defined_functions_init(None)
-        
-                
-class FST(object):
 
+
+class FST(object):
     networkdefinitions = FSTnetworkdefinitions()
     functiondefinitions = FSTfunctiondefinitions()
 
@@ -159,21 +180,33 @@ class FST(object):
     def load(cls, filename):
         """Load binary FSM from file."""
         fsm = cls()
-        fsm.fsthandle = foma_fsm_read_binary_file(c_char_p(filename))
+        fsm.fsthandle = foma_fsm_read_binary_file(c_char_p(FST.encode(filename)))
         if not fsm.fsthandle:
             raise ValueError("File error.")
         return fsm
 
     @staticmethod
     def encode(string):
+        # type: (Any) -> six.binary_type
         """Makes sure str and unicode are converted."""
-        if isinstance(string, unicode):
+        if isinstance(string, six.text_type):
             return string.encode('utf8')
-        elif isinstance(string, str):
+        elif isinstance(string, six.binary_type):
             return string
         else:
-            return str(string)
-            
+            return FST.encode(str(string))
+
+    @staticmethod
+    def decode(text):
+        if text is None:
+            return None
+        elif isinstance(text, six.binary_type):
+            # Assume output is UTF-8 encoded:
+            return text.decode('UTF-8')
+        else:
+            assert isinstance(text, six.text_type)
+            return text
+
     def __init__(self, regex = False):
         if regex:
             self.regex = self.encode(regex)
@@ -301,7 +334,7 @@ class FST(object):
                 if tokenize:
                     yield output[:-1].split('\x07')
                 else:
-                    yield output
+                    yield self.decode(output)
             if word:
                 output = applyf(c_void_p(applyerhandle), None)
             else:
