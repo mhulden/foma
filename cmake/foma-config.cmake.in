@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/foma.cmake")
+
+if (NOT foma_FIND_QUIETLY)
+	message(STATUS "Found foma: ${PACKAGE_PREFIX_DIR}")
+endif()
