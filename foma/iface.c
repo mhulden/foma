@@ -1680,32 +1680,29 @@ static int view_net(struct fsm *net) {
 
   char tmpstr[255];
   char *dotname;
-#ifndef __APPLE__
   char *pngname;
-#endif  /* __APPLE__ */
+
 
   dotname = strncpy(tmpstr,tempnam(NULL,"foma"), 250);
   strcat(dotname, ".dot");
   dotname = xxstrdup(tmpstr);
   print_dot(net, dotname);
 
-#ifdef __APPLE__
-  sprintf(tmpstr,"/usr/bin/open -a Graphviz %s &",dotname);
-  if (system(tmpstr) == -1)
-      printf("Error opening viewer.\n");
-  
-#endif /* __APPLE__ */
 
-#ifndef __APPLE__
+
   pngname = xxstrdup(tempnam(NULL, "foma"));
   sprintf(tmpstr,"dot -Tpng %s > %s ",dotname,pngname);
   if (system(tmpstr) == -1)
       printf("Error writing tempfile.\n");
+#ifdef __APPLE__
+  sprintf(tmpstr,"/usr/bin/open %s 2>/dev/null &",pngname);
+#endif /* __APPLE__ */
+#ifndef __APPLE__
   sprintf(tmpstr,"/usr/bin/xdg-open %s 2>/dev/null &",pngname);
+#endif /* __APPLE__ */
   if (system(tmpstr) == -1)
       printf("Error opening viewer.\n");
   xxfree(pngname);
-#endif /* __APPLE__ */
 
   xxfree(dotname);
   
