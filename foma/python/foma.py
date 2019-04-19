@@ -17,6 +17,7 @@
 #   See the License for the specific language governing permissions and       #
 #   limitations under the License.                                            #
 
+from past.builtins import xrange
 from sys import maxsize
 from ctypes import *
 from ctypes.util import find_library
@@ -141,7 +142,7 @@ class FST(object):
         name = cls.encode(name)
         if isinstance(definition, FST):
             retval = foma.add_defined(c_void_p(cls.networkdefinitions.defhandle), foma_fsm_copy(definition.fsthandle), c_char_p(name))
-        elif isinstance(definition, basestring):
+        elif isinstance(definition, six.string_types):
             regex = cls.encode(definition)
             retval = foma.add_defined(c_void_p(cls.networkdefinitions.defhandle), foma_fsm_parse_regex(c_char_p(regex), c_void_p(cls.networkdefinitions.defhandle), c_void_p(cls.functiondefinitions.deffhandle)), c_char_p(name))
         else:
@@ -153,7 +154,7 @@ class FST(object):
         # Prototype is a 2-tuple (name, (arg1name, ..., argname))
         # Definition is regex using prototype variables
         name = cls.encode(prototype[0] + '(')
-        if isinstance(definition, basestring):
+        if isinstance(definition, six.string_types):
             numargs = len(prototype[1])
             for i in xrange(numargs):
                 definition = definition.replace(prototype[1][i], "@ARGUMENT0%i@" % (i+1))
@@ -302,7 +303,7 @@ class FST(object):
             return False
                 
     def __call__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, six.string_types):
             return FST("{" + other + "}").compose(self)
         else:
             return other.compose(self)
@@ -520,7 +521,7 @@ class MTFSM(FST):
         foma_apply_set_space_symbol(c_void_p(applyerhandle), c_char_p(toksym))
         output = applyf(c_void_p(applyerhandle))
         while True:
-            if output == None:
+            if output is None:
                 foma_apply_clear(c_void_p(applyerhandle))
                 return
             else:
