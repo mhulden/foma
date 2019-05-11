@@ -33,3 +33,7 @@ and the output is
 ```
 cad[ARule|Rule one]cbd[BRule|Rule two]ccd
 ```
+
+## foma2js.py
+
+This is a port of `foma/contrib/foma2js.perl` to Python 3. Get the help using `foma2js.py -h`. Everything else like in the original program.
