@@ -96,8 +96,9 @@ def main():
             trans_value = '{{{}:\'{}\'}}'.format(arr_target, sigma[arr_out])
             trans[trans_key].append(trans_value)
         elif mode is Mode.SIGMA:
-            number, symbol = line.split(' ')
-            number = int(number)
+            tokens = line.split(' ')
+            number = int(tokens[0])
+            symbol = tokens[1] if len(tokens) > 1 else ''
             if symbol == '@_EPSILON_SYMBOL_@':
                 symbol = ''
             if symbol == '@_IDENTITY_SYMBOL_@':
@@ -130,7 +131,7 @@ def main():
 
     for i in range(3, len(sigma)):
         if i in sigma:
-            print('{}.s[{}] = {};'.format(args.name, sigma[i], i))
+            print('{}.s[\'{}\'] = {};'.format(args.name, sigma[i], i))
 
     print('{}.maxlen = {} ;'.format(args.name, longest_symbol_length))
 
