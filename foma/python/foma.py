@@ -17,12 +17,9 @@
 #   See the License for the specific language governing permissions and       #
 #   limitations under the License.                                            #
 
-from past.builtins import xrange
-from sys import maxsize
+from sys import maxsize, version_info
 from ctypes import *
 from ctypes.util import find_library
-
-import six_1_11_0 as six
 
 fomalibpath = find_library('foma')
 foma = cdll.LoadLibrary(fomalibpath)
@@ -136,13 +133,18 @@ class FST(object):
     networkdefinitions = FSTnetworkdefinitions()
     functiondefinitions = FSTfunctiondefinitions()
 
+    # Generalize over Python2 and Python3 types
+    string_types = str   if version_info[0] > 2 else basestring
+    text_type    = str   if version_info[0] > 2 else unicode
+    binary_type  = bytes if version_info[0] > 2 else str
+
     @classmethod
     def define(cls, definition, name):
         """Defines an FSM constant; can be supplied regex or existing FSM."""
         name = cls.encode(name)
         if isinstance(definition, FST):
             retval = foma.add_defined(c_void_p(cls.networkdefinitions.defhandle), foma_fsm_copy(definition.fsthandle), c_char_p(name))
-        elif isinstance(definition, six.string_types):
+        elif isinstance(definition, FST.string_type):
             regex = cls.encode(definition)
             retval = foma.add_defined(c_void_p(cls.networkdefinitions.defhandle), foma_fsm_parse_regex(c_char_p(regex), c_void_p(cls.networkdefinitions.defhandle), c_void_p(cls.functiondefinitions.deffhandle)), c_char_p(name))
         else:
@@ -154,9 +156,9 @@ class FST(object):
         # Prototype is a 2-tuple (name, (arg1name, ..., argname))
         # Definition is regex using prototype variables
         name = cls.encode(prototype[0] + '(')
-        if isinstance(definition, six.string_types):
+        if isinstance(definition, FST.string_type):
             numargs = len(prototype[1])
-            for i in xrange(numargs):
+            for i in range(numargs):
                 definition = definition.replace(prototype[1][i], "@ARGUMENT0%i@" % (i+1))
             regex = cls.encode(definition + ';')
             retval = foma.add_defined_function(c_void_p(cls.functiondefinitions.deffhandle), c_char_p(name), c_char_p(regex), c_int(numargs))
@@ -188,11 +190,11 @@ class FST(object):
 
     @staticmethod
     def encode(string):
-        # type: (Any) -> six.binary_type
+        # type: (Any) -> FST.binary_type
         """Makes sure str and unicode are converted."""
-        if isinstance(string, six.text_type):
+        if isinstance(string, FST.text_type):
             return string.encode('utf8')
-        elif isinstance(string, six.binary_type):
+        elif isinstance(string, FST.binary_type):
             return string
         else:
             return FST.encode(str(string))
@@ -201,11 +203,11 @@ class FST(object):
     def decode(text):
         if text is None:
             return None
-        elif isinstance(text, six.binary_type):
+        elif isinstance(text, FST.binary_type):
             # Assume output is UTF-8 encoded:
             return text.decode('UTF-8')
         else:
-            assert isinstance(text, six.text_type)
+            assert isinstance(text, FST.text_type)
             return text
 
     def __init__(self, regex = False):
@@ -303,7 +305,7 @@ class FST(object):
             return False
                 
     def __call__(self, other):
-        if isinstance(other, six.string_types):
+        if isinstance(other, FST.string_type):
             return FST("{" + other + "}").compose(self)
         else:
             return other.compose(self)
@@ -501,11 +503,11 @@ class MTFSM(FST):
 
     def _fmt(self, word):
         cols = word
-        colchunks = [map(lambda z: len(z), word[x:x+self.numtapes]) for x in xrange(0, len(word), self.numtapes)]
+        colchunks = [map(lambda z: len(z), word[x:x+self.numtapes]) for x in range(0, len(word), self.numtapes)]
         col_widths = [max(x) for x in colchunks]
         format = '  '.join(['%%-%ds' % width for width in col_widths])
         # string to rows
-        rows = [[word[y] for y in xrange(x, len(word), self.numtapes)] for x in xrange(self.numtapes)]
+        rows = [[word[y] for y in range(x, len(word), self.numtapes)] for x in range(self.numtapes)]
         s = ''
         for row in rows:
             #s += format % tuple(row) + '\n'
