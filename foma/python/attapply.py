@@ -69,9 +69,9 @@ class ATTFST:
         self.identity_symbol = identity_symbol
         self.unknown_symbol = unknown_symbol        
         try:
-            lines = [line.strip() for line in codecs.getreader('utf-8')(gzip.open(attfile), errors='replace')]
+            lines = [line.rstrip('\n') for line in codecs.getreader('utf-8')(gzip.open(attfile), errors='replace')]
         except:
-            lines = [line.strip() for line in codecs.open(attfile, "r", encoding="utf-8")]
+            lines = [line.rstrip('\n') for line in codecs.open(attfile, "r", encoding="utf-8")]
         self.states = {}
         self.alphabet = set()
         for l in lines:
@@ -115,7 +115,7 @@ class ATTFST:
         start = 0
         while start < len(word):
             t = word[start]
-            for length in xrange(1, len(word) - start + 1):
+            for length in range(1, len(word) - start + 1):
                 if word[start:start+length] in self.alphabet:
                     t = word[start:start+length]
             tokens.append(t)
