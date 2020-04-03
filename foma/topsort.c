@@ -41,6 +41,8 @@ struct fsm *fsm_topsort (struct fsm *net) {
     long long grand_pathcount, *pathcount;
     struct fsm_state *fsm, *curr_fsm, *new_fsm;
 
+    if (net == NULL) { return NULL; }
+
     fsm_count(net);
 
     fsm = net->states;

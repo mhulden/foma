@@ -352,12 +352,14 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 
 <REGEX>(;) {
     if (my_yyparse(interfacetext, interfacelineno, g_defines, g_defines_f) == 0) {
+      tempnet = fsm_topsort(fsm_minimize(current_parse));
+      if (tempnet == NULL) {
+        printf("invalid regex detected\n");
       /* regex xxx line */
-      if (pmode == RE) {
-         stack_add(fsm_topsort(fsm_minimize(current_parse)));
+      } else if (pmode == RE) {
+         stack_add(current_parse);
       /* define XXX xxx line */
       } else if (pmode == DE) {
-        tempnet = fsm_topsort(fsm_minimize(current_parse));
         olddef = add_defined(g_defines, tempnet,tempstr);
         if (olddef) {
           printf("redefined %s: ",tempstr);
