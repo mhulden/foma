@@ -3,6 +3,7 @@ exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
+pkgcfgdir = $(libdir)/pkgconfig
 
 VERSION = 0.9.18
 CC = gcc
@@ -69,14 +70,16 @@ $(SHAREDLIBV): $(LIBOBJS)
 	$(RANLIB) $(STATICLIB)
 	$(CC) $(CFLAGS) -shared -Wl,$(DFLAG),$(SHAREDLIBM) -o $(SHAREDLIBV) $(LIBOBJS) $(LDFLAGS)
 
-install: foma libfoma
+install: foma libfoma libfoma.pc
 	-@if [ ! -d $(exec_prefix) ]; then mkdir -p $(exec_prefix); fi
 	-@if [ ! -d $(includedir)  ]; then mkdir -p $(includedir); fi
 	-@if [ ! -d $(libdir)      ]; then mkdir -p $(libdir); fi
+	-@if [ ! -d $(pkgcfgdir)   ]; then mkdir -p $(pkgcfgdir); fi
 	-@if [ ! -d $(bindir)      ]; then mkdir -p $(bindir); fi
 	cp fomalib.h fomalibconf.h $(includedir);
 	chmod 644 $(includedir)/fomalib.h
 	cp foma flookup cgflookup $(bindir)
+	cp libfoma.pc $(pkgcfgdir)
 	cp $(LIBS) $(libdir)
 	cd $(libdir); chmod 755 $(LIBS); \
 	if test -f $(libdir)/$(SHAREDLIB); then rm  $(libdir)/$(SHAREDLIB); fi
@@ -86,6 +89,18 @@ install: foma libfoma
 	>/dev/null 2>&1; \
 
 $(OBJS): foma.h
+
+libfoma.pc:
+	echo "prefix=${prefix}" > $@
+	echo 'exec_prefix=$${prefix}' >> $@
+	echo 'includedir=$${prefix}/include' >> $@
+	echo 'libdir=$${exec_prefix}/lib' >> $@
+	echo '' >> $@
+	echo 'Name: foma' >> $@
+	echo 'Description: The foma library' >> $@
+	echo 'Version: ${VERSION}' >> $@
+	echo 'Cflags: -I$${includedir}' >> $@
+	echo 'Libs: -L$${libdir} -lfoma' >> $@
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -106,4 +121,4 @@ regex.c regex.h: regex.y
 	$(YACC) --defines=$*.h --output=$*.c $<
 
 clean:
-	$(RM) foma flookup cgflookup $(FOMAOBJS) $(LIBOBJS) flookup.o cgflookup.o regex.h regex.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a
+	$(RM) foma flookup cgflookup $(FOMAOBJS) $(LIBOBJS) flookup.o cgflookup.o regex.h regex.c regex.output lex.yy.c lex.lexc.c lex.interface.c lex.cmatrix.c *.so* *.dylib* *.a libfoma.pc
