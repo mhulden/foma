@@ -240,6 +240,10 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
   BEGIN(DEFREGEX);
   yymore();
 }
-<*>((!).*[\015]?(\n)) {  /* printf ("Comment: [%s]\n",lexctext); */  }
+<*>((!).*[\015]?(\n)) {
+  /* printf ("Comment: [%s]\n",lexctext); */
+  lexclineno++;
+  lexccolumn = 1;
+}
 
 <*>(.) { printf("\n***Syntax error on line %i column %i at '%s'\n",lexclineno,lexccolumn,lexctext); return 1;}
