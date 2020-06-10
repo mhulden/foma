@@ -15,6 +15,9 @@
 /*   See the License for the specific language governing permissions and       */
 /*   limitations under the License.                                            */
 
+#ifndef FOMALIB_H
+#define FOMALIB_H
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
@@ -503,3 +506,5 @@ FEXPORT void fsm_read_done(struct fsm_read_handle *handle);
 #ifdef  __cplusplus
 }
 #endif
+
+#endif /* FOMALIB_H */
