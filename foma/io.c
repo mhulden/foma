@@ -44,9 +44,6 @@ struct binaryline {
 
 extern char *g_att_epsilon;
 
-extern struct defined_networks   *g_defines;
-extern struct defined_functions  *g_defines_f;
-
 struct io_buf_handle {
     char *io_buf;
     char *io_buf_ptr;

@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include "foma.h"
 
+struct defined_networks   *g_defines;
+struct defined_functions  *g_defines_f;
+
 /* Find a defined symbol from the symbol table */
 /* Return the corresponding FSM                */
 struct fsm *find_defined(struct defined_networks *def, char *string) {

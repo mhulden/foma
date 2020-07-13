@@ -48,9 +48,6 @@ extern int g_med_cutoff ;
 extern int g_lexc_align ;
 extern char *g_att_epsilon;
 
-extern struct defined_networks   *g_defines;
-extern struct defined_functions  *g_defines_f;
-
 extern int foma_net_print(struct fsm *net, gzFile outfile);
 
 static char *sigptr(struct sigma *sigma, int number);

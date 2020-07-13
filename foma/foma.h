@@ -24,8 +24,8 @@
 #define PROMPT_MAIN 0 /* Regular prompt */
 #define PROMPT_A 1    /* Apply prompt   */
 
-struct defined_networks   *g_defines;
-struct defined_functions  *g_defines_f;
+extern struct defined_networks   *g_defines;
+extern struct defined_functions  *g_defines_f;
 
 /** User stack */
 struct stack_entry {
