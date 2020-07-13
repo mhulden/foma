@@ -62,13 +62,13 @@ struct T_memo {
 struct trans_list {
     int inout;
     int target;
-} *trans_list;
+} *trans_list_determinize;
 
 struct trans_array {
     struct trans_list *transitions;
     unsigned int size;
     unsigned int tail;
-} *trans_array;
+} *trans_array_determinize;
 
 static struct T_memo *T_ptr;
 
@@ -184,8 +184,8 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
         nhash_free(table, nhash_tablesize);
         xxfree(T_ptr);
         xxfree(e_table);
-        xxfree(trans_list);
-        xxfree(trans_array);
+        xxfree(trans_list_determinize);
+        xxfree(trans_array_determinize);
         xxfree(double_sigma_array);
         xxfree(single_sigma_array);
         xxfree(finals);
@@ -199,8 +199,8 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
         nhash_free(table, nhash_tablesize);
         xxfree(T_ptr);
         xxfree(e_table);
-        xxfree(trans_list);
-        xxfree(trans_array);
+        xxfree(trans_list_determinize);
+        xxfree(trans_array_determinize);
         xxfree(double_sigma_array);
         xxfree(single_sigma_array);
         xxfree(finals);
@@ -233,7 +233,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
         has_trans = 0;
         for (i = 0; i < setsize; i++) {
             stateno = *(theset+i);
-            tptr = trans_array+stateno;
+            tptr = trans_array_determinize+stateno;
             tptr->tail = 0;
             if (tptr->size == 0)
                 continue;
@@ -256,7 +256,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
             for (i = 0, j = 0 ; i < setsize; i++) {
                 
                 stateno = *(theset+i);
-                tptr = trans_array+stateno;
+                tptr = trans_array_determinize+stateno;
                 tail = tptr->tail;
                 transitions = (tptr->transitions)+tail;
                 
@@ -318,8 +318,8 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
     xxfree(T_ptr);
     xxfree(temp_move);
     xxfree(e_table);
-    xxfree(trans_list);
-    xxfree(trans_array);
+    xxfree(trans_list_determinize);
+    xxfree(trans_array_determinize);
     
     if (epsilon_symbol != -1)
         e_closure_free();
@@ -384,8 +384,8 @@ static void init_trans_array(struct fsm *net) {
     struct fsm_state *fsm;
     int i, j, laststate, lastsym, inout, size, state;
 
-    arrptr = trans_list = xxmalloc(net->linecount * sizeof(struct trans_list));
-    trans_array = xxcalloc(net->statecount, sizeof(struct trans_array));
+    arrptr = trans_list_determinize = xxmalloc(net->linecount * sizeof(struct trans_list));
+    trans_array_determinize = xxcalloc(net->statecount, sizeof(struct trans_array));
     
     laststate = -1;
     fsm = net->states;
@@ -394,9 +394,9 @@ static void init_trans_array(struct fsm *net) {
         state = (fsm+i)->state_no;
         if (state != laststate) {
             if (laststate != -1) {
-                (trans_array+laststate)->size = size;
+                (trans_array_determinize+laststate)->size = size;
             }
-            (trans_array+state)->transitions = arrptr;
+            (trans_array_determinize+state)->transitions = arrptr;
             size = 0;
         }
         laststate = state;
@@ -414,12 +414,12 @@ static void init_trans_array(struct fsm *net) {
     }
 
     if (laststate != -1) {
-        (trans_array+laststate)->size = size;
+        (trans_array_determinize+laststate)->size = size;
     }
 
     for (i=0; i < net->statecount; i++) {
-        arrptr = (trans_array+i)->transitions;
-        size = (trans_array+i)->size;
+        arrptr = (trans_array_determinize+i)->transitions;
+        size = (trans_array_determinize+i)->size;
         if (size > 1) {
             qsort(arrptr, size, sizeof(struct trans_list), trans_sort_cmp);
             lastsym = -1;

@@ -69,13 +69,13 @@ struct agenda {
 struct trans_list {
     int inout;
     int source;
-} *trans_list;
+} *trans_list_minimize;
 
 struct trans_array {
     struct trans_list *transitions;
     unsigned int size;
     unsigned int tail;
-} *trans_array;
+} *trans_array_minimize;
 
 
 
@@ -174,7 +174,7 @@ static struct fsm *fsm_minimize_hop(struct fsm *net) {
             stateno = temp_E - E;
             *(temp_group+thissize) = stateno;
             thissize++;
-            tptr = trans_array+stateno;
+            tptr = trans_array_minimize+stateno;
             /* Clear tails if symloop should start from 0 */
             if (current_i == 0)
                 tptr->tail = 0;
@@ -190,7 +190,7 @@ static struct fsm *fsm_minimize_hop(struct fsm *net) {
 
             /* Add states to temp_move */
             for (i = 0, j = 0; i < thissize; i++) {
-                tptr = trans_array+*(temp_group+i);
+                tptr = trans_array_minimize+*(temp_group+i);
                 tail = tptr->tail;
                 transitions = (tptr->transitions)+tail;
                 while (tail < tptr->size && transitions->inout == minsym) {
@@ -223,8 +223,8 @@ static struct fsm *fsm_minimize_hop(struct fsm *net) {
 
     net = rebuild_machine(net);
 
-    xxfree(trans_array);
-    xxfree(trans_list);
+    xxfree(trans_array_minimize);
+    xxfree(trans_list_minimize);
 
  bail:
     
@@ -565,8 +565,8 @@ static void generate_inverse(struct fsm *net) {
 
     int i, source, target, offsetcount, symbol, size;
     fsm = net->states;
-    trans_array = xxcalloc(net->statecount, sizeof(struct trans_array));
-    trans_list = xxcalloc(net->arccount, sizeof(struct trans_list));
+    trans_array_minimize = xxcalloc(net->statecount, sizeof(struct trans_array));
+    trans_list_minimize = xxcalloc(net->arccount, sizeof(struct trans_list));
 
     /* Figure out the number of transitions each one has */
     for (i=0; (fsm+i)->state_no != -1; i++) {
@@ -576,12 +576,12 @@ static void generate_inverse(struct fsm *net) {
         target = (fsm+i)->target;
         (E+target)->inv_count++;
         (E+target)->group->inv_count++;
-        (trans_array+target)->size++;
+        (trans_array_minimize+target)->size++;
     }
     offsetcount = 0;
     for (i=0; i < net->statecount; i++) {
-        (trans_array+i)->transitions = trans_list + offsetcount;
-        offsetcount += (trans_array+i)->size;
+        (trans_array_minimize+i)->transitions = trans_list_minimize + offsetcount;
+        offsetcount += (trans_array_minimize+i)->size;
     }
     for (i=0; (fsm+i)->state_no != -1; i++) {
         if ((fsm+i)->target == -1) {
@@ -590,15 +590,15 @@ static void generate_inverse(struct fsm *net) {
         symbol = symbol_pair_to_single_symbol((fsm+i)->in,(fsm+i)->out);        
         source = (fsm+i)->state_no;
         target = (fsm+i)->target;
-        tptr = trans_array + target;
+        tptr = trans_array_minimize + target;
         ((tptr->transitions)+(tptr->tail))->inout = symbol;
         ((tptr->transitions)+(tptr->tail))->source = source;
         tptr->tail++;
     }
     /* Sort arcs */
     for (i=0; i < net->statecount; i++) {
-        listptr = (trans_array+i)->transitions;
-        size = (trans_array+i)->size;
+        listptr = (trans_array_minimize+i)->transitions;
+        size = (trans_array_minimize+i)->size;
         if (size > 1)
             qsort(listptr, size, sizeof(struct trans_list), trans_sort_cmp);
     }
