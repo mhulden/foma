@@ -134,7 +134,7 @@ class FST(object):
     functiondefinitions = FSTfunctiondefinitions()
 
     # Generalize over Python2 and Python3 types
-    string_types = str   if version_info[0] > 2 else basestring
+    string_type  = str   if version_info[0] > 2 else basestring
     text_type    = str   if version_info[0] > 2 else unicode
     binary_type  = bytes if version_info[0] > 2 else str
 
