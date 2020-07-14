@@ -450,6 +450,10 @@ class MTFSM(FST):
         s += 'Numtapes: %i\n' % self.numtapes
         return s
     
+    def generate(self, word):
+        # TODO: Implement this method
+        raise NotImplementedError()
+
     def parse(self, word):
         #[word/□ .o. [0:?^(numtapes-1) ?]*].l & Grammar ;
         m = self.numtapes
