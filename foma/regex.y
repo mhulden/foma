@@ -201,7 +201,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
      int  type;
 }
 
-%pure-parser
+%define api.pure full
 %expect 686
 %parse-param { void *scanner }
 %parse-param { struct defined_networks *defined_nets }
