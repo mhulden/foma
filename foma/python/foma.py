@@ -451,8 +451,15 @@ class MTFSM(FST):
         return s
     
     def generate(self, word):
-        # TODO: Implement this method
-        raise NotImplementedError()
+
+        m = self.numtapes
+        regx = (u'[{' + word + u'}/□ .o. [? 0:?^' + str(m-1) + ']*].l')
+        reg = FST(regx)
+        gr = FST()
+        gr.fsthandle = foma_fsm_copy(self.fsthandle)
+        res = MTFSM(reg.intersect(gr), numtapes = m)
+        return res
+    
 
     def parse(self, word):
         #[word/□ .o. [0:?^(numtapes-1) ?]*].l & Grammar ;
