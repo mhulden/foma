@@ -117,7 +117,7 @@ lex.interface.c: interface.l
 lex.cmatrix.c: cmatrix.l
 	$(LEXCMATRIX) $<
 
-regex.c regex.h: regex.y
+regex.c regex.h: regex.y constructions.o
 	$(YACC) --defines=$*.h --output=$*.c $<
 
 clean:
