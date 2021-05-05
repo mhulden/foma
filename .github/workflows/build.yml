@@ -23,7 +23,7 @@ jobs:
       with:
         name: dist
         path: |
-          foma
-          flookup
-          cgflookup
-          libfoma.so.*
+          foma/foma
+          foma/flookup
+          foma/cgflookup
+          foma/libfoma.so.*
