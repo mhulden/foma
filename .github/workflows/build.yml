@@ -14,7 +14,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: install dependencies
-      run: sudo apt install bison flex libreadline-dev
-    - name: compile library and foma CLI
+
+    - name: build
       run: cd foma && make
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist
+        path: |
+          foma
+          flookup
+          cgflookup
+          libfoma.so.*
