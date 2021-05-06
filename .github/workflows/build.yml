@@ -21,7 +21,7 @@ jobs:
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: dist
+        name: dist-linux
         path: |
           foma/foma
           foma/flookup
@@ -52,9 +52,12 @@ jobs:
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: dist
+        name: dist-windows
         path: |
           foma/foma.exe
           foma/flookup.exe
           foma/cgflookup.exe
-          foma/libfoma.so.*
+          foma/cygncurses7.dll
+          foma/cygwin1.dll
+          foma/cygreadline7.dll
+          foma/cygz.dll
