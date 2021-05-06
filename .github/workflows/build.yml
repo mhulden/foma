@@ -83,7 +83,7 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: gcc bison flex
+        install: gcc bison flex make
 
     - name: Compile Foma
       run: cd foma && make
