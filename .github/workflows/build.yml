@@ -46,7 +46,7 @@ jobs:
     - name: Copy Cygwin DLLs to build directory
       run: |
         path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-        bash.exe -c "cp C:/tools/cygwin/bin/{cygncurses-10.dll,cygncursesw-10.dll,cygwin1.dll,cygreadline7.dll,cygz.dll} foma"
+        bash.exe -c "cp C:/tools/cygwin/bin/{cygncursesw-10.dll,cygwin1.dll,cygreadline7.dll,cygz.dll} foma"
       shell: cmd
 
     - name: Compile Foma
@@ -63,7 +63,6 @@ jobs:
           foma/foma.exe
           foma/flookup.exe
           foma/cgflookup.exe
-          foma/cygncurses-10.dll
           foma/cygncursesw-10.dll
           foma/cygwin1.dll
           foma/cygreadline7.dll
