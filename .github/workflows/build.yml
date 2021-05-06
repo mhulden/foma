@@ -89,7 +89,7 @@ jobs:
       run: cd foma && make
 
     - name: Copy MINGW64 DLLs to build directory
-      run: cp /usr/bin/{msys-2.0.dll,msys-ncursesw6.dll,msys-readline8.dll,msys-z.dll} foma"
+      run: cp /usr/bin/{msys-2.0.dll,msys-ncursesw6.dll,msys-readline8.dll,msys-z.dll} foma
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
