@@ -40,7 +40,7 @@ jobs:
 
     - name: Install cygwin additional packages
       run: |
-        C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -s http://mirrors.kernel.org/sourceware/cygwin/ -P bison,flex,gcc-core,libreadline-devel,zlib-devel,make
+        C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -s http://mirrors.kernel.org/sourceware/cygwin/ -P bison,flex,gcc-core,libreadline-devel,libncurses-devel,zlib-devel,make
       shell: cmd
 
     - name: build
