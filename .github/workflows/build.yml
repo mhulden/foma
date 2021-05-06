@@ -83,7 +83,7 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: mingw-w64-x86_64-gcc bison flex make zlib-devel libreadline-devel	ncurses-devel
+        install: mingw-w64-x86_64-gcc bison flex make zlib-devel libreadline-devel ncurses-devel mingw-w64-x86_64-readline mingw-w64-x86_64-ncurses
 
     - name: Compile Foma
       run: cd foma && make
