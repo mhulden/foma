@@ -46,7 +46,7 @@ jobs:
     - name: Copy Cygwin DLLs to build directory
       run: |
         path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-        bash.exe -c "cp /cygdrive/c/cygwin/bin/{cygncurses7.dll,cygwin1.dll,cygreadline7.dll,cygz.dll} foma"
+        bash.exe -c "cp /bin/{cygncurses7.dll,cygwin1.dll,cygreadline7.dll,cygz.dll} foma"
       shell: cmd
 
     - name: Compile Foma
