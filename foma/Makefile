@@ -61,9 +61,7 @@ ifeq ($(UNAME), CYGWIN_NT-5.1)
 	FLOOKUPLDFLAGS = libfoma.a /usr/lib/libz.a
 endif
 
-ifeq ($(UNAME), CYGWIN_NT-10.0)
-	LDFLAGS = -lreadline -lz -lncurses
-endif
+LDFLAGS = -lreadline -lz -lncurses
 
 LIBS = $(SHAREDLIBV) $(STATICLIB)
 
