@@ -28,46 +28,6 @@ jobs:
           foma/cgflookup
           foma/libfoma.so.*
 
-#   build-cygwin:
-
-#     runs-on: windows-latest
-
-#     steps:
-#     - uses: actions/checkout@v2
-
-#     - name: Install cygwin base packages with chocolatey
-#       run: choco install --no-progress cygwin
-
-#     - name: Install cygwin additional packages
-#       run: |
-#         C:\tools\cygwin\cygwinsetup.exe -qgnNdO -R C:/tools/cygwin -s http://mirrors.kernel.org/sourceware/cygwin/ -P bison,flex,gcc-core,libreadline-devel,libncurses-devel,zlib-devel,make
-#       shell: cmd
-
-#     - name: Copy Cygwin DLLs to build directory
-#       run: |
-#         path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-#         bash.exe -c "cp C:/tools/cygwin/bin/{cygncursesw-10.dll,cygwin1.dll,cygreadline7.dll,cygz.dll} foma"
-#       shell: cmd
-
-#     - name: Compile Foma
-#       run: |
-#         path C:\tools\cygwin\bin;C:\tools\cygwin\usr\bin
-#         bash.exe -c "cd foma && make"
-#       shell: cmd
-
-#     - name: Archive production artifacts
-#       uses: actions/upload-artifact@v2
-#       with:
-#         name: dist-windows
-#         path: |
-#           foma/foma.exe
-#           foma/flookup.exe
-#           foma/cgflookup.exe
-#           foma/cygncursesw-10.dll
-#           foma/cygwin1.dll
-#           foma/cygreadline7.dll
-#           foma/cygz.dll
-
   build-msys2:
 
     runs-on: windows-latest
