@@ -63,7 +63,7 @@ jobs:
           foma/foma.exe
           foma/flookup.exe
           foma/cgflookup.exe
-          foma/cygncurses7.dll
+          foma/cygncursesw-10.dll
           foma/cygwin1.dll
           foma/cygreadline7.dll
           foma/cygz.dll
