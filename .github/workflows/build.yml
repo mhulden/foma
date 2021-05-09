@@ -1,0 +1,92 @@
+name: Build foma
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: build
+      run: cd foma && make
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-linux
+        path: |
+          foma/foma
+          foma/flookup
+          foma/cgflookup
+          foma/libfoma.so.*
+          foma/README*
+          foma/CHANGELOG
+          foma/COPYING
+
+  build-windows:
+
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: gcc bison flex make zlib-devel libreadline-devel ncurses-devel
+
+    - name: Compile Foma
+      run: cd foma && make
+
+    - name: Copy MINGW64 DLLs to build directory
+      run: cp /usr/bin/{msys-2.0.dll,msys-ncursesw6.dll,msys-readline8.dll,msys-z.dll} foma
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-windows
+        path: |
+          foma/foma.exe
+          foma/flookup.exe
+          foma/cgflookup.exe
+          foma/*.dll
+          foma/README*
+          foma/CHANGELOG
+          foma/COPYING
+          
+  build-macos:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Compile Foma
+      run: brew install bison && export PATH="$(brew --prefix bison)/bin:$PATH" && cd foma && make
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-macos
+        path: |
+          foma/foma
+          foma/cgflookup
+          foma/flookup
+          foma/libfoma.a
+          foma/libfoma.*.dylib
+          foma/README*
+          foma/CHANGELOG
+          foma/COPYING
