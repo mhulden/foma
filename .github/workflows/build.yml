@@ -77,7 +77,7 @@ jobs:
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: dist-msys2
+        name: dist-macos
         path: |
           foma/foma
           foma/cgflookup
