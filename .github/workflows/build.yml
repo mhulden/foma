@@ -28,7 +28,7 @@ jobs:
           foma/cgflookup
           foma/libfoma.so.*
 
-  build-msys2:
+  build-windows:
 
     runs-on: windows-latest
 
@@ -59,7 +59,28 @@ jobs:
           foma/foma.exe
           foma/flookup.exe
           foma/cgflookup.exe
-          foma/msys-2.0.dll
-          foma/msys-ncursesw6.dll
-          foma/msys-readline8.dll
-          foma/msys-z.dll
+          foma/*.dll
+          
+  build-macos:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install build dependencies via homebrew
+      run: brew install bison flex make zlib readline ncurses
+
+    - name: Compile Foma
+      run: cd foma && make
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-msys2
+        path: |
+          foma/foma
+          foma/cgflookup
+          foma/flookup
+          foma/libfoma.a
+          foma/libfoma.*.dylib
