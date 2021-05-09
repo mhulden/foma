@@ -68,9 +68,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install build dependencies via homebrew
-      run: brew install bison flex make zlib readline ncurses
-
     - name: Compile Foma
       run: cd foma && make
 
