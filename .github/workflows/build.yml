@@ -27,6 +27,9 @@ jobs:
           foma/flookup
           foma/cgflookup
           foma/libfoma.so.*
+          foma/README*
+          foma/CHANGELOG
+          foma/COPYING
 
   build-windows:
 
@@ -54,12 +57,15 @@ jobs:
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: dist-msys2
+        name: dist-windows
         path: |
           foma/foma.exe
           foma/flookup.exe
           foma/cgflookup.exe
           foma/*.dll
+          foma/README*
+          foma/CHANGELOG
+          foma/COPYING
           
   build-macos:
 
@@ -81,3 +87,6 @@ jobs:
           foma/flookup
           foma/libfoma.a
           foma/libfoma.*.dylib
+          foma/README*
+          foma/CHANGELOG
+          foma/COPYING
