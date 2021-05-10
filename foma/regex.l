@@ -66,7 +66,7 @@ int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_net
 
 int yywrap(yyscan_t scanner) {return 1; }
 
-int yyerror(YYLTYPE* yylloc, yyscan_t scanner, char *msg) {
+int yyerror(YYLTYPE* yylloc, yyscan_t scanner, struct defined_networks *defined_nets, struct defined_functions *defined_funcs, char *msg) {
    if(yylloc->first_line)
        fprintf(stderr, "%d.%d-%d.%d: error: ", yylloc->first_line, yylloc->first_column, yylloc->last_line, yylloc->last_column);
    fprintf(stderr, "%s%s at '%s'.\n", "***", msg, yyget_text(scanner));
