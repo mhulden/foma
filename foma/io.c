@@ -572,6 +572,10 @@ int save_defined(struct defined_networks *def, char *filename) {
     }
     printf("Writing definitions to file %s.\n", filename);
     for (d = def; d != NULL; d = d->next) {
+        if (!d->net) {
+            printf("Skipping definition without network.\n");
+            continue;
+        }
         strncpy(d->net->name, d->name, FSM_NAME_LEN);
         foma_net_print(d->net, outfile);
     }
