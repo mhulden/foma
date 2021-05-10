@@ -120,13 +120,17 @@ int add_defined_function(struct defined_functions *deff, char *name, char *regex
 }
 
 /* Add a network to list of defined networks */
-/* Returns 0 on success or 1 on redefinition */
+/* Returns 0 on success or 1 on redefinition or -1 if name is too long */
 /* Always maintain head of list at same ptr */
 
 int add_defined(struct defined_networks *def, struct fsm *net, char *string) {
     struct defined_networks *d;
     if (net == NULL)
 	return 0;
+    if (strlen(string) > FSM_NAME_LEN) {
+      return(-1);
+    }
+
     fsm_count(net);
     for (d = def; d != NULL; d = d->next) {
 	if (d->name != NULL && strcmp(d->name, string) == 0) {

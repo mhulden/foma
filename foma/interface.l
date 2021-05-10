@@ -361,7 +361,9 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
       /* define XXX xxx line */
       } else if (pmode == DE) {
         olddef = add_defined(g_defines, tempnet,tempstr);
-        if (olddef) {
+        if (olddef == -1) {
+          printf("Network name '%s' should consist of at most %d characters.\n", tempstr, FSM_NAME_LEN);
+        } else if (olddef == 1) {
           printf("redefined %s: ",tempstr);
         } else {
           printf("defined %s: ",tempstr);

@@ -212,9 +212,12 @@ int fsm_destroy(struct fsm *net) {
 }
 
 struct fsm *fsm_create (char *name) {
+  if (strlen(name) > FSM_NAME_LEN) {
+    printf("Network name '%s' should consist of at most %d characters.\n", name, FSM_NAME_LEN);
+  }
   struct fsm *fsm;
   fsm = xxmalloc(sizeof(struct fsm));
-  strcpy(fsm->name, name);
+  strncpy(fsm->name, name, FSM_NAME_LEN);
   fsm->arity = 1;
   fsm->arccount = 0;
   fsm->is_deterministic = NO;
