@@ -3,6 +3,7 @@
 The *foma* compiler is essentially a tool for converting regular expressions to finite automata and transducers.  It supports a variety of operations (many more than are found in search-regex formalisms such as the *Python* `re` module).  The interface also includes tools for performing various tests on automata and transducers, passing words through transducers (doing translations), and importing and exporting transducers in various formats.
 
 The *foma* program runs with a read-eval-print loop (REPL), like IPython/Jupyter.  That means that each command given is executed and the output is printed, and a new prompt is displayed.  You can run scripts of commands by either launching foma with the `foma -l` flag, or by typing `source filename` inside foma.
+Input text files must be encoded as ASCII or UTF-8 without byte order mark.
 
 ## Foma basics
 
