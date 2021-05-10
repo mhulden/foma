@@ -572,7 +572,7 @@ int save_defined(struct defined_networks *def, char *filename) {
     }
     printf("Writing definitions to file %s.\n", filename);
     for (d = def; d != NULL; d = d->next) {
-        strcpy(d->net->name, d->name);
+        strncpy(d->net->name, d->name, FSM_NAME_LEN);
         foma_net_print(d->net, outfile);
     }
     gzclose(outfile);
@@ -701,7 +701,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     io_gets(iobh, buf);
     extras = 0;
     sscanf(buf, "%i %i %i %i %i %lld %i %i %i %i %i %i %s", &net->arity, &net->arccount, &net->statecount, &net->linecount, &net->finalcount, &net->pathcount, &net->is_deterministic, &net->is_pruned, &net->is_minimized, &net->is_epsilon_free, &net->is_loop_free, &extras, buf);
-    strcpy(net->name, buf);
+    strncpy(net->name, buf, FSM_NAME_LEN);
     *net_name = xxstrdup(buf);
     io_gets(iobh, buf);
 

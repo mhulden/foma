@@ -85,6 +85,8 @@ extern "C" {
 #define APPLY_INDEX_INPUT 1
 #define APPLY_INDEX_OUTPUT 2
 
+#define FSM_NAME_LEN 40
+
 /* Defined networks */
 struct defined_networks {
   char *name;
@@ -109,7 +111,7 @@ struct defined_quantifiers {
 
 /** Main automaton structure */
 struct fsm {
-  char name[40];
+  char name[FSM_NAME_LEN];
   int arity;
   int arccount;
   int statecount;
