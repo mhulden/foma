@@ -197,6 +197,7 @@ struct fsm *fsm_rewrite(struct rewrite_set *all_rules) {
 		/* ~[?* Center ~[EP ?*]] & ~[~[?* EP] Center ?*] */
 		Center = fsm_copy(rules->cross_product);
 		Base = fsm_intersect(fsm_intersect(Base, fsm_complement(fsm_concat(rewrite_any_4tape(rb), fsm_concat(fsm_copy(Center), fsm_complement(fsm_concat(rewrite_epextend(rb), rewrite_any_4tape(rb))))))), fsm_complement(fsm_concat(fsm_complement(fsm_concat(rewrite_any_4tape(rb), rewrite_epextend(rb))), fsm_concat(fsm_copy(Center), rewrite_any_4tape(rb)))));
+		fsm_destroy(Center);
 	    }
 	    if (ruleset->rewrite_contexts) {
 		Base = fsm_intersect(Base, rewr_context_restrict(rb, rules->cross_product, ruleset->rewrite_contexts));
