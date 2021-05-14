@@ -1172,8 +1172,11 @@ void iface_test_unambiguous() {
 }
 
 void iface_test_lower_universal() {
-    if (iface_stack_check(1))
-        iface_print_bool(fsm_isempty(fsm_complement(fsm_lower(fsm_copy(stack_find_top()->fsm)))));
+    if (iface_stack_check(1)) {
+        struct fsm *tmp = fsm_complement(fsm_lower(fsm_copy(stack_find_top()->fsm)));
+        iface_print_bool(fsm_isempty(tmp));
+        fsm_destroy(tmp);
+    }
 }
 
 void iface_test_sequential() {
@@ -1182,8 +1185,11 @@ void iface_test_sequential() {
 }
 
 void iface_test_upper_universal() {
-    if (iface_stack_check(1))
-        iface_print_bool(fsm_isempty(fsm_complement(fsm_upper(fsm_copy(stack_find_top()->fsm)))));
+    if (iface_stack_check(1)) {
+        struct fsm *tmp = fsm_complement(fsm_upper(fsm_copy(stack_find_top()->fsm)));
+        iface_print_bool(fsm_isempty(tmp));
+        fsm_destroy(tmp);
+    }
 }
 
 void iface_turn() {
