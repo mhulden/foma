@@ -1158,12 +1158,12 @@ void iface_test_identity() {
 
 void iface_test_nonnull() {
     if (iface_stack_check(1))
-        iface_print_bool(!fsm_isempty(fsm_copy(stack_find_top()->fsm)));
+        iface_print_bool(!fsm_isempty(stack_find_top()->fsm));
 }
 
 void iface_test_null() {
     if (iface_stack_check(1))
-        iface_print_bool(fsm_isempty(fsm_copy(stack_find_top()->fsm)));
+        iface_print_bool(fsm_isempty(stack_find_top()->fsm));
 }
 
 void iface_test_unambiguous() {
