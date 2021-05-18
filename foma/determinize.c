@@ -105,60 +105,6 @@ struct fsm *fsm_determinize(struct fsm *net) {
     return(fsm_subset(net, SUBSET_DETERMINIZE));
 }
 
-int fsm_isstarfree(struct fsm *net) {
-    #define DFS_WHITE 0
-    #define DFS_GRAY 1
-    #define DFS_BLACK 2
-
-    struct fsm *sfnet;
-    struct state_array *state_array;
-    struct fsm_state *curr_ptr;
-    int v, vp, is_star_free;
-    short int in;
-    char *dfs_map;
-
-    sfnet = fsm_subset(net, SUBSET_TEST_STAR_FREE);
-    is_star_free = 1;
-
-    state_array = map_firstlines(net);
-    ptr_stack_clear();
-    ptr_stack_push(state_array->transitions);
-
-    dfs_map = xxcalloc(sfnet->statecount, sizeof(char));
-    while(!ptr_stack_isempty()) {
-
-        curr_ptr = ptr_stack_pop();
-    nopop:
-        v = curr_ptr->state_no; /* source state number */
-        vp = curr_ptr->target;  /* target state number */
-
-        if (v == -1 || vp == -1) {
-            *(dfs_map+v) = DFS_BLACK;
-            continue;
-        }
-        *(dfs_map+v) = DFS_GRAY;
-
-        in = curr_ptr->in;
-        if (*(dfs_map+vp) == DFS_GRAY && in == maxsigma) {
-            /* Not star-free */
-            is_star_free = 0;
-            break;
-        }
-        if (v == (curr_ptr+1)->state_no) {
-            ptr_stack_push(curr_ptr+1);
-        }
-        if (*(dfs_map+vp) == DFS_WHITE) { 
-            curr_ptr = (state_array+vp)->transitions;
-            goto nopop;
-        }
-    }
-    ptr_stack_clear();
-    xxfree(dfs_map);
-    xxfree(state_array);
-    //stack_add(sfnet);
-    return(is_star_free);
-}
-
 static struct fsm *fsm_subset(struct fsm *net, int operation) {
 
     int T, U;
