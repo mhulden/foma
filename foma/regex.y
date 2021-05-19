@@ -246,6 +246,8 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
 %left KLEENE_STAR KLEENE_PLUS REVERSE INVERSE
 %left TERM_NEGATION
 
+%destructor { fsm_destroy($$); } <net>
+
 /* Regular expression grammar */
 %%
 
