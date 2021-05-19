@@ -190,7 +190,6 @@ struct global_help {
     {"test non-null","test if top machine is not the empty language","Short form:tnn\n" },
     {"test null","test if top machine is the empty language (∅)","Short form: tnu\n" },
     {"test sequential","tests if top machine is sequential","Short form: tseq\n"},
-    {"test star-free","test if top FSM is star-free","Short form: tsf\n"},
     {"turn stack","turns stack upside down","" },
     {"twosided flag-diacritics","changes flags to always be identity pairs","Short form: tfd" },
     {"undefine <name>","remove <name> from defined networks","See define\n"},
