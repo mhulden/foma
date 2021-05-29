@@ -22,11 +22,29 @@
 #include "foma.h"
 
 static struct defined_quantifiers *quantifiers;
+struct _fsm_options fsm_options;
 
 char *fsm_get_library_version_string() {
     static char s[20];
     sprintf(s,"%i.%i.%i%s",MAJOR_VERSION,MINOR_VERSION,BUILD_VERSION,STATUS_VERSION);
     return(s);
+}
+
+_Bool fsm_set_option(unsigned long long option, void *value) {
+	switch (option) {
+	case FSMO_SKIP_WORD_BOUNDARY_MARKER:
+		fsm_options.skip_word_boundary_marker = *((_Bool*)value);
+		return 1;
+	}
+	return 0;
+}
+
+void *fsm_get_option(unsigned long long option) {
+	switch (option) {
+	case FSMO_SKIP_WORD_BOUNDARY_MARKER:
+		return &fsm_options.skip_word_boundary_marker;
+	}
+	return NULL;
 }
 
 int linesortcompin(struct fsm_state *a, struct fsm_state *b) {

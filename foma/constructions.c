@@ -894,15 +894,17 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
   struct fsm_state *fsm_state, *new_1_state, *new_2_state;
   int i, j, end_1 = 0, end_2 = 0, sigmasizes, *mapping_1, *mapping_2, equal = 1, unknown_1 = 0, unknown_2 = 0, net_unk = 0, net_adds = 0, net_lines;
 
-  i = sigma_find(".#.", net1->sigma);
-  j = sigma_find(".#.", net2->sigma);
-  if (i != -1 && j == -1) {
+  if (!fsm_options.skip_word_boundary_marker) {
+    i = sigma_find(".#.", net1->sigma);
+    j = sigma_find(".#.", net2->sigma);
+    if (i != -1 && j == -1) {
       sigma_add(".#.", net2->sigma);
       sigma_sort(net2);
-  }
-  if (j != -1 && i == -1) {
+    }
+    if (j != -1 && i == -1) {
       sigma_add(".#.", net1->sigma);
       sigma_sort(net1);
+    }
   }
 
   sigma_1 = net1->sigma;
