@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "foma.h"
 
+extern int g_verbose;
 struct defined_networks   *g_defines;
 struct defined_functions  *g_defines_f;
 
@@ -48,7 +49,7 @@ int remove_defined(struct defined_networks *def, char *string) {
 	}
 	return 0;
     }
-    d_prev = NULL; 
+    d_prev = NULL;
     for (d = def; d != NULL; d_prev = d, d = d->next) {
 	if (d->name != NULL && strcmp(d->name, string) == 0) {
 	    exists = 1;
@@ -102,7 +103,11 @@ int add_defined_function(struct defined_functions *deff, char *name, char *regex
 	if (d->name != NULL && strcmp(d->name, name) == 0 && d->numargs == numargs) {
 	    xxfree(d->regex);
 	    d->regex = xxstrdup(regex);
-	    printf("redefined %s@%i)\n", name, numargs);
+            if (g_verbose)
+            {
+                fprintf(stderr,"redefined %s@%i)\n", name, numargs);
+                fflush(stderr);
+            }
 	    return 1;
 	}
     }

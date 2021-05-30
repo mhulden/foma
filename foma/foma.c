@@ -26,7 +26,7 @@
 
 /* Front-end behavior variables */
 int pipe_mode = 0;
-int quiet_mode = 0;
+extern int g_verbose;
 static int use_readline = 1;
 
 int promptmode = PROMPT_MAIN;
@@ -65,7 +65,7 @@ char no_readline_line[512];
    Returns NULL on EOF. */
 
 char *rl_gets(char *prompt) {
-    
+
     /* If the buffer has already been allocated,
        return the memory to the free pool. */
     if (use_readline == 1) {
@@ -83,12 +83,12 @@ char *rl_gets(char *prompt) {
     } else {
         line_read = readline(prompt);
     }
-    
+
     /* If the line has any text in it,
        save it on the history. */
     if (use_readline == 1) {
         if (line_read && *line_read)
-            add_history(line_read);        
+            add_history(line_read);
     }
     return (line_read);
 }
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
             pipe_mode = 1;
             break;
         case 'q':
-            quiet_mode = 1;
+            g_verbose = 0;
             break;
         case 'r':
             use_readline = 0;
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (!pipe_mode && !quiet_mode) 
+    if (!pipe_mode && g_verbose)
         printf("%s",disclaimer);
     rl_basic_word_break_characters = " >";
 
@@ -162,11 +162,11 @@ int main(int argc, char *argv[]) {
             sprintf(prompt, "apply up> ");
         if (promptmode == PROMPT_A && apply_direction == AP_M)
             sprintf(prompt, "apply med> ");
-        if (pipe_mode || quiet_mode)
+        if (pipe_mode || !g_verbose)
 	    prompt[0] = '\0';
 
 	fflush(stdout);
-	
+
         command = rl_gets(prompt);
 
         if (command == NULL && promptmode == PROMPT_MAIN) {
@@ -203,8 +203,8 @@ static char **my_completion(const char *text, int start, int end) {
     matches = (char **)NULL;
     smatch = start;
     matches = rl_completion_matches ((char*)text, &my_generator);
-    
-    return (matches);    
+
+    return (matches);
 }
 
 char *my_generator(const char *text, int state) {
@@ -217,27 +217,27 @@ char *my_generator(const char *text, int state) {
         nummatches = 0;
         len = strlen(text);
     }
-    
+
     while ((name = cmd[list_index])) {
         list_index++;
 
         if (strncmp (name, text, len) == 0) {
-            nummatches++;            
+            nummatches++;
             /* Can't use xxstrdup here */
             return(strdup(name+smatch));
         }
     }
-    
+
     if (rl_point > 0) {
         while ((name = abbrvcmd[list_index2])) {
             list_index2++;
-            
+
             /* Can't use xxstrdup here */
             if (strncmp (name, text, len) == 0)
                 return(strdup(name+smatch));
-        }        
+        }
     }
-    
+
     /* If no names matched, then return NULL. */
     return ((char *)NULL);
 }
