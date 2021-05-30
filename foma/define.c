@@ -134,7 +134,7 @@ int add_defined(struct defined_networks *def, struct fsm *net, char *string) {
     fsm_count(net);
     for (d = def; d != NULL; d = d->next) {
 	if (d->name != NULL && strcmp(d->name, string) == 0) {
-	    xxfree(d->net);
+	    fsm_destroy(d->net);
 	    xxfree(d->name);
 	    d->net = net;
 	    d->name = xxstrdup(string);
