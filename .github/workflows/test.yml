@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: build with sanitizer
-      run: cd foma && make CFLAGS="-g3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC -fsanitize=address" && make install
+      run: cd foma && make CFLAGS="-g3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC -fsanitize=address"
 
     - name: run tests
-      run: cd tests && ./run.sh
+      run: cd tests && PATH=../:$PATH ./run.sh
