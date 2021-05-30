@@ -27,6 +27,7 @@
 #define REGEX_ENTRY 2
 
 extern int g_lexc_align;
+extern int g_verbose;
 
 struct multichar_symbols {
     char *symbol;
@@ -796,7 +797,11 @@ void lexc_number_states() {
         for (s = statelist; s != NULL; s = s->next) {        
             if (s->next == NULL) {
                 s->state->number = 0;
-                fprintf(stderr,"*Warning: no Root lexicon, using '%s' as Root.\n",s->state->lexstate->name);
+                if (g_verbose)
+                {
+                    fprintf(stderr,"*Warning: no Root lexicon, using '%s' as Root.\n",s->state->lexstate->name);
+                    fflush(stderr);
+                }
                 s->start = 1;
                 n++;
             }
@@ -823,12 +828,18 @@ void lexc_number_states() {
     lexc_statecount = n+1;
     for (l = lexstates; l != NULL ; l = l->next) {
         if (l->targeted == 0 && l->state->number != 0) {
-	    fprintf(stderr,"*Warning: lexicon '%s' defined but not used\n",l->name);
-            fflush(stdout);
+            if (g_verbose)
+            {
+                fprintf(stderr,"*Warning: lexicon '%s' defined but not used\n",l->name);
+                fflush(stderr);
+            }
         }
         if (l->has_outgoing == 0 && strcmp(l->name, "#") != 0) {
-	    fprintf(stderr,"***Warning: lexicon '%s' used but never defined\n",l->name);
-            fflush(stdout);
+            if (g_verbose)
+            {
+                fprintf(stderr,"***Warning: lexicon '%s' used but never defined\n",l->name);
+                fflush(stderr);
+            }
         }
     }
 }
@@ -988,15 +999,22 @@ struct fsm *lexc_to_fsm() {
     struct trans *t;
     int i, j,  linecount;
 
-    fprintf(stderr,"Building lexicon...\n");
-    fflush(stdout);
+    if (g_verbose)
+    {
+        fprintf(stderr,"Building lexicon...\n");
+        fflush(stderr);
+    }
     lexc_merge_states();
     net = fsm_create("");
     xxfree(net->sigma);
     net->sigma = lexsigma;
     lexc_number_states();
     if (hasfinal == 0) {
-        fprintf(stderr,"Warning: # is never reached!!!\n");
+        if (g_verbose)
+        {
+            fprintf(stderr,"Warning: # is never reached!!!\n");
+            fflush(stderr);
+        }
         return(fsm_empty_set());
     }
     sa = xxmalloc(sizeof(struct statelist)*lexc_statecount);
@@ -1034,13 +1052,23 @@ struct fsm *lexc_to_fsm() {
     sigma_cleanup(net,0);
     sigma_sort(net);
     
-    fprintf(stderr,"Determinizing...\n");
-    fflush(stdout);
+    if (g_verbose)
+    {
+        fprintf(stderr,"Determinizing...\n");
+        fflush(stderr);
+    }
     net = fsm_determinize(net);
-    fprintf(stderr,"Minimizing...\n");
-    fflush(stdout);
+    if (g_verbose)
+    {
+        fprintf(stderr,"Minimizing...\n");
+        fflush(stderr);
+    }
     net = fsm_topsort(fsm_minimize(net));
-    fprintf(stderr,"Done!\n");
+    if (g_verbose)
+    {
+        fprintf(stderr,"Done!\n");
+        fflush(stderr);
+    }
     return(net);
 }
 

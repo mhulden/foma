@@ -21,6 +21,8 @@
 #include <locale.h>
 #include "foma.h"
 
+extern int g_verbose;
+
 #define FAIL    1
 #define SUCCEED 2
 #define NONE    3
@@ -70,7 +72,11 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
     filter = NULL;
 
     if (net->pathcount == 0) {
-        fprintf(stderr,"Skipping flag elimination since there are no paths in network.\n");
+        if (g_verbose)
+        {
+            fprintf(stderr,"Skipping flag elimination since there are no paths in network.\n");
+            fflush(stderr);
+        }
         return(net);
     }
 
@@ -82,7 +88,11 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
                 found = 1;
         }
         if (found == 0) {
-	    fprintf(stderr,"Flag attribute '%s' does not occur in the network.\n",name);
+            if (g_verbose)
+            {
+                fprintf(stderr,"Flag attribute '%s' does not occur in the network.\n",name);
+                fflush(stderr);
+            }
             return(net);
         }
     }

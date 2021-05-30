@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include "foma.h"
 
-extern int quiet_mode;
+extern int g_verbose;
 
 struct stack_entry *main_stack;
 
@@ -63,8 +63,10 @@ int stack_add(struct fsm *fsm) {
   (stack_ptr->next)->fsm = NULL;
   (stack_ptr->next)->next = NULL;
   (stack_ptr->next)->previous = stack_ptr;
-  if (!quiet_mode)
-      print_stats(fsm);
+  if (g_verbose)
+  {
+    print_stats(fsm);
+  }
   return(stack_ptr->number);
 }
 

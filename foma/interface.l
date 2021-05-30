@@ -50,6 +50,7 @@ static struct fsm *tempnet;
 extern int promptmode;
 extern int apply_direction;
 extern int g_list_limit;
+extern int g_verbose;
 
 extern int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 extern void my_cmatrixparse(struct fsm *net, char *my_string);
@@ -354,21 +355,27 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
     if (my_yyparse(interfacetext, interfacelineno, g_defines, g_defines_f) == 0) {
       tempnet = fsm_topsort(fsm_minimize(current_parse));
       if (tempnet == NULL) {
-        printf("invalid regex detected\n");
+        if (g_verbose)
+        {
+          printf("invalid regex detected\n");
+        }
       /* regex xxx line */
       } else if (pmode == RE) {
          stack_add(current_parse);
       /* define XXX xxx line */
       } else if (pmode == DE) {
         olddef = add_defined(g_defines, tempnet,tempstr);
-        if (olddef == -1) {
-          printf("Network name '%s' should consist of at most %d characters.\n", tempstr, FSM_NAME_LEN);
-        } else if (olddef == 1) {
-          printf("redefined %s: ",tempstr);
-        } else {
-          printf("defined %s: ",tempstr);
+        if (g_verbose)
+        {
+          if (olddef == -1) {
+            printf("Network name '%s' should consist of at most %d characters.\n", tempstr, FSM_NAME_LEN);
+          } else if (olddef == 1) {
+            printf("redefined %s: ",tempstr);
+          } else {
+            printf("defined %s: ",tempstr);
+          }
+          print_stats(tempnet);
         }
-        print_stats(tempnet);
         xxfree(tempstr);
         tempstr = NULL;
       }
@@ -439,12 +446,15 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
    if (iface_stack_check(1)) {
        tempnet = stack_pop();
        olddef = add_defined(g_defines, tempnet,remove_trailing(interfacetext,';'));
-       if (olddef) {
-         printf("redefined %s: ",interfacetext);
-       } else {
+       if (g_verbose)
+       {
+        if (olddef) {
+          printf("redefined %s: ",interfacetext);
+        } else {
           printf("defined %s: ",interfacetext);
+        }
+        print_stats(tempnet);
        }
-       print_stats(tempnet);
      }
      BEGIN(INITIAL);
 }

@@ -702,7 +702,11 @@ void iface_print_net(char *netname, char *filename) {
     struct fsm *net;
     if (netname != NULL) {
         if ((net = find_defined(g_defines, netname)) == NULL) {
-            printf("No defined network %s.\n", netname);
+            if (g_verbose)
+            {
+                fprintf(stderr,"No defined network %s.\n", netname);
+                fflush(stderr);
+            }
             return;
         }
         print_net(net, filename);
