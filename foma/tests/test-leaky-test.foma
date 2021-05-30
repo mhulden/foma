@@ -1,0 +1,8 @@
+regex a:b;
+test null
+test identity
+test sequential
+test unambiguous
+test lower-universal
+test upper-universal
+print shortest-string
