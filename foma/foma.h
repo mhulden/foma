@@ -24,6 +24,12 @@
 #define PROMPT_MAIN 0 /* Regular prompt */
 #define PROMPT_A 1    /* Apply prompt   */
 
+/** Runtime options */
+struct _fsm_options {
+	_Bool skip_word_boundary_marker;
+};
+extern struct _fsm_options fsm_options;
+
 extern struct defined_networks   *g_defines;
 extern struct defined_functions  *g_defines_f;
 
@@ -34,7 +40,7 @@ struct stack_entry {
   struct apply_med_handle *amedh;
   struct fsm *fsm;
   struct stack_entry *next;
-  struct stack_entry *previous;    
+  struct stack_entry *previous;
 };
 
 /* Quantifier & Logic-related */
