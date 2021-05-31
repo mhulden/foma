@@ -1,0 +1,3 @@
+# fail if memory is not released when variable is redefined
+define foo a*;
+define foo a*;

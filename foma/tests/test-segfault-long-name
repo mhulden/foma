@@ -1,0 +1,2 @@
+define ForeignGuessIntermediateToSurfaceGrammar [a-z];
+save defined /tmp/out

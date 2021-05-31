@@ -1,0 +1,15 @@
+name: Test foma
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: build with sanitizer
+      run: cd foma && make CFLAGS="-g3 -Wall -D_GNU_SOURCE -std=c99 -fvisibility=hidden -fPIC -fsanitize=address"
+
+    - name: run tests
+      run: cd foma/tests && PATH=../:$PATH ./run.sh

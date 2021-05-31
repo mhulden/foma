@@ -1,0 +1,2 @@
+regex 0 - 0 ; !Creates xducer with 0 paths
+eliminate flags !seg fault

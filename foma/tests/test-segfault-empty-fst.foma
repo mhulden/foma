@@ -1,0 +1,2 @@
+regex a:b;
+save defined /tmp/a
