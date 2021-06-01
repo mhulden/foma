@@ -1,8 +1,8 @@
 Foma
 ====
 
-version 0.9.18alpha
-2015/06/12
+version 0.10.0
+2021/06/01
 
 Author: Mans Hulden
 Email: mans.hulden@gmail.com
@@ -40,5 +40,5 @@ To compile foma (and flookup) as well as the foma static and dynamic library, "m
 Bugs
 ----
 
-Many. The current release is 0.9.18alpha, and bug reports will be gratefully received at mans.hulden@gmail.com.
+Many. The current release is 0.10.0, and bug reports will be gratefully received at mans.hulden@gmail.com.
 
