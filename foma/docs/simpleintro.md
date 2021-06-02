@@ -9,7 +9,7 @@ Input text files must be encoded as ASCII or UTF-8 without byte order mark.
 
 When you start *foma*, it should respond with a title page, something like:
 
-    Foma, version 0.9.18alpha
+    Foma, version 0.10.0
     ...
     Type "help" to list all commands available.
     Type "help <topic>" or help "<operator>" for further help.

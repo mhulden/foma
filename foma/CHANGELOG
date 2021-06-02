@@ -1,3 +1,19 @@
+0.10.0 (20210601)
+
+- Add runtime options interface.
+- Fix numerous memory leaks and segfaults.
+- Allow to suppress verbose messages.
+- Drop leftover command "test star-free"
+- Render error message when input file contains UTF byte order mark.
+- Fix error rendering: make yyerror signature consistent with yyparse.
+- Skip flags elimination if there are no paths in network.
+- Makefile now creates libfoma.pc to allow pkg-config provide info about foma.
+- Fixed syntax error reporting line count in lexc.
+- Add Python 3 compatibility and Python 3 port of foma2js.perl
+- Sort alphabet after eliminating flags.
+- Make "lower" be "lower-words".
+- New rewrite algorithms.
+
 0.9.18alpha (20150612)
 
 - Many bugfixes and speedups

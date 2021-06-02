@@ -5,7 +5,7 @@ bindir = $(exec_prefix)/bin
 includedir = $(prefix)/include
 pkgcfgdir = $(libdir)/pkgconfig
 
-VERSION = 0.9.18
+VERSION = 0.10.0
 CC = gcc
 RANLIB = ranlib
 YACC = bison -v
