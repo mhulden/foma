@@ -27,6 +27,10 @@ extern "C" {
 #include <stdbool.h>
 #include "zlib.h"
 
+#if !defined(bool) && !defined(_Bool)
+  #define _Bool bool
+#endif
+
 #define INLINE inline
 
 #define FEXPORT __attribute__((visibility("default")))
