@@ -204,7 +204,7 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
 }
 <DEF>{NONRESERVED}+{SPACE}+={SPACE}+ {
     lexc_trim(lexctext);
-    tempstr = xxstrdup(lexctext);
+    tempstr = strdup(lexctext);
     BEGIN(DEFREGEX);
 }
  /* \073 = ; */
@@ -212,7 +212,7 @@ ANY    [\001-\177]|[\300-\337][\200-\277]|[\340-\357][\200-\277][\200-\277]|[\36
     if (my_yyparse(lexctext, lexclineno, g_defines, NULL) == 0) {
       add_defined(g_defines, fsm_topsort(fsm_minimize(current_parse)),tempstr);
     }
-    xxfree(tempstr);
+    free(tempstr);
     BEGIN(DEF);
 }
 <DEFREGEX>({INSIDEDEFREGEX}|%{ANY})* {

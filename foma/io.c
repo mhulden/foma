@@ -66,7 +66,7 @@ void escape_print(FILE *stream, char* string) {
     if (strchr(string, '"') != NULL) {
 	for (i = 0; *(string+i) != '\0'; i++) {
 	    if (*(string+i) == '"') {
-		fprintf(stream, "\\\""); 
+		fprintf(stream, "\\\"");
 	    } else {
 		fputc(*(string+i), stream);
 	    }
@@ -81,7 +81,7 @@ int foma_write_prolog (struct fsm *net, char *filename) {
   int i, *finals, *used_symbols, maxsigma;
   FILE *out;
   char *outstring, *instring, identifier[100];
-  
+
   if (filename == NULL) {
     out = stdout;
   } else {
@@ -93,8 +93,8 @@ int foma_write_prolog (struct fsm *net, char *filename) {
   }
   fsm_count(net);
   maxsigma = sigma_max(net->sigma);
-  used_symbols = xxcalloc(maxsigma+1,sizeof(int));
-  finals = xxmalloc(sizeof(int)*(net->statecount));
+  used_symbols = calloc(maxsigma+1,sizeof(int));
+  finals = malloc(sizeof(int)*(net->statecount));
   stateptr = net->states;
   identifier[0] = '\0';
 
@@ -123,14 +123,14 @@ int foma_write_prolog (struct fsm *net, char *filename) {
       instring = sigma_string(i, net->sigma);
       if (strcmp(instring,"0") == 0) {
 	  instring = "%0";
-      } 
+      }
       fprintf(out, "symbol(%s, \"", identifier);
       escape_print(out, instring);
-      fprintf(out, "\").\n"); 
+      fprintf(out, "\").\n");
 
     }
   }
-  
+
   for (; stateptr->state_no != -1; stateptr++) {
     if (stateptr->target == -1)
       continue;
@@ -149,7 +149,7 @@ int foma_write_prolog (struct fsm *net, char *filename) {
     if (strcmp(instring,"?") == 0 && stateptr->in > 2) instring = "%?";
     if (strcmp(outstring,"?") == 0 && stateptr->in > 2) outstring = "%?";
     /* Escape quotes */
-    
+
     if (net->arity == 2 && stateptr->in == IDENTITY && stateptr->out == IDENTITY) {
       fprintf(out, "\"?\").\n");
     }
@@ -158,11 +158,11 @@ int foma_write_prolog (struct fsm *net, char *filename) {
 	escape_print(out, instring);
 	fprintf(out, "\").\n");
     }
-    else if (net->arity == 2) {	
+    else if (net->arity == 2) {
       fprintf(out, "\"");
       escape_print(out, instring);
       fprintf(out, "\":\"");
-      escape_print(out, outstring); 
+      escape_print(out, outstring);
       fprintf(out, "\").\n");
     }
     else if (net->arity == 1) {
@@ -180,8 +180,8 @@ int foma_write_prolog (struct fsm *net, char *filename) {
   if (filename != NULL) {
       fclose(out);
   }
-  xxfree(finals);
-  xxfree(used_symbols);
+  free(finals);
+  free(used_symbols);
   return 1;
 }
 
@@ -244,7 +244,7 @@ struct fsm *fsm_read_prolog (char *filename) {
     struct fsm *outnet;
     struct fsm_construct_handle *outh = NULL;
     FILE *prolog_file;
-    
+
     has_net = 0;
     prolog_file = fopen(filename, "r");
     if (prolog_file == NULL) {
@@ -264,7 +264,7 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    temp_ptr2 = strstr(buf, ").");
 	    strncpy(temp, temp_ptr, (temp_ptr2 - temp_ptr));
 	    temp[(temp_ptr2-temp_ptr)] = '\0';
-	    
+
 	    /* Start network */
 	    outh = fsm_construct_init(temp);
 	}
@@ -274,7 +274,7 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    temp_ptr2 = strstr(temp_ptr, ").");
 	    strncpy(temp, temp_ptr, (temp_ptr2 - temp_ptr));
 	    temp[(temp_ptr2-temp_ptr)] = '\0';
-	    
+
 	    fsm_construct_set_final(outh, atoi(temp));
 	}
 	if (strstr(buf, "symbol(") == buf) {
@@ -285,22 +285,22 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    if (strcmp(temp, "%0") == 0)
 		strcpy(temp, "0");
 	    //printf("special: %s\n",temp);
-	    
+
 	    if (fsm_construct_check_symbol(outh, temp) == -1) {
 		fsm_construct_add_symbol(outh, temp);
-	    }      
+	    }
 	    continue;
 	}
 	if (strstr(buf, "arc(") == buf) {
 	    in[0] = '\0';
 	    out[0] = '\0';
-	    
+
 	    if (strstr(buf, "\":\"") == NULL || strstr(buf, ", \":\").") != NULL) {
 		arity = 1;
 	    } else {
 		arity = 2;
 	    }
-	    
+
 	    /* Get source */
 	    temp_ptr = strstr(buf, " ");
 	    temp_ptr++;
@@ -308,7 +308,7 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    strncpy(temp, temp_ptr, (temp_ptr2 - temp_ptr));
 	    temp[(temp_ptr2-temp_ptr)] = '\0';
 	    source = atoi(temp);
-	    
+
 	    /* Get target */
 	    temp_ptr = strstr(temp_ptr2, " ");
 	    temp_ptr++;
@@ -316,17 +316,17 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    strncpy(temp, temp_ptr, (temp_ptr2 - temp_ptr));
 	    temp[(temp_ptr2-temp_ptr)] = '\0';
 	    target = atoi(temp);
-	    
+
 	    temp_ptr = strstr(temp_ptr2, "\"");
 	    temp_ptr++;
-	    if (arity == 2)  { 
+	    if (arity == 2)  {
 		temp_ptr2 = strstr(temp_ptr, "\":");
 	    } else {
 		temp_ptr2 = strstr(temp_ptr, "\").");
 	    }
 	    strncpy(in, temp_ptr, (temp_ptr2 - temp_ptr));
 	    in[(temp_ptr2 - temp_ptr)] = '\0';
-	    
+
 	    if (arity == 2) {
 		temp_ptr = strstr(temp_ptr2, ":\"");
 		temp_ptr += 2;
@@ -361,9 +361,9 @@ struct fsm *fsm_read_prolog (char *filename) {
 	    if (strcmp(out, "%?") == 0) {
 		strcpy(out,"?");
 	    }
-	    
-	    if (arity == 1) { 
-		fsm_construct_add_arc(outh, source, target, in, in);	    
+
+	    if (arity == 1) {
+		fsm_construct_add_arc(outh, source, target, in, in);
 	    } else {
 		fsm_construct_add_arc(outh, source, target, in, out);
 	    }
@@ -382,7 +382,7 @@ struct fsm *fsm_read_prolog (char *filename) {
 
 struct io_buf_handle *io_init() {
     struct io_buf_handle *iobh;
-    iobh = xxmalloc(sizeof(struct io_buf_handle));
+    iobh = malloc(sizeof(struct io_buf_handle));
     (iobh->io_buf) = NULL;
     (iobh->io_buf_ptr) = NULL;
     return(iobh);
@@ -390,10 +390,10 @@ struct io_buf_handle *io_init() {
 
 void io_free(struct io_buf_handle *iobh) {
     if (iobh->io_buf != NULL) {
-        xxfree(iobh->io_buf);
+        free(iobh->io_buf);
         (iobh->io_buf) = NULL;
     }
-    xxfree(iobh);
+    free(iobh);
 }
 
 char *spacedtext_get_next_line(char **text) {
@@ -401,11 +401,11 @@ char *spacedtext_get_next_line(char **text) {
     ret = *text;
     if (**text == '\0')
 	return NULL;
-    for (t = *text; *t != '\0' && *t != '\n'; t++) {	
+    for (t = *text; *t != '\0' && *t != '\n'; t++) {
     }
     if (*t == '\0')
 	*text = t;
-    else 
+    else
 	*text = t+1;
     *t = '\0';
     return(ret);
@@ -433,7 +433,7 @@ struct fsm *fsm_read_spaced_text_file(char *filename) {
     char *text, *textorig, *insym, *outsym, *t1, *t2, *l1, *l2;
 
     text = textorig = file_to_mem(filename);
-    
+
     if (text == NULL)
 	return NULL;
     th = fsm_trie_init();
@@ -474,7 +474,7 @@ struct fsm *fsm_read_spaced_text_file(char *filename) {
 	    fsm_trie_end_word(th);
 	}
     }
-    xxfree(textorig);
+    free(textorig);
     return(fsm_trie_done(th));
 }
 
@@ -502,7 +502,7 @@ struct fsm *fsm_read_text_file(char *filename) {
 	if (strlen(textp1) > 0)
 	    fsm_trie_add_word(th, textp1);
     }
-    xxfree(text);
+    free(text);
     return(fsm_trie_done(th));
 }
 
@@ -526,7 +526,7 @@ struct fsm *fsm_read_binary_file_multiple(fsm_read_binary_handle fsrh) {
 	io_free(iobh);
 	return(NULL);
     } else {
-	xxfree(net_name);
+	free(net_name);
 	return(net);
     }
 }
@@ -630,7 +630,7 @@ static INLINE int explode_line(char *buf, int *values) {
 /* ##sigma## */
 /* ...SIGMA LINES... */
 /* ##states## */
-/* ...TRANSITION LINES... */ 
+/* ...TRANSITION LINES... */
 /* ##end## */
 
 /* Several networks may be concatenated in one file */
@@ -678,7 +678,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     char buf[READ_BUF_SIZE];
     struct fsm *net;
     struct fsm_state *fsm;
-    
+
     char *new_symbol;
     int i, items, new_symbol_number, laststate, lineint[5], *cm;
     int extras;
@@ -687,7 +687,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     if (io_gets(iobh, buf) == 0) {
         return NULL;
     }
-    
+
     net = fsm_create("");
 
     if (strcmp(buf, "##foma-net 1.0##") != 0) {
@@ -706,7 +706,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
     extras = 0;
     sscanf(buf, "%i %i %i %i %i %lld %i %i %i %i %i %i %s", &net->arity, &net->arccount, &net->statecount, &net->linecount, &net->finalcount, &net->pathcount, &net->is_deterministic, &net->is_pruned, &net->is_minimized, &net->is_epsilon_free, &net->is_loop_free, &extras, buf);
     strncpy(net->name, buf, FSM_NAME_LEN);
-    *net_name = xxstrdup(buf);
+    *net_name = strdup(buf);
     io_gets(iobh, buf);
 
     net->is_completed = (extras & 3);
@@ -744,7 +744,7 @@ struct fsm *io_net_read(struct io_buf_handle *iobh, char **net_name) {
         printf("File format error!\n");
         return NULL;
     }
-    net->states = xxmalloc(net->linecount*sizeof(struct fsm_state));
+    net->states = malloc(net->linecount*sizeof(struct fsm_state));
     fsm = net->states;
     laststate = -1;
     for (i=0; ;i++) {
@@ -847,10 +847,10 @@ int foma_net_print(struct fsm *net, gzFile outfile) {
     gzprintf(outfile, "%s","##props##\n");
 
     extras = (net->is_completed) | (net->arcs_sorted_in << 2) | (net->arcs_sorted_out << 4);
- 
-    gzprintf(outfile, 
+
+    gzprintf(outfile,
 	     "%i %i %i %i %i %lld %i %i %i %i %i %i %s\n", net->arity, net->arccount, net->statecount, net->linecount, net->finalcount, net->pathcount, net->is_deterministic, net->is_pruned, net->is_minimized, net->is_epsilon_free, net->is_loop_free, extras, net->name);
-    
+
     /* Sigma */
     gzprintf(outfile, "%s","##sigma##\n");
     for (sigma = net->sigma; sigma != NULL && sigma->number != -1; sigma = sigma->next) {
@@ -907,7 +907,7 @@ int net_print_att(struct fsm *net, FILE *outfile) {
     }
     for (i=0; (fsm+i)->state_no != -1; i++) {
         if ((fsm+i)->target != -1) {
-            fprintf(outfile, "%i\t%i\t%s\t%s\n",(fsm+i)->state_no,(fsm+i)->target, (sl+(fsm+i)->in)->symbol, (sl+(fsm+i)->out)->symbol);            
+            fprintf(outfile, "%i\t%i\t%s\t%s\n",(fsm+i)->state_no,(fsm+i)->target, (sl+(fsm+i)->in)->symbol, (sl+(fsm+i)->out)->symbol);
         }
     }
     prev = -1;
@@ -916,7 +916,7 @@ int net_print_att(struct fsm *net, FILE *outfile) {
             fprintf(outfile, "%i\n",(fsm+i)->state_no);
         }
     }
-    xxfree(sl);
+    free(sl);
     return(1);
 }
 
@@ -978,7 +978,7 @@ size_t io_gz_file_to_mem(struct io_buf_handle *iobh, char *filename) {
     if (size == 0) {
         return 0;
     }
-    (iobh->io_buf) = xxmalloc((size+1)*sizeof(char));
+    (iobh->io_buf) = malloc((size+1)*sizeof(char));
     FILE = gzopen(filename, "rb");
     gzread(FILE, iobh->io_buf, size);
     gzclose(FILE);
@@ -1025,7 +1025,7 @@ char *file_to_mem(char *name) {
     fseek(infile, 0L, SEEK_END);
     numbytes = ftell(infile);
     fseek(infile, 0L, SEEK_SET);
-    buffer = (char*)xxmalloc((numbytes+1) * sizeof(char));
+    buffer = (char*)malloc((numbytes+1) * sizeof(char));
     if(buffer == NULL) {
         printf("Error reading file '%s'\n",name);
         return NULL;

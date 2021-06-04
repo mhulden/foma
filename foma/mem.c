@@ -47,7 +47,7 @@ char *xxstrndup(const char *s, size_t n) {
     const char *p = s;
     while(*p++ && n--);
     n = p - s - 1;
-    r = (char *) xxmalloc(n + 1);
+    r = (char *) malloc(n + 1);
     if(r != NULL) {
         memcpy(r, s, n);
         r[n] = 0;
@@ -72,24 +72,3 @@ unsigned int round_up_to_power_of_two(unsigned int v) {
     v++;
     return(v);
 }
-
-INLINE void *xxmalloc(size_t size) {
-    return(malloc(size));
-}
-
-INLINE void xxfree(void *ptr) {
-    free(ptr);
-}
-
-void *xxrealloc(void *ptr, size_t size) {
-    return(realloc(ptr, size));
-}
-
-INLINE void *xxcalloc(size_t nmemb, size_t size) {
-    return(calloc(nmemb,size));
-}
-
-INLINE char *xxstrdup(const char *s) {
-    return(strdup(s));
-}
-

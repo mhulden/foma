@@ -16,6 +16,7 @@
 /*   limitations under the License.                                            */
 
 #include "fomalib.h"
+#include <stdlib.h>
 
 #define THASH_TABLESIZE 1048573
 #define TRIE_STATESIZE 32768
@@ -25,9 +26,9 @@ unsigned int trie_hashf(unsigned int source, char *insym, char *outsym);
 struct fsm_trie_handle *fsm_trie_init() {
     struct fsm_trie_handle *th;
 
-    th = xxcalloc(1,sizeof(struct fsm_trie_handle));
-    th->trie_hash = xxcalloc(THASH_TABLESIZE, sizeof(struct trie_hash));
-    th->trie_states = xxcalloc(TRIE_STATESIZE, sizeof(struct trie_states));
+    th = calloc(1,sizeof(struct fsm_trie_handle));
+    th->trie_hash = calloc(THASH_TABLESIZE, sizeof(struct trie_hash));
+    th->trie_states = calloc(TRIE_STATESIZE, sizeof(struct trie_states));
     th->statesize = TRIE_STATESIZE;
     th->trie_cursor = 0;
     th->sh_hash = sh_init();
@@ -48,7 +49,7 @@ struct fsm *fsm_trie_done(struct fsm_trie_handle *th) {
 		fsm_construct_add_arc(newh, thash->sourcestate, thash->targetstate, thash->insym, thash->outsym);
 	    } else {
 		break;
-	    }		
+	    }
 	}
     }
     for (i = 0; i <= th->used_states; i++) {
@@ -62,27 +63,27 @@ struct fsm *fsm_trie_done(struct fsm_trie_handle *th) {
     for (i=0; i < THASH_TABLESIZE; i++) {
 	for (thash=((th->trie_hash)+i)->next; thash != NULL; thash = thashp) {
 	    thashp = thash->next;
-	    xxfree(thash);
+	    free(thash);
 	}
     }
     sh_done(th->sh_hash);
-    xxfree(th->trie_states);
-    xxfree(th->trie_hash);
-    xxfree(th);
+    free(th->trie_states);
+    free(th->trie_hash);
+    free(th);
     return(newnet);
 }
 
 void fsm_trie_add_word(struct fsm_trie_handle *th, char *word) {
     int i, len;
     char *wcopy;
-    wcopy = xxstrdup(word);
+    wcopy = strdup(word);
     len = strlen(wcopy);
     for (i=0 ; *word != '\0' && i < len; word = word + utf8skip(word)+1, i++) {
 	strncpy(wcopy, word, utf8skip(word)+1);
 	*(wcopy+utf8skip(word)+1) = '\0';
 	fsm_trie_symbol(th, wcopy, wcopy);
     }
-    xxfree(wcopy);
+    free(wcopy);
     fsm_trie_end_word(th);
 }
 
@@ -106,7 +107,7 @@ void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outsym) {
 	}
     }
     /* Doesn't exist */
-    
+
     /* Insert trans, move counter and cursor */
     th->used_states++;
     thash = th->trie_hash+h;
@@ -116,7 +117,7 @@ void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outsym) {
 	thash->sourcestate = th->trie_cursor;
 	thash->targetstate = th->used_states;
     } else {
-	newthash = xxcalloc(1, sizeof(struct trie_hash));
+	newthash = calloc(1, sizeof(struct trie_hash));
 	newthash->next = thash->next;
 	newthash->insym = sh_find_add_string(th->sh_hash, insym,1);
 	newthash->outsym = sh_find_add_string(th->sh_hash, outsym,1);
@@ -129,7 +130,7 @@ void fsm_trie_symbol(struct fsm_trie_handle *th, char *insym, char *outsym) {
     /* Realloc */
     if (th->used_states >= th->statesize) {
 	th->statesize = next_power_of_two(th->statesize);
-	th->trie_states = xxrealloc(th->trie_states, th->statesize * sizeof(struct trie_states));
+	th->trie_states = realloc(th->trie_states, th->statesize * sizeof(struct trie_states));
     }
     (th->trie_states+th->used_states)->is_final = 0;
 }
@@ -139,7 +140,7 @@ unsigned int trie_hashf(unsigned int source, char *insym, char *outsym) {
     /* Hash based on insym, outsym, and sourcestate */
     register unsigned int hash;
     hash = 0;
-    
+
     while (*insym != '\0') {
         hash = hash * 101  +  *insym++;
     }

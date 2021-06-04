@@ -76,14 +76,14 @@ int yyerror(YYLTYPE* yylloc, yyscan_t scanner, struct defined_networks *defined_
 struct fsm *fsm_parse_regex(char *regex, struct defined_networks *defined_nets, struct defined_functions *defined_funcs) {
     char *newregex;
     current_parse = NULL;
-    newregex = xxmalloc(sizeof(char)*(strlen(regex)+2));
+    newregex = malloc(sizeof(char)*(strlen(regex)+2));
     strcpy(newregex, regex);
     strcat(newregex, ";");
     if (my_yyparse(newregex, 1, defined_nets, defined_funcs) == 0) {
-	xxfree(newregex);
+	free(newregex);
 	return(fsm_minimize(current_parse));
     } else {
-	xxfree(newregex);
+	free(newregex);
 	return(NULL);
     }
 }
@@ -92,10 +92,10 @@ struct fsm *fsm_parse_regex(char *regex, struct defined_networks *defined_nets, 
 struct fsm *fsm_parse_regex_string(char *regex) {
     current_parse = NULL;
     if (my_yyparse(regex,1,g_defines,g_defines_f) == 0) {
-	xxfree(regex);
+	free(regex);
 	return(fsm_minimize(current_parse));
     } else {
-	xxfree(regex);
+	free(regex);
 	return(NULL);
     }
 }
@@ -166,7 +166,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 ([\100]["][^"]+[\042]) {
     tempstr = xxstrndup(yytext+2,yyleng-3);
     yylval_param->net = fsm_read_binary_file(tempstr);
-    xxfree(tempstr);
+    free(tempstr);
     if (yylval_param->net != NULL) {
 	return NET;
     }
@@ -176,12 +176,12 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 ([\100]re["][^"]+[\042]) {
     tempstr = xxstrndup(yytext+4,yyleng-5);
     tempstr2 = file_to_mem(tempstr);
-    xxfree(tempstr);
+    free(tempstr);
     if (tempstr2 != NULL) {
 	yylval_param->net = fsm_parse_regex_string(tempstr2);
 	if (yylval_param->net != NULL) {
 	    return NET;
-	}  
+	}
     }
 }
 
@@ -189,7 +189,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 ([\100]txt["][^"]+[\042]) {
     tempstr = xxstrndup(yytext+5,yyleng-6);
     yylval_param->net = fsm_read_text_file(tempstr);
-    xxfree(tempstr);
+    free(tempstr);
     if (yylval_param->net != NULL) {
 	return NET;
     }
@@ -199,30 +199,30 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 ([\100]stxt["][^"]+[\042]) {
     tempstr = xxstrndup(yytext+6,yyleng-7);
     yylval_param->net = fsm_read_spaced_text_file(tempstr);
-    xxfree(tempstr);
+    free(tempstr);
     if (yylval_param->net != NULL) {
 	return NET;
     }
 }
 
 (\^[0-9]+) {
-    //yylval_param->string = xxstrdup(yytext+1);
+    //yylval_param->string = strdup(yytext+1);
     yylval_param->string = yytext+1;
     return NCONCAT;
 }
 
 (\^\{[0-9]+[ ]*,[ ]*[0-9]+\}) {
-    //yylval_param->string = xxstrdup(yytext+2);
+    //yylval_param->string = strdup(yytext+2);
     yylval_param->string = yytext+2;
     return MNCONCAT;
 }
 (\^\>[0-9]+) {
     yylval_param->string = yytext+2;
-//  yylval_param->string = xxstrdup(yytext+2);
+//  yylval_param->string = strdup(yytext+2);
     return MORENCONCAT;
 }
 (\^\<[0-9]+) {
-    //  yylval_param->string = xxstrdup(yytext+2);
+    //  yylval_param->string = strdup(yytext+2);
     yylval_param->string = yytext+2;
     return LESSNCONCAT;
 }
@@ -235,7 +235,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 [\050][\342][\210][\200]/(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+[\051] {
     BEGIN(UQ);
 }
- 
+
  /* Start of existential quantifier */
 [\050][\342][\210][\203]/(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+[\051] {
     BEGIN(EQ);
@@ -245,7 +245,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 <UQ>(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+/[\051] {
  /* Add quantifier to quantifier symbol table */
 
- //yylval_param->string = xxstrdup(yytext);
+ //yylval_param->string = strdup(yytext);
     yylval_param->string = yytext;
     add_quantifier(yytext);
     BEGIN(ENDQ);
@@ -254,7 +254,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 
 <EQ>(([\000-\177]{-}[\051])|[\300-\337].|[\340-\357]..|[\360-\367]...)+/[\051] {
     /* Add quantifier to quantifier symbol table */
-    //yylval_param->string = xxstrdup(yytext);
+    //yylval_param->string = strdup(yytext);
     yylval_param->string = yytext;
     add_quantifier(yytext);
     BEGIN(ENDQ);
@@ -270,7 +270,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 
  /* Stuff that goes inside " ", including UTF8 \uHHHH sequences */
 <QTD>([\300-\337].|[\340-\357]..|[\360-\367]...|[\001-\041]|[\043-\177])+/[\042] {
-    decode_quoted(yytext);										  
+    decode_quoted(yytext);
     yylval_param->net = fsm_symbol(yytext);
     BEGIN(QTDEND);
     return NET;
@@ -292,14 +292,14 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 
  /* Sigma */
 [\316][\243] {
-  yylval_param->net = fsm_identity();  
+  yylval_param->net = fsm_identity();
   return NET;
 }
 
 (_S\() { return SUCCESSOR_OF; }
 
 (_isunambiguous\()   { return ISUNAMBIGUOUS;   }
-(_isidentity\()      { return ISIDENTITY;      } 
+(_isidentity\()      { return ISIDENTITY;      }
 (_isfunctional\()    { return ISFUNCTIONAL;    }
 (_notid\()           { return NOTID;           }
 (_lm\()              { return LETTERMACHINE;   }
@@ -322,7 +322,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 (_closeu\()          { return CLOSESIGMAUNK;   }
 
 ({NONRESERVED}+\() {
-   yylval_param->string = xxstrdup(yytext);
+   yylval_param->string = strdup(yytext);
    //yylval_param->string = yytext;
    return FUNCTION;
 }
@@ -334,10 +334,10 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   if ((strncmp(yytext,"=",1) == 0) && (count_quantifiers() > 0)) {
    int i;
    /* Copy yytext because unput() trashes yytext */
-   char *yycopy = xxstrdup(yytext);
+   char *yycopy = strdup(yytext);
    for ( i = yyleng - 1; i > 0; --i )
      unput( yycopy[i] );
-   xxfree(yycopy);
+   free(yycopy);
    return EQUALS;
   }
 
@@ -354,11 +354,11 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
   }
   *(yytext+j) = *(yytext+i);
   if (substituting) {
-    yylval_param->string = xxstrdup(yytext);
+    yylval_param->string = strdup(yytext);
     //yylval_param->string = yytext;
     return SUBVAL;
   }
-  //  yylval_param->string = xxstrdup(yytext);
+  //  yylval_param->string = strdup(yytext);
   yylval_param->string = yytext;
   if(find_defined(yyextra->defined_nets, yytext) != NULL) {
     yylval_param->net = fsm_copy(find_defined(yyextra->defined_nets, yytext));
@@ -449,7 +449,7 @@ BRACED      [{]([^}]|[\300-\337].|[\340-\357]..|[\360-\367]...)+[}]
 [\342][\211][\240] {         return NEQ;                 }
 (\() {                       return LPAREN;              }
 (\)) {                       return RPAREN;              }
-(;m) {                       return ENDM;                } 
+(;m) {                       return ENDM;                }
 (;d) {                       return ENDD;                }
 (;)  {                       return END;                 }
 (\||[\342][\210][\250]|[\342][\210][\252]) { return UNION;     }

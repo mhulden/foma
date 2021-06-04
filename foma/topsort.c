@@ -46,14 +46,14 @@ struct fsm *fsm_topsort (struct fsm *net) {
     fsm_count(net);
 
     fsm = net->states;
-    
-    statemap = xxmalloc(sizeof(int)*net->statecount);
-    order = xxmalloc(sizeof(int)*net->statecount);
-    pathcount = xxmalloc(sizeof(long long)*net->statecount);
-    newnum = xxmalloc(sizeof(int)*net->statecount);
-    invcount = xxmalloc(sizeof(unsigned short int)*net->statecount);
-    treated =  xxmalloc(sizeof(unsigned char)*net->statecount);
-   
+
+    statemap = malloc(sizeof(int)*net->statecount);
+    order = malloc(sizeof(int)*net->statecount);
+    pathcount = malloc(sizeof(long long)*net->statecount);
+    newnum = malloc(sizeof(int)*net->statecount);
+    invcount = malloc(sizeof(unsigned short int)*net->statecount);
+    treated =  malloc(sizeof(unsigned char)*net->statecount);
+
     for (i=0; i < net->statecount; i++) {
 	*(statemap+i) = -1;
 	*(invcount+i) = 0;
@@ -62,7 +62,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
 	*(pathcount+i) = 0;
     }
 
-    for (i=0, lc=0; (fsm+i)->state_no != -1; i++) {        
+    for (i=0, lc=0; (fsm+i)->state_no != -1; i++) {
         lc++;
         if ((fsm+i)->target != -1) {
             (*(invcount+(fsm+i)->target))++;
@@ -82,7 +82,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
     int_stack_clear();
     int_stack_push(0);
     grand_pathcount = 0;
-    
+
     *(pathcount+0) = 1;
 
     overflow = 0;
@@ -98,7 +98,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
         while (curr_fsm->state_no == curr_state) {
             if (curr_fsm->target != -1 ) {
                 (*(invcount+(curr_fsm->target)))--;
-                
+
                 /* Check if we overflow the path counter */
 
                 if (!overflow) {
@@ -107,7 +107,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
                         overflow = 1;
                     }
                 }
-                
+
                 /* Case (1) for cyclic */
                 if (*(treated+(curr_fsm)->target) == 1) {
                     net->pathcount = PATHCOUNT_CYCLIC;
@@ -119,7 +119,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
                 }
             }
             curr_fsm++;
-        }       
+        }
     }
 
     /* Case (2) */
@@ -129,27 +129,27 @@ struct fsm *fsm_topsort (struct fsm *net) {
         goto cyclic;
     }
 
-    new_fsm = xxmalloc(sizeof(struct fsm_state) * (lc+1));
+    new_fsm = malloc(sizeof(struct fsm_state) * (lc+1));
     for (i=0, j=0 ; i < net->statecount; i++) {
 
         curr_state = *(order+i);
         curr_fsm = fsm+*(statemap+curr_state);
-        
+
         if (curr_fsm->final_state == 1 && !overflow) {
             grand_pathcount += *(pathcount + curr_state);
             if (grand_pathcount < 0)
-                overflow = 1;           
+                overflow = 1;
         }
-            
+
         for (; curr_fsm->state_no == curr_state; curr_fsm++) {
-                        
+
             newstate = curr_fsm->state_no  == -1 ? -1 : *(newnum+(curr_fsm->state_no));
             newtarget = curr_fsm->target == -1 ? -1 : *(newnum+(curr_fsm->target));
             add_fsm_arc(new_fsm, j, newstate, curr_fsm->in, curr_fsm->out, newtarget, curr_fsm->final_state, curr_fsm->start_state);
             j++;
         }
     }
-    
+
     add_fsm_arc(new_fsm, j, -1, -1, -1, -1, -1, -1);
     net->states = new_fsm;
     net->pathcount = grand_pathcount;
@@ -157,16 +157,16 @@ struct fsm *fsm_topsort (struct fsm *net) {
     if (overflow == 1) {
         net->pathcount = PATHCOUNT_OVERFLOW;
     }
-    xxfree(fsm);
+    free(fsm);
 
  cyclic:
 
-    xxfree(statemap);
-    xxfree(order);
-    xxfree(pathcount);
-    xxfree(newnum);
-    xxfree(invcount);
-    xxfree(treated);
+    free(statemap);
+    free(order);
+    free(pathcount);
+    free(newnum);
+    free(invcount);
+    free(treated);
     int_stack_clear();
     return(net);
 }

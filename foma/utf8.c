@@ -71,15 +71,15 @@ char *escape_string(char *string, char chr) {
         }
     }
     if (j>0) {
-        newstring = xxcalloc((strlen(string)+j),sizeof(char));
+        newstring = calloc((strlen(string)+j),sizeof(char));
         for (i=0,j=0; i<strlen(string); i++, j++) {
             if (string[i] == chr) {
                 newstring[j++] = '\\';
                 newstring[j] = chr;
             } else {
                 newstring[j] = string[i];
-            }            
-        }        
+            }
+        }
         return(newstring);
     } else {
         return(string);
@@ -94,7 +94,7 @@ void strip_newline(char *s) {
     for (i = 0; i < len; i++ ) {
         if (s[i] == '\n' ) {
             s[i] = '\0';
-            return;   
+            return;
         }
     }
 }
@@ -109,7 +109,7 @@ void dequote_string(char *s) {
         }
         *(s+j) = '\0';
         decode_quoted(s);
-    }    
+    }
 }
 
 /* Decode quoted strings. This includes: */
@@ -118,7 +118,7 @@ void dequote_string(char *s) {
 void decode_quoted(char *s) {
     int len, i, j, skip;
     unsigned char *unistr;
-    
+
     len = strlen(s);
     for (i=0, j=0; i < len; ) {
         if (*(s+i) == 0x5c && len-i > 5 && *(s+i+1) == 0x75 && ishexstr(s+i+2)) {
@@ -229,7 +229,7 @@ unsigned char *utf8code16tostr(char *str) {
 
 unsigned char *int2utf8str(int codepoint) {
   unsigned char *value;
-  value = xxmalloc(sizeof(unsigned char)*5);
+  value = malloc(sizeof(unsigned char)*5);
 
   if (codepoint < 0x80) {
     *(value) = (unsigned char)(codepoint);
@@ -255,16 +255,16 @@ int hexstrtoint(char *str) {
   int hex;
 
   if (*str > 0x60) {
-    hex = (*str - 0x57) << 4; 
+    hex = (*str - 0x57) << 4;
   } else if (*str > 0x40) {
-    hex = (*str - 0x37) << 4; 
+    hex = (*str - 0x37) << 4;
   } else {
     hex = (*str - 0x30) << 4;
   }
   if (*(str+1) > 0x60) {
-    hex += (*(str+1) - 0x57); 
+    hex += (*(str+1) - 0x57);
   } else if (*(str+1) > 0x40) {
-    hex += (*(str+1) - 0x37); 
+    hex += (*(str+1) - 0x37);
   } else {
     hex += (*(str+1) - 0x30);
   }

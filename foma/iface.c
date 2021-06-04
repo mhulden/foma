@@ -90,7 +90,7 @@ struct g_v {
 };
 
 char warranty[] = "\nLicensed under the Apache License, Version 2.0 (the \"License\")\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\n";
- 
+
 struct global_help {
     char *name;
     char *help;
@@ -156,7 +156,7 @@ struct global_help {
     {"print upper-words","prints words on the upper side of top FSM","Short form: upper-words"},
     {"print upper-words > filename","prints words on the upper side of top FSM to file","Short form:upper-words"},
     {"print words","prints words of top FSM","Short form: words"},
-    {"print words > filename","prints words of top FSM to file","Short form: words"},    
+    {"print words > filename","prints words of top FSM to file","Short form: words"},
     {"prune net","makes top network coaccessible",""},
     {"push (defined) <name>","adds a defined FSM to top of stack",""},
     {"quit","exit foma",""},
@@ -323,7 +323,7 @@ void iface_apropos(char *s) {
 
 void iface_help_search(char *s) {
     struct global_help *gh;
-    
+
     for (gh = global_help; gh->name != NULL; gh++) {
         if (strstr(gh->name,s) != NULL || strstr(gh->help,s) != NULL) {
             printf("##\n");
@@ -391,7 +391,7 @@ int iface_apply_file(char *infilename, char *outfilename, int direction) {
         perror("Error opening file");
         return 1;
     }
-    
+
     if (outfilename == NULL) {
         OUTFILE = stdout;
     } else {
@@ -415,7 +415,7 @@ int iface_apply_file(char *infilename, char *outfilename, int direction) {
             result = apply_down(ah,inword);
         else
             result = apply_up(ah,inword);
-        
+
         if (result == NULL) {
             fprintf(OUTFILE,"???\n");
             continue;
@@ -426,9 +426,9 @@ int iface_apply_file(char *infilename, char *outfilename, int direction) {
             if (direction == AP_D)
                 result = apply_down(ah,NULL);
             if (direction == AP_U)
-                result = apply_up(ah,NULL);            
+                result = apply_up(ah,NULL);
             if (result == NULL)
-                break;            
+                break;
             fprintf(OUTFILE,"%s\n", result);
         }
     }
@@ -464,12 +464,12 @@ void iface_apply_down(char *word) {
 void iface_apply_up(char *word) {
     int i;
     char *result;
-    struct apply_handle *ah; 
+    struct apply_handle *ah;
     if (!iface_stack_check(1)) {
         return;
     }
     ah = stack_get_ah();
-    
+
     iface_apply_set_params(ah);
     result = apply_up(ah, word);
 
@@ -495,7 +495,7 @@ void iface_close() {
 
 void iface_compact() {
     if (iface_stack_check(1)) {
-        fsm_compact(stack_find_top()->fsm); 
+        fsm_compact(stack_find_top()->fsm);
 	sigma_sort(stack_find_top()->fsm);
         stack_add(fsm_topsort(fsm_minimize(stack_pop())));
     }
@@ -534,7 +534,7 @@ void iface_crossproduct() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
 	one = stack_pop();
-	two = stack_pop();         
+	two = stack_pop();
         stack_add(fsm_topsort(fsm_minimize(fsm_cross_product(one,two))));
     }
 }
@@ -583,14 +583,14 @@ void iface_ignore() {
     struct fsm *one, *two;
     if (iface_stack_check(2)) {
 	one = stack_pop();
-	two = stack_pop();         
+	two = stack_pop();
         stack_add(fsm_topsort(fsm_minimize(fsm_ignore(one,two,OP_IGNORE_ALL))));
     }
 }
 
 void iface_intersect() {
     if (iface_stack_check(2)) {
-        while (stack_size()>1) 
+        while (stack_size()>1)
             stack_add(fsm_topsort(fsm_minimize(fsm_intersect(stack_pop(),stack_pop()))));
     }
 }
@@ -655,7 +655,7 @@ void iface_pop() {
     else {
         net = stack_pop();
 	fsm_destroy(net);
-    }        
+    }
 }
 
 void iface_lower_words(int limit) {
@@ -681,7 +681,7 @@ void iface_lower_words(int limit) {
 
 void iface_name_net(char *name) {
     if (iface_stack_check(1)) {
-        strncpy(stack_find_top()->fsm->name, name, 40); 
+        strncpy(stack_find_top()->fsm->name, name, 40);
         iface_print_name();
     }
 }
@@ -723,14 +723,14 @@ void iface_print_cmatrix_att(char *filename) {
             printf("No confusion matrix defined.\n");
         } else {
             if (filename == NULL) {
-                outfile = stdout;            
+                outfile = stdout;
             } else {
                 outfile = fopen(filename,"w");
                 printf("Writing confusion matrix to file '%s'.\n", filename);
-            }        
+            }
             cmatrix_print_att(stack_find_top()->fsm, outfile);
         }
-    }    
+    }
 }
 
 void iface_print_cmatrix() {
@@ -740,7 +740,7 @@ void iface_print_cmatrix() {
         } else {
             cmatrix_print(stack_find_top()->fsm);
         }
-    }    
+    }
 }
 
 void iface_print_defined() {
@@ -801,7 +801,7 @@ void iface_apply_random(char *(*applyer)(), int limit) {
 
     limit = (limit == -1) ? g_list_random_limit : limit;
     if (iface_stack_check(1)) {
-	results = xxcalloc(limit, sizeof(struct apply_results));
+	results = calloc(limit, sizeof(struct apply_results));
 	ah = stack_get_ah();
 	iface_apply_set_params(ah);
         for (i = limit; i > 0; i--) {
@@ -824,10 +824,10 @@ void iface_apply_random(char *(*applyer)(), int limit) {
 	for (tempresults = results; tempresults - results < limit; tempresults++) {
 	    if (tempresults->string != NULL) {
 		printf("[%i] %s\n", tempresults->count, tempresults->string);
-		xxfree(tempresults->string);
+		free(tempresults->string);
 	    }
 	}
-	xxfree(results);
+	free(results);
 	apply_reset_enumerator(ah);
     }
 }
@@ -849,7 +849,7 @@ void iface_print_shortest_string() {
     if (iface_stack_check(1)) {
         one = fsm_copy(stack_find_top()->fsm);
         /* L -  ?+  [[L .o. [?:"@TMP@"]*].l .o. "@TMP@":?*].l; */
-        if (stack_find_top()->fsm->arity == 1) {           
+        if (stack_find_top()->fsm->arity == 1) {
             Result = fsm_minimize(fsm_minus(fsm_copy(one),fsm_concat(fsm_kleene_plus(fsm_identity()),fsm_lower(fsm_compose(fsm_lower(fsm_compose(fsm_copy(one),fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("@TMP@"))))),fsm_kleene_star(fsm_cross_product(fsm_symbol("@TMP@"),fsm_identity())))))));
             ah = apply_init(Result);
             word = apply_words(ah);
@@ -894,7 +894,7 @@ void iface_print_shortest_string_size() {
             ResultU = fsm_minimize(fsm_lower(fsm_compose(oneu,fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("a"))))));
             ResultL = fsm_minimize(fsm_lower(fsm_compose(onel,fsm_kleene_star(fsm_cross_product(fsm_identity(),fsm_symbol("a"))))));
             printf("Shortest acyclic upper path length: %i\n",(ResultU->statecount)-1);
-            printf("Shortest acyclic lower path length: %i\n",(ResultL->statecount)-1);            
+            printf("Shortest acyclic lower path length: %i\n",(ResultL->statecount)-1);
         }
     }
 }
@@ -910,7 +910,7 @@ int iface_read_att(char *filename) {
     } else {
         stack_add(tempnet);
         return 0;
-    }   
+    }
 }
 
 int iface_read_prolog(char *filename) {
@@ -1063,7 +1063,7 @@ void iface_show_variable(char *name) {
             return;
         }
     }
-    printf("*There is no global variable '%s'.\n",name);    
+    printf("*There is no global variable '%s'.\n",name);
 }
 
 void iface_set_variable(char *name, char *value) {
@@ -1085,7 +1085,7 @@ void iface_set_variable(char *name, char *value) {
                 return;
             }
             if (global_vars[i].type == FVAR_STRING) {
-                *((char **)(global_vars[i].ptr)) = xxstrdup(value);
+                *((char **)(global_vars[i].ptr)) = strdup(value);
                 printf("variable %s = %s\n",global_vars[i].name, value);
                 return;
             }
@@ -1144,7 +1144,7 @@ void iface_test_equivalent() {
         two = fsm_copy(stack_find_second()->fsm);
 	fsm_count(one);
 	fsm_count(two);
-	
+
 	//if (one->arccount != two->arccount || one->statecount != two->statecount || one->finalcount != two->finalcount) {
 	//iface_print_bool(0);
 	    //} else {
@@ -1259,7 +1259,7 @@ void iface_words_file(char *filename, int type) {
         }
         apply_reset_enumerator(ah);
 	fclose(outfile);
-    }   
+    }
 }
 
 void iface_words(int limit) {
@@ -1337,25 +1337,25 @@ void iface_pairs_call(int limit, int random) {
     if (iface_stack_check(1)) {
         ah = stack_get_ah();
 	apply_set_show_flags(ah, g_show_flags);
-	apply_set_obey_flags(ah, g_obey_flags);	
+	apply_set_obey_flags(ah, g_obey_flags);
 	apply_set_space_symbol(ah, "\001");
 	apply_set_epsilon(ah, "\002");
 	apply_set_separator(ah, "\003");
         for (i = limit; i > 0; i--) {
-	    if (random == 1)		
+	    if (random == 1)
 		result = apply_random_words(ah);
 	    else
-		result = apply_words(ah);		
+		result = apply_words(ah);
             if (result == NULL)
                 break;
 	    iface_split_result(result, &upper, &lower);
             printf("%s\t%s\n",upper, lower);
-	    xxfree(upper);
-	    xxfree(lower);
+	    free(upper);
+	    free(lower);
         }
 	apply_set_space_symbol(ah, " ");
 	apply_set_epsilon(ah, "0");
-	apply_set_separator(ah, ":");	
+	apply_set_separator(ah, ":");
         apply_reset_enumerator(ah);
     }
 }
@@ -1384,22 +1384,22 @@ void iface_pairs_file(char *filename) {
 	}
 	ah = stack_get_ah();
 	apply_set_show_flags(ah, g_show_flags);
-	apply_set_obey_flags(ah, g_obey_flags);	
+	apply_set_obey_flags(ah, g_obey_flags);
 	apply_set_space_symbol(ah, "\001");
 	apply_set_epsilon(ah, "\002");
 	apply_set_separator(ah, "\003");
         for (;;) {
-	    result = apply_words(ah);		
+	    result = apply_words(ah);
             if (result == NULL)
                 break;
 	    iface_split_result(result, &upper, &lower);
 	    fprintf(outfile, "%s\t%s\n", upper, lower);
-	    xxfree(upper);
-	    xxfree(lower);
+	    free(upper);
+	    free(lower);
         }
 	apply_set_space_symbol(ah, " ");
 	apply_set_epsilon(ah, "0");
-	apply_set_separator(ah, ":");	
+	apply_set_separator(ah, ":");
         apply_reset_enumerator(ah);
 	fclose(outfile);
     }
@@ -1430,7 +1430,7 @@ int iface_write_att(char *filename) {
 }
 
 void iface_write_prolog(char *filename) {
-  if (iface_stack_check(1))       
+  if (iface_stack_check(1))
     foma_write_prolog(stack_find_top()->fsm, filename);
 }
 
@@ -1461,7 +1461,7 @@ static char *sigptr(struct sigma *sigma, int number) {
             return (sigma->symbol);
         }
     }
-    mystr = xxmalloc(sizeof(char)*40);
+    mystr = malloc(sizeof(char)*40);
     snprintf(mystr, 40, "NONE(%i)",number);
     return(mystr);
 }
@@ -1481,7 +1481,7 @@ static int print_net(struct fsm *net, char *filename) {
       printf("Writing network to file %s.\n", filename);
   }
   fsm_count(net);
-  finals = xxmalloc(sizeof(int)*(net->statecount));
+  finals = malloc(sizeof(int)*(net->statecount));
   stateptr = net->states;
 
   for (i=0; (stateptr+i)->state_no != -1; i++) {
@@ -1508,10 +1508,10 @@ static int print_net(struct fsm *net, char *filename) {
   fprintf(out,"Arity: %i\n", net->arity);
   for (; stateptr->state_no != -1; stateptr++) {
     if (stateptr->state_no != previous_state) {
-      if (stateptr->start_state) { 
+      if (stateptr->start_state) {
           fprintf(out,"S");
       }
-      if (stateptr->final_state) { 
+      if (stateptr->final_state) {
           fprintf(out,"f");
       }
       if (stateptr->in==-1) {
@@ -1547,7 +1547,7 @@ static int print_net(struct fsm *net, char *filename) {
   if (filename != NULL) {
       fclose(out);
   }
-  xxfree(finals);
+  free(finals);
   return 0;
 }
 
@@ -1570,7 +1570,7 @@ void print_mem_size(struct fsm *net) {
     } else if (s >= 1048576 && s < 1073741824) {
         sprintf(size, "%.1f MB. ", sf/1048576);
     } else if (s >= 1073741824) {
-        sprintf(size, "%.1f GB. ", sf/1073741824);        
+        sprintf(size, "%.1f GB. ", sf/1073741824);
     }
     fprintf(stdout, "%s", size);
     fflush(stdout);
@@ -1619,12 +1619,12 @@ static int print_dot(struct fsm *net, char *filename) {
     FILE *dotfile;
     int i, j, linelen;
     short *finals, *printed;
-    
+
     fsm_count(net);
-    
-    finals = xxmalloc(sizeof(short)*net->statecount);
+
+    finals = malloc(sizeof(short)*net->statecount);
     stateptr = net->states;
-    
+
     for (i=0; (stateptr+i)->state_no != -1; i++) {
         if ((stateptr+i)->final_state == 1) {
             *(finals+((stateptr+i)->state_no)) = 1;
@@ -1632,7 +1632,7 @@ static int print_dot(struct fsm *net, char *filename) {
             *(finals+((stateptr+i)->state_no)) = 0;
         }
     }
-    
+
     if (filename != NULL) {
         dotfile = fopen(filename,"w");
     } else {
@@ -1649,9 +1649,9 @@ static int print_dot(struct fsm *net, char *filename) {
     }
   }
 
-  printed = xxcalloc(net->linecount,sizeof(printed));
-  /* Go through arcs */  
-  for (i=0; (stateptr+i)->state_no != -1; i++) {      
+  printed = calloc(net->linecount,sizeof(printed));
+  /* Go through arcs */
+  for (i=0; (stateptr+i)->state_no != -1; i++) {
       if ((stateptr+i)->target == -1 || printed[i] == 1)
           continue;
       fprintf(dotfile,"%i -> %i [label=\"", (stateptr+i)->state_no, (stateptr+i)->target);
@@ -1675,12 +1675,12 @@ static int print_dot(struct fsm *net, char *filename) {
               }
           }
       }
-      fprintf(dotfile,"\"];\n");  
+      fprintf(dotfile,"\"];\n");
   }
 
-  
-  xxfree(finals);
-  xxfree(printed);
+
+  free(finals);
+  free(printed);
   fprintf(dotfile, "}\n");
   if (filename != NULL)
       fclose(dotfile);
@@ -1697,28 +1697,28 @@ static int view_net(struct fsm *net) {
 
   dotname = strncpy(tmpstr,tempnam(NULL,"foma"), 250);
   strcat(dotname, ".dot");
-  dotname = xxstrdup(tmpstr);
+  dotname = strdup(tmpstr);
   print_dot(net, dotname);
 
 #ifdef __APPLE__
   sprintf(tmpstr,"/usr/bin/open -a Graphviz %s &",dotname);
   if (system(tmpstr) == -1)
       printf("Error opening viewer.\n");
-  
+
 #endif /* __APPLE__ */
 
 #ifndef __APPLE__
-  pngname = xxstrdup(tempnam(NULL, "foma"));
+  pngname = strdup(tempnam(NULL, "foma"));
   sprintf(tmpstr,"dot -Tpng %s > %s ",dotname,pngname);
   if (system(tmpstr) == -1)
       printf("Error writing tempfile.\n");
   sprintf(tmpstr,"/usr/bin/xdg-open %s 2>/dev/null &",pngname);
   if (system(tmpstr) == -1)
       printf("Error opening viewer.\n");
-  xxfree(pngname);
+  free(pngname);
 #endif /* __APPLE__ */
 
-  xxfree(dotname);
-  
+  free(dotname);
+
   return(1);
 }
