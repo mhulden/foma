@@ -37,7 +37,7 @@ struct fsm *fsm_lower(struct fsm *net) {
         }
     }
     fsm_state_end_state();
-    xxfree(net->states);
+    free(net->states);
     fsm_state_close(net);
     fsm_update_flags(net,NO,NO,NO,UNK,UNK,UNK);
     sigma_cleanup(net,0);
@@ -63,7 +63,7 @@ struct fsm *fsm_upper(struct fsm *net) {
         }
     }
     fsm_state_end_state();
-    xxfree(net->states);
+    free(net->states);
     fsm_state_close(net);
     fsm_update_flags(net,NO,NO,NO,UNK,UNK,UNK);
     sigma_cleanup(net,0);

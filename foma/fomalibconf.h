@@ -77,9 +77,9 @@ struct apply_med_handle {
     uint8_t *nletterbits;
     int astarcount;
     int heapcount;
-    int heap_size;  
+    int heap_size;
     int agenda_size;
-    int maxdepth; 
+    int maxdepth;
     int maxsigma;
     int wordlen;
     int utf8len;
@@ -114,13 +114,13 @@ struct apply_med_handle {
 struct apply_handle {
 
     int ptr;
-    int curr_ptr; 
+    int curr_ptr;
     int ipos;
     int opos;
     int mode;
     int printcount;
     int *numlines;
-    int *statemap; 
+    int *statemap;
     int *marks;
 
     struct sigma_trie {
@@ -153,7 +153,7 @@ struct apply_handle {
     char *epsilon_symbol;
     int print_pairs;
     int apply_stack_ptr;
-    int apply_stack_top; 
+    int apply_stack_top;
     int oldflagneg;
     int outstringtop;
     int iterate_old;
@@ -166,7 +166,7 @@ struct apply_handle {
 	int length;
     } *sigs;
     char *oldflagvalue;
-    
+
     struct fsm *last_net;
     struct fsm_state *gstates;
     struct sigma *gsigma;
@@ -179,7 +179,7 @@ struct apply_handle {
 	char *name;
 	char *value;
 	short neg;
-	struct flag_list *next;	
+	struct flag_list *next;
     } *flag_list;
 
     struct flag_lookup {
@@ -296,10 +296,5 @@ char *trim(char *string);
 void strip_newline(char *s);
 char *streqrep(char *s, char *oldstring, char *newstring);
 char *xxstrndup(const char *s, size_t n);
-char *xxstrdup(const char *s);
-FEXPORT void *xxmalloc(size_t size);
-void *xxcalloc(size_t nmemb, size_t size);
-void *xxrealloc(void *ptr, size_t size);
-void xxfree(void *ptr);
 int next_power_of_two(int v);
 unsigned int round_up_to_power_of_two(unsigned int v);

@@ -66,7 +66,7 @@ struct fsm *fsm_escape(char *symbol) {
 /* are single utf8 letters.                           */
 
 struct fsm *fsm_letter_machine(struct fsm *net) {
-   
+
     struct fsm *outnet;
     struct fsm_read_handle *inh;
     struct fsm_construct_handle *outh;
@@ -84,7 +84,7 @@ struct fsm *fsm_letter_machine(struct fsm *net) {
 	outnum = fsm_get_arc_num_out(inh);
 	source = fsm_get_arc_source(inh);
 	target = fsm_get_arc_target(inh);
-	
+
 	if (((innum > IDENTITY) && utf8strlen(in) > 1) || ((outnum > IDENTITY) && utf8strlen(out) > 1)) {
 	    inlen = innum <= IDENTITY ? 1 : utf8strlen(in);
 	    outlen = outnum <= IDENTITY ? 1 : utf8strlen(out);
@@ -95,7 +95,7 @@ struct fsm *fsm_letter_machine(struct fsm *net) {
 		if (innum <= IDENTITY || inlen < 1) {
 		    if (inlen < 1)
 			currin = "@_EPSILON_SYMBOL_@";
-		    else 
+		    else
 			currin = in;
 		} else {
 		    strncpy(tmpin, in, utf8skip(in)+1);
@@ -116,7 +116,7 @@ struct fsm *fsm_letter_machine(struct fsm *net) {
 		    out = out+utf8skip(out)+1;
 		    outlen--;
 		}
-		if (i == 0 && steps > 1) {		    
+		if (i == 0 && steps > 1) {
 		    target = addstate;
 		    addstate++;
 		}
@@ -154,13 +154,13 @@ struct fsm *fsm_explode(char *symbol) {
 
     h = fsm_construct_init("");
     fsm_construct_set_initial(h,0);
-    
+
     length = strlen(symbol)-2;
     for (i=1, j=1; i <= length; i += skip, j++) {
 	skip = utf8skip(symbol+i)+1;
 	tempstring = xxstrndup(((symbol+i)),skip);
 	fsm_construct_add_arc(h,j-1,j,tempstring,tempstring);
-	xxfree(tempstring);
+	free(tempstring);
     }
     fsm_construct_set_final(h, j-1);
     net = fsm_construct_done(h);
@@ -176,7 +176,7 @@ struct fsm *fsm_symbol(char *symbol) {
   if (strcmp(symbol,"@_EPSILON_SYMBOL_@")==0) {
     /* Epsilon */
     (void)sigma_add_special(EPSILON, net->sigma);
-    net->states = xxmalloc(sizeof(struct fsm_state)*2);
+    net->states = malloc(sizeof(struct fsm_state)*2);
     add_fsm_arc(net->states, 0, 0, -1,-1,-1,1,1);
     add_fsm_arc(net->states, 1, -1,-1,-1,-1,-1,-1);
     net->arccount = 0;
@@ -192,7 +192,7 @@ struct fsm *fsm_symbol(char *symbol) {
     } else {
       symbol_no = sigma_add(symbol,net->sigma);
     }
-    net->states = xxmalloc(sizeof(struct fsm_state)*3);
+    net->states = malloc(sizeof(struct fsm_state)*3);
     add_fsm_arc(net->states, 0, 0, symbol_no, symbol_no, 1, 0, 1);
     add_fsm_arc(net->states, 1, 1, -1, -1, -1, 1, 0);
     add_fsm_arc(net->states, 2, -1, -1, -1, -1, -1, -1);
@@ -253,12 +253,12 @@ struct state_arr *init_state_pointers(struct fsm_state *fsm_state) {
   int states, i, sold;
   sold = -1;
   states = fsm_count_states(fsm_state);
-  state_arr = xxmalloc(sizeof(struct state_arr)*(states+1));
+  state_arr = malloc(sizeof(struct state_arr)*(states+1));
   for (i=0; i<states; i++) {
     (state_arr+i)->final = 0;
     (state_arr+i)->start = 0;
   }
-  
+
   for (i=0; (fsm_state+i)->state_no != -1; i++) {
     if ((fsm_state+i)->final_state == 1)
       (state_arr+((fsm_state+i)->state_no))->final = 1;
@@ -268,7 +268,7 @@ struct state_arr *init_state_pointers(struct fsm_state *fsm_state) {
       (state_arr+((fsm_state+i)->state_no))->transitions = (fsm_state+i);
       sold = (fsm_state+i)->state_no;
     }
-  }  
+  }
   return(state_arr);
 }
 
@@ -292,10 +292,10 @@ struct triplethash {
 struct triplethash *triplet_hash_init() {
     struct triplethash *th;
     int i;
-    th = xxmalloc(sizeof(struct triplethash));
+    th = malloc(sizeof(struct triplethash));
     th->tablesize = 128;
     th->occupancy = 0;
-    th->triplets = xxmalloc(sizeof(struct triplethash_triplets) * th->tablesize);
+    th->triplets = malloc(sizeof(struct triplethash_triplets) * th->tablesize);
     for (i = 0; i < th->tablesize; i++) {
 	(th->triplets+i)->key = -1;
     }
@@ -309,10 +309,10 @@ unsigned int triplethash_hashf(int a, int b, int c) {
 void triplet_hash_free(struct triplethash *th) {
     if (th != NULL) {
 	if (th->triplets != NULL) {
-	    xxfree(th->triplets);
+	    free(th->triplets);
 	}
-	xxfree(th);
-    }    
+	free(th);
+    }
 }
 
 void triplet_hash_rehash(struct triplethash *th);
@@ -366,7 +366,7 @@ void triplet_hash_rehash(struct triplethash *th) {
     newtablesize = th->tablesize * 2;
     oldtablesize = th->tablesize;
     oldtriplets = th->triplets;
-    th->triplets = xxmalloc(sizeof(struct triplethash_triplets) * newtablesize);
+    th->triplets = malloc(sizeof(struct triplethash_triplets) * newtablesize);
     th->tablesize = newtablesize;
     for (i = 0; i < newtablesize; i++) {
 	(th->triplets+i)->key = -1;
@@ -376,7 +376,7 @@ void triplet_hash_rehash(struct triplethash *th) {
 	    triplet_hash_insert_with_key(th, (oldtriplets+i)->a, (oldtriplets+i)->b, (oldtriplets+i)->c, (oldtriplets+i)->key);
 	}
     }
-    xxfree(oldtriplets);
+    free(oldtriplets);
 }
 
 int triplet_hash_find(struct triplethash *th, int a, int b, int c) {
@@ -416,40 +416,40 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
     }
 
     fsm_merge_sigma(net1, net2);
-    
+
     fsm_update_flags(net1, YES, NO, UNK, YES, UNK, UNK);
-    
+
     machine_a = net1->states;
     machine_b = net2->states;
 
     sigma2size = sigma_max(net2->sigma)+1;
-    array = xxcalloc(sigma2size*sigma2size, sizeof(struct blookup));
+    array = calloc(sigma2size*sigma2size, sizeof(struct blookup));
     mainloop = 0;
 
     /* Intersect two networks by the running-in-parallel method */
     /* new state 0 = {0,0} */
-    
+
     STACK_2_PUSH(0,0);
-    
+
     th = triplet_hash_init();
     triplet_hash_insert(th, 0, 0, 0);
 
     fsm_state_init(sigma_max(net1->sigma));
-    
+
     point_a = init_state_pointers(machine_a);
     point_b = init_state_pointers(machine_b);
-    
+
     while (!int_stack_isempty()) {
-        
+
         /* Get a pair of states to examine */
-        
+
         a = int_stack_pop();
         b = int_stack_pop();
-        
+
 	current_state = triplet_hash_find(th, a, b, 0);
         current_start = (((point_a+a)->start == 1) && ((point_b+b)->start == 1)) ? 1 : 0;
         current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 1)) ? 1 : 0;
-        
+
         fsm_state_set_current_state(current_state, current_final, current_start);
 
         /* Create a lookup index for machine b */
@@ -462,7 +462,7 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
             if (machine_b->in < 0) continue;
             bptr = array+(machine_b->in*sigma2size)+machine_b->out;
             bptr->mainloop = mainloop;
-            bptr->target = machine_b->target;            
+            bptr->target = machine_b->target;
         }
 
         /* The main loop where we run the machines in parallel */
@@ -475,14 +475,14 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
 
             if (bptr->mainloop != mainloop)
                 continue;
-                
+
             if ((target_number = triplet_hash_find(th, machine_a->target, bptr->target, 0)) == -1) {
                 STACK_2_PUSH(bptr->target, machine_a->target);
-                target_number = triplet_hash_insert(th, machine_a->target, bptr->target, 0);		
+                target_number = triplet_hash_insert(th, machine_a->target, bptr->target, 0);
             }
-            
+
             fsm_state_add_arc(current_state, machine_a->in, machine_a->out, target_number, current_final, current_start);
-            
+
         }
         fsm_state_end_state();
     }
@@ -493,16 +493,16 @@ struct fsm *fsm_intersect(struct fsm *net1, struct fsm *net2) {
     fsm_destroy(net2);
     fsm_destroy(net1);
     fsm_state_close(new_net);
-    xxfree(point_a);
-    xxfree(point_b);
-    xxfree(array);
+    free(point_a);
+    free(point_b);
+    free(array);
     triplet_hash_free(th);
     return(fsm_coaccessible(new_net));
 }
 
 struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
 
-    
+
     /* The composition algorithm is the basic naive composition where we lazily      */
     /* take the cross-product of states P and Q and move to a new state with symbols */
     /* ain, bout if the symbols aout = bin.  Also, if aout = 0 state p goes to       */
@@ -560,7 +560,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
 	fsm_destroy(net2);
 	return(fsm_empty_set());
     }
-    
+
     /* If flag-is-epsilon is on, we need to add the flag symbols    */
     /* in both networks to each other's sigma so that UNKNOWN       */
     /* or IDENTITY symbols do not match these flags, since they are */
@@ -576,7 +576,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
         for (sig1 = net1->sigma; sig1 != NULL; sig1 = sig1->next) {
             if (flag_check(sig1->symbol)) {
                 flags1 = 1;
-                if (sigma_find(sig1->symbol, sig2) == -1) {                    
+                if (sigma_find(sig1->symbol, sig2) == -1) {
                     sigma_add(sig1->symbol, sig2);
                 }
             }
@@ -593,7 +593,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 }
             }
         }
-        sigma_sort(net2);        
+        sigma_sort(net2);
         sigma_sort(net1);
         if (flags1 && flags2) {
             printf("***Warning: flag-is-epsilon is ON and both networks contain flags in composition.  This may yield incorrect results.  Set flag-is-epsilon to OFF.\n");
@@ -605,7 +605,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     if (g_flag_is_epsilon) {
         /* Create lookup table for quickly checking if a symbol is a flag */
         struct sigma *sig1;
-        is_flag = xxmalloc(sizeof(_Bool)*(sigma_max(net1->sigma)+1));
+        is_flag = malloc(sizeof(_Bool)*(sigma_max(net1->sigma)+1));
         for (sig1 = net1->sigma; sig1 != NULL; sig1=sig1->next) {
             if (flag_check(sig1->symbol)) {
                 *(is_flag+(sig1->number)) = 1;
@@ -616,9 +616,9 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     }
 
     fsm_update_flags(net1, YES, NO, UNK, YES, UNK, UNK);
-    
+
     machine_a = net1->states;
-    machine_b = net2->states;    
+    machine_b = net2->states;
 
     max2sigma = sigma_max(net2->sigma);
 
@@ -630,8 +630,8 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     /* UNKNOWN and IDENTITY are indexed as UNKNOWN because we need to find both */
     /* as they share some semantics */
 
-    index = xxcalloc(max2sigma+1, sizeof(struct index));
-    outarray = xxcalloc((max2sigma+2)*(max2sigma+1), sizeof(struct outarray));
+    index = calloc(max2sigma+1, sizeof(struct index));
+    outarray = calloc((max2sigma+2)*(max2sigma+1), sizeof(struct outarray));
 
     for (i=0; i <= max2sigma; i++) {
         (index+i)->tail = outarray + ((max2sigma+2)*i);
@@ -645,24 +645,24 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
     triplet_hash_insert(th, 0, 0, 0);
 
     fsm_state_init(sigma_max(net1->sigma));
-    
+
     point_a = init_state_pointers(machine_a);
     point_b = init_state_pointers(machine_b);
-    
+
     mainloop = 0;
 
     while (!int_stack_isempty()) {
-        
+
         /* Get a pair of states to examine */
-        
+
         a = int_stack_pop();
         b = int_stack_pop();
         mode = int_stack_pop();
-        
+
 	current_state = triplet_hash_find(th, a,b,mode);
         current_start = (((point_a+a)->start == 1) && ((point_b+b)->start == 1) && (mode == 0)) ? 1 : 0;
         current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 1)) ? 1 : 0;
-        
+
         fsm_state_set_current_state(current_state, current_final, current_start);
 
         /* Create the index for machine b in this state */
@@ -698,19 +698,19 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
             iptr = outarray+(asearch*(max2sigma+2));
             currtail = (index+asearch)->tail + 1;
             for ( ; iptr != currtail && iptr->mainloop == mainloop ; iptr++) {
-                
+
                 ain = machine_a->in;
                 aout = machine_a->out;
                 bin = iptr->symin;
                 bout = iptr->symout;
-                
+
                 if (aout == IDENTITY && bin == UNKNOWN) {
                     ain = aout = UNKNOWN;
                 }
                 else if (aout == UNKNOWN && bin == IDENTITY) {
                     bin = bout = UNKNOWN;
                 }
-                
+
                 if (!g_compose_tristate) {
                     if (bin == aout && bin != -1 && bin != EPSILON) {
                         /* mode -> 0 */
@@ -718,7 +718,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                             STACK_3_PUSH(0, iptr->target, machine_a->target);
                             target_number = triplet_hash_insert(th, machine_a->target, iptr->target, 0);
                         }
-                        
+
                         fsm_state_add_arc(current_state, ain, bout, target_number, current_final, current_start);
                     }
                 }
@@ -730,16 +730,16 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                             STACK_3_PUSH(0, iptr->target, machine_a->target);
                             target_number = triplet_hash_insert(th, machine_a->target, iptr->target, 0);
                         }
-                        
+
                         fsm_state_add_arc(current_state, ain, bout, target_number, current_final, current_start);
                     }
                 }
-                                
+
             }
         }
-        
+
         /* Treat epsilon outputs on machine a (may include flags) */
-        for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a ; machine_a++) {            
+        for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a ; machine_a++) {
             aout = machine_a->out;
             if (aout != EPSILON && g_flag_is_epsilon == 0)
                 continue;
@@ -756,12 +756,12 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
             if (!g_compose_tristate) {
                 /* Check A:0 arcs on upper side */
                 if (aout == EPSILON && mode == 0) {
-                    /* mode -> 0 */        
+                    /* mode -> 0 */
                     if ((target_number = triplet_hash_find(th, machine_a->target, b, 0)) == -1) {
                         STACK_3_PUSH(0, b, machine_a->target);
-                        target_number = triplet_hash_insert(th, machine_a->target, b, 0);                    
+                        target_number = triplet_hash_insert(th, machine_a->target, b, 0);
                     }
-                    
+
                     fsm_state_add_arc(current_state, ain, EPSILON, target_number, current_final, current_start);
                 }
             }
@@ -771,14 +771,14 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                     /* mode -> 1 */
                     if ((target_number = triplet_hash_find(th, machine_a->target, b, 1)) == -1) {
                         STACK_3_PUSH(1, b, machine_a->target);
-                        target_number = triplet_hash_insert(th, machine_a->target, b, 1);                    
+                        target_number = triplet_hash_insert(th, machine_a->target, b, 1);
                     }
-                    
+
                     fsm_state_add_arc(current_state, ain, EPSILON, target_number, current_final, current_start);
-                    
+
                 }
             }
-            
+
         }
         /* Treat epsilon inputs on machine b (may include flags) */
         for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
@@ -787,7 +787,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 continue;
 
             bout = machine_b->out;
-            
+
             if (g_flag_is_epsilon && bin != -1 && *(is_flag+bin)) {
                 if ((target_number = triplet_hash_find(th, a, machine_b->target, 1)) == -1) {
                     STACK_3_PUSH(1, machine_b->target,a);
@@ -804,7 +804,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                         STACK_3_PUSH(1, machine_b->target,a);
                         target_number = triplet_hash_insert(th, a, machine_b->target, 1);
                     }
-                    
+
                     fsm_state_add_arc(current_state, EPSILON, bout, target_number, current_final, current_start);
                 }
             }
@@ -817,24 +817,24 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                         STACK_3_PUSH(2, machine_b->target, a);
                         target_number = triplet_hash_insert(th, a, machine_b->target, 2);
                     }
-                    
+
                     fsm_state_add_arc(current_state, EPSILON, bout, target_number, current_final, current_start);
                 }
             }
         }
         fsm_state_end_state();
     }
-    
-    xxfree(net1->states);
+
+    free(net1->states);
     fsm_destroy(net2);
     fsm_state_close(net1);
-    xxfree(point_a);
-    xxfree(point_b);
-    xxfree(index);
-    xxfree(outarray);
+    free(point_a);
+    free(point_b);
+    free(index);
+    free(outarray);
 
     if (g_flag_is_epsilon)
-        xxfree(is_flag);
+        free(is_flag);
     triplet_hash_free(th);
     net1 = fsm_topsort(fsm_coaccessible(net1));
     return(fsm_coaccessible(net1));
@@ -846,7 +846,7 @@ struct mergesigma *add_to_mergesigma(struct mergesigma *msigma, struct sigma *si
   if (msigma->number == -1) {
     number = 2;
   } else {
-    msigma->next = xxmalloc(sizeof(struct mergesigma));
+    msigma->next = malloc(sizeof(struct mergesigma));
     number = msigma->number;
     msigma = msigma->next;
     msigma->next = NULL;
@@ -866,22 +866,22 @@ struct mergesigma *add_to_mergesigma(struct mergesigma *msigma, struct sigma *si
 
 struct sigma *copy_mergesigma(struct mergesigma *mergesigma) {
     struct sigma *sigma, *new_sigma;
-    
+
     sigma = new_sigma = NULL;
     while(mergesigma != NULL) {
 	if (sigma == NULL) {
-	    sigma = xxmalloc(sizeof(struct sigma));
+	    sigma = malloc(sizeof(struct sigma));
 	    new_sigma = sigma;
 	} else {
-	    sigma->next = xxmalloc(sizeof(struct sigma));
+	    sigma->next = malloc(sizeof(struct sigma));
 	    sigma = sigma->next;
 	}
 	sigma->next = NULL;
 	sigma->number = mergesigma->number;
-	
+
 	sigma->symbol = NULL;
 	if (mergesigma->symbol != NULL)
-	    sigma->symbol = xxstrdup(mergesigma->symbol);
+	    sigma->symbol = strdup(mergesigma->symbol);
 	mergesigma = mergesigma->next;
     }
     return(new_sigma);
@@ -912,12 +912,12 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
 
   sigmasizes = sigma_max(sigma_1) + sigma_max(sigma_2) + 3;
 
-  mapping_1 = xxmalloc(sizeof(int)*sigmasizes);
-  mapping_2 = xxmalloc(sizeof(int)*sigmasizes);
+  mapping_1 = malloc(sizeof(int)*sigmasizes);
+  mapping_2 = malloc(sizeof(int)*sigmasizes);
 
   /* Fill mergesigma */
 
-  mergesigma = xxmalloc(sizeof(struct mergesigma));
+  mergesigma = malloc(sizeof(struct mergesigma));
   mergesigma->number = -1;
   mergesigma->symbol = NULL;
   mergesigma->next = NULL;
@@ -956,7 +956,7 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
       if ((sigma_1->number <= IDENTITY) || (sigma_2->number <= IDENTITY)) {
 
 	/* Treating zeros or unknowns */
-	
+
 	if ((sigma_1->number == UNKNOWN) || (sigma_1->number == IDENTITY))
 	  unknown_1 = 1;
 	if ((sigma_2->number == UNKNOWN) || (sigma_2->number == IDENTITY))
@@ -1002,11 +1002,11 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
 	equal = 0;
       }
       continue;
-    }    
+    }
   }
-  
+
   /* Go over both net1 and net2 and replace arc numbers with new mappings */
-  
+
   fsm_state = net1->states;
   for (i=0; (fsm_state+i)->state_no != -1; i++) {
     if ((fsm_state+i)->in > 2)
@@ -1023,10 +1023,10 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
   }
 
   /* Copy mergesigma to net1, net2 */
-  
+
   new_sigma_1 = copy_mergesigma(start_mergesigma);
   new_sigma_2 = copy_mergesigma(start_mergesigma);
-  
+
   fsm_sigma_destroy(net1->sigma);
   fsm_sigma_destroy(net2->sigma);
 
@@ -1055,9 +1055,9 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
 	net_adds += net_unk*net_unk - net_unk + 2*net_unk;
     }
 
-    new_1_state = xxmalloc(sizeof(struct fsm_state)*(net_adds+net_lines+1));
-    for(i=0,j=0; (fsm_state+i)->state_no != -1; i++) {    
-      
+    new_1_state = malloc(sizeof(struct fsm_state)*(net_adds+net_lines+1));
+    for(i=0,j=0; (fsm_state+i)->state_no != -1; i++) {
+
       if ((fsm_state+i)->in == IDENTITY) {
 	add_fsm_arc(new_1_state, j, (fsm_state+i)->state_no, (fsm_state+i)->in, (fsm_state+i)->out, (fsm_state+i)->target, (fsm_state+i)->final_state, (fsm_state+i)->start_state);
 	j++;
@@ -1110,7 +1110,7 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
 	add_fsm_arc(new_1_state, j, (fsm_state+i)->state_no, (fsm_state+i)->in, (fsm_state+i)->out, (fsm_state+i)->target, (fsm_state+i)->final_state, (fsm_state+i)->start_state);
 	j++;
       }
-      
+
       if ((fsm_state+i)->in == -1) {
 	add_fsm_arc(new_1_state, j, (fsm_state+i)->state_no, (fsm_state+i)->in, (fsm_state+i)->out, (fsm_state+i)->target, (fsm_state+i)->final_state, (fsm_state+i)->start_state);
 	j++;
@@ -1118,7 +1118,7 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
     }
 
     add_fsm_arc(new_1_state, j, -1, -1, -1, -1, -1, -1);
-    xxfree(net1->states);
+    free(net1->states);
     net1->states = new_1_state;
   }
 
@@ -1144,8 +1144,8 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
     }
 
     /* We need net_add new lines in fsm_state */
-    new_2_state = xxmalloc(sizeof(struct fsm_state)*(net_adds+net_lines+1));
-    for(i=0,j=0; (fsm_state+i)->state_no != -1; i++) {    
+    new_2_state = malloc(sizeof(struct fsm_state)*(net_adds+net_lines+1));
+    for(i=0,j=0; (fsm_state+i)->state_no != -1; i++) {
 
       if ((fsm_state+i)->in == IDENTITY) {
 	add_fsm_arc(new_2_state, j, (fsm_state+i)->state_no, (fsm_state+i)->in, (fsm_state+i)->out, (fsm_state+i)->target, (fsm_state+i)->final_state, (fsm_state+i)->start_state);
@@ -1195,7 +1195,7 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
 
       /* Simply copy arcs that are not IDENTITY or UNKNOWN */
       if (((fsm_state+i)->in > IDENTITY || (fsm_state+i)->in == EPSILON) && ((fsm_state+i)->out > IDENTITY || (fsm_state+i)->out == EPSILON)) {
-	
+
 	add_fsm_arc(new_2_state, j, (fsm_state+i)->state_no, (fsm_state+i)->in, (fsm_state+i)->out, (fsm_state+i)->target, (fsm_state+i)->final_state, (fsm_state+i)->start_state);
 	j++;
       }
@@ -1207,17 +1207,17 @@ void fsm_merge_sigma(struct fsm *net1, struct fsm *net2) {
     }
 
     add_fsm_arc(new_2_state, j, -1, -1, -1, -1, -1, -1);
-    xxfree(net2->states);
+    free(net2->states);
     net2->states = new_2_state;
   }
-  xxfree(mapping_1);
-  xxfree(mapping_2);
+  free(mapping_1);
+  free(mapping_2);
 
   /* Free structure */
   for (mergesigma2 = NULL; start_mergesigma != NULL; ) {
       mergesigma2 = start_mergesigma;
       start_mergesigma = start_mergesigma->next;
-      xxfree(mergesigma2);
+      free(mergesigma2);
   }
 }
 
@@ -1244,7 +1244,7 @@ void fsm_count(struct fsm *net) {
 
   fsm = net->states;
   for (i=0; (fsm+i)->state_no != -1; i++) {
-    if ((fsm+i)->state_no > maxstate) 
+    if ((fsm+i)->state_no > maxstate)
       maxstate = (fsm+i)->state_no;
 
     linecount++;
@@ -1258,7 +1258,7 @@ void fsm_count(struct fsm *net) {
             finalcount++;
         }
         oldstate = (fsm+i)->state_no;
-    }    
+    }
   }
 
   linecount++;
@@ -1319,7 +1319,7 @@ struct fsm *fsm_concat(struct fsm *net1, struct fsm *net2) {
   /* Add |fsm1| states to the state numbers of fsm2 */
   fsm_add_to_states(net2, net1->statecount);
 
-  new_fsm = xxmalloc(((sizeof(struct fsm_state))*(net1->linecount + net2->linecount + net1->finalcount + 2 )));
+  new_fsm = malloc(((sizeof(struct fsm_state))*(net1->linecount + net2->linecount + net1->finalcount + 2 )));
   current_final = -1;
   /* Copy fsm1, fsm2 after each other, adding appropriate epsilon arcs */
   for(i=0,j=0; (fsm1+i)->state_no != -1; i++) {
@@ -1338,7 +1338,7 @@ struct fsm *fsm_concat(struct fsm *net1, struct fsm *net2) {
     add_fsm_arc(new_fsm, j, (fsm2+i)->state_no, (fsm2+i)->in, (fsm2+i)->out, (fsm2+i)->target, (fsm2+i)->final_state, 0);
   }
   add_fsm_arc(new_fsm, j, -1, -1, -1, -1, -1, -1);
-  xxfree(net1->states);
+  free(net1->states);
   fsm_destroy(net2);
   net1->states = new_fsm;
   if (sigma_find_number(EPSILON, net1->sigma) == -1) {
@@ -1355,7 +1355,7 @@ struct fsm *fsm_concat(struct fsm *net1, struct fsm *net2) {
 struct fsm *fsm_union(struct fsm *net1, struct fsm *net2) {
     struct fsm_state *new_fsm, *fsm1, *fsm2;
     int i, j, net1_offset, net2_offset, new_target, arccount;
-    
+
     fsm_merge_sigma(net1, net2);
 
     fsm_count(net1);
@@ -1366,7 +1366,7 @@ struct fsm *fsm_union(struct fsm *net1, struct fsm *net2) {
 
     net1_offset = 1;
     net2_offset = net1->statecount + 1;
-    new_fsm = xxmalloc((net1->linecount + net2->linecount + 2) * sizeof(struct fsm_state));
+    new_fsm = malloc((net1->linecount + net2->linecount + 2) * sizeof(struct fsm_state));
 
     j = 0;
 
@@ -1384,7 +1384,7 @@ struct fsm *fsm_union(struct fsm *net1, struct fsm *net2) {
         if (new_target != -1) arccount++;
     }
     add_fsm_arc(new_fsm, j++, -1, -1, -1, -1, -1, -1);
-    xxfree(net1->states);
+    free(net1->states);
     net1->states = new_fsm;
     net1->statecount = net1->statecount + net2->statecount + 1;
     net1->linecount = j;
@@ -1402,7 +1402,7 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
   struct fsm_state *fsm, *new_fsm;
   int i, j, offset, statecount, sigsize, *state_table, sink_state, target, last_sigma = 0, arccount = 0, incomplete;
   short *starts, *finals, *sinks;
-  
+
   /* TODO: this currently relies on that the sigma is gap-free in its numbering  */
   /* which can't always be counted on, especially when reading external machines */
 
@@ -1429,9 +1429,9 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 
   fsm_count(net);
   statecount = net->statecount;
-  starts = xxmalloc(sizeof(short)*(statecount+1)); /* +1 for sink state */
-  finals = xxmalloc(sizeof(short)*(statecount+1));
-  sinks = xxmalloc(sizeof(short)*(statecount+1));
+  starts = malloc(sizeof(short)*(statecount+1)); /* +1 for sink state */
+  finals = malloc(sizeof(short)*(statecount+1));
+  sinks = malloc(sizeof(short)*(statecount+1));
 
   /* Init starts, finals, sinks arrays */
 
@@ -1446,7 +1446,7 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 	(fsm+i)->final_state = 0;
       } else if ((fsm+i)->final_state == 0) {
 	(fsm+i)->final_state = 1;
-      }		
+      }
     }
     if ((fsm+i)->target != -1)
       arccount++;
@@ -1475,9 +1475,9 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 /* 	} */
 /*       } */
 /*     } */
-    xxfree(starts);
-    xxfree(finals);
-    xxfree(sinks);
+    free(starts);
+    free(finals);
+    free(sinks);
     net->is_completed = YES;
     net->is_minimized = YES;
     net->is_pruned = NO;
@@ -1511,7 +1511,7 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 
   sigsize += 2;
 
-  state_table = xxmalloc(sizeof(int)*sigsize*statecount);
+  state_table = malloc(sizeof(int)*sigsize*statecount);
 
   /* Init state table */
   /* i = state #, j = sigma # */
@@ -1520,14 +1520,14 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
       *(state_table+(i*sigsize+j)) = -1;
     }
   }
-  
+
   for (i=0; (fsm+i)->state_no != -1; i++) {
     if ((fsm+i)->target != -1) {
       *(state_table+(((fsm+i)->state_no)*sigsize+((fsm+i)->in))) = (fsm+i)->target;
     }
   }
   /* Add looping arcs from and to sink state */
-  for (j=2; j<=last_sigma; j++) 
+  for (j=2; j<=last_sigma; j++)
       *(state_table+(sink_state*sigsize+j)) = sink_state;
   /* Add missing arcs to sink state from all states */
   for (i=0; i<statecount; i++) {
@@ -1536,14 +1536,14 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
 	*(state_table+(i*sigsize+j)) = sink_state;
     }
   }
-  
-  new_fsm = xxmalloc(sizeof(struct fsm_state)*(sigsize*statecount+1));
-  
+
+  new_fsm = malloc(sizeof(struct fsm_state)*(sigsize*statecount+1));
+
 /* Complement requires toggling final, nonfinal states */
 /*   if (operation == COMPLEMENT) */
 /*     for (i=0; i < statecount; i++) */
 /*       *(finals+i) = *(finals+i) == 0 ? 1 : 0; */
-  
+
   for (i=0, offset = 0; i<statecount; i++) {
     for (j=2; j<=last_sigma; j++) {
       target = *(state_table+(i*sigsize+j)) == -1 ? sink_state : *(state_table+(i*sigsize+j));
@@ -1553,12 +1553,12 @@ struct fsm *fsm_completes(struct fsm *net, int operation) {
   }
   add_fsm_arc(new_fsm, offset, -1, -1, -1, -1, -1, -1);
   offset++;
-  xxfree(net->states);
+  free(net->states);
   net->states = new_fsm;
-  xxfree(starts);
-  xxfree(finals);
-  xxfree(sinks);
-  xxfree(state_table);
+  free(starts);
+  free(finals);
+  free(sinks);
+  free(state_table);
   net->is_minimized = NO;
   net->is_pruned = NO;
   net->is_completed = YES;
@@ -1583,16 +1583,16 @@ struct fsm *fsm_kleene_closure(struct fsm *net, int operation) {
     }
 
     net = fsm_minimize(net);
-    fsm_count(net);    
+    fsm_count(net);
 
     fsm = net->states;
-    
-    new_fsm = xxmalloc( (net->linecount + net->finalcount + 1) * sizeof(struct fsm_state));
+
+    new_fsm = malloc( (net->linecount + net->finalcount + 1) * sizeof(struct fsm_state));
 
     j = 0;
     if (operation == KLEENE_STAR)
         add_fsm_arc(new_fsm, j++, 0, EPSILON, EPSILON, 1, 1, 1);
-    if (operation == KLEENE_PLUS)            
+    if (operation == KLEENE_PLUS)
         add_fsm_arc(new_fsm, j++, 0, EPSILON, EPSILON, 1, 0, 1);
     laststate = 0;
     arccount = 1;
@@ -1617,7 +1617,7 @@ struct fsm *fsm_kleene_closure(struct fsm *net, int operation) {
     net->finalcount = operation == KLEENE_STAR ? net->finalcount+1 : net->finalcount;
     net->arccount = arccount;
     net->pathcount = PATHCOUNT_UNKNOWN;
-    xxfree(net->states);
+    free(net->states);
     net->states = new_fsm;
     if (sigma_find_number(EPSILON, net->sigma) == -1)
         sigma_add_special(EPSILON, net->sigma);
@@ -1638,13 +1638,13 @@ char *fsm_network_to_char(struct fsm *net) {
 }
 
 struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *substitute) {
-   
+
     struct fsm *outnet, *subnet2;
     struct fsm_read_handle *inh, *subh, *subh2;
     struct fsm_construct_handle *outh;
     char *subin, *subout;
     int i, repsym, source, target, in, out, addstate1, addstate2;
-        
+
     fsm_merge_sigma(net, substitute);
     addstate1 = net->statecount;
     addstate2 = substitute->statecount;
@@ -1687,7 +1687,7 @@ struct fsm *fsm_substitute_label(struct fsm *net, char *original, struct fsm *su
 	    } else {
 		subnet2 = fsm_minimize(fsm_cross_product(fsm_symbol(fsm_get_arc_in(inh)),fsm_copy(substitute)));
 	    }
-	    fsm_construct_add_arc_nums(outh, source, addstate1, EPSILON, EPSILON);		
+	    fsm_construct_add_arc_nums(outh, source, addstate1, EPSILON, EPSILON);
 	    subh2 = fsm_read_init(subnet2);
 	    while (fsm_get_next_arc(subh2)) {
 		source = fsm_get_arc_source(subh2);
@@ -1762,7 +1762,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
   /* The approach here allows a state to stay, creating a a:0 or 0:b transition */
   /* with the a/b-state waiting, and the arc going to {a,stay} or {stay,b} */
   /* the wait maneuver is only possible if the waiting state is final */
-  
+
   /* For the rewrite rules compilation, a different cross-product is used:  */
   /* rewrite_cp() synchronizes A and B as long as possible to get a unique  */
   /* output match for each cross product.                                   */
@@ -1781,13 +1781,13 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
   net2 = fsm_minimize(net2);
 
   fsm_merge_sigma(net1, net2);
-  
+
   fsm_count(net1);
   fsm_count(net2);
 
   machine_a = net1->states;
   machine_b = net2->states;
-  
+
   /* new state 0 = {0,0} */
 
   STACK_2_PUSH(0,0);
@@ -1801,12 +1801,12 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
   point_b = init_state_pointers(machine_b);
 
   while (!int_stack_isempty()) {
- 
+
    /* Get a pair of states to examine */
- 
+
     a = int_stack_pop();
     b = int_stack_pop();
-    
+
    /* printf("Treating pair: {%i,%i}\n",a,b); */
 
     current_state = triplet_hash_find(th, a, b, 0);
@@ -1817,7 +1817,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 
     for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a  ; machine_a++) {
       for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
-	
+
 	if ((machine_a->target == -1) && (machine_b->target == -1)) {
 	  continue;
 	}
@@ -1839,7 +1839,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 	    symbol1 = UNKNOWN;
 	  if (symbol2 == IDENTITY && symbol1 != IDENTITY)
 	    symbol2 = UNKNOWN;
-	  
+
           fsm_state_add_arc(current_state, symbol1, symbol2, target_number, current_final, current_start);
 	  /* @:@ -> @:@ and also ?:? */
 	  if ((machine_a->in == IDENTITY) && (machine_b->in == IDENTITY)) {
@@ -1847,7 +1847,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 	  }
 	}
 	if (machine_a->final_state == 1 && machine_b->target != -1) {
-            
+
 	  /* Add 0:b i.e. stay in state A */
 	    if ((target_number = triplet_hash_find(th, machine_a->state_no, machine_b->target, 0)) == -1) {
 		STACK_2_PUSH(machine_b->target, machine_a->state_no);
@@ -1859,7 +1859,7 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
 	}
 
 	if (machine_b->final_state == 1 && machine_a->target != -1) {
-	  
+
 	  /* Add a:0 i.e. stay in state B */
 	    if ((target_number = triplet_hash_find(th, machine_a->target, machine_b->state_no, 0)) == -1) {
               STACK_2_PUSH(machine_b->state_no, machine_a->target);
@@ -1874,15 +1874,15 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
     /* Check arctrack */
     fsm_state_end_state();
   }
-  
-  xxfree(net1->states);
+
+  free(net1->states);
   fsm_state_close(net1);
 
   for (i=0, fsm = net1->states; (fsm+i)->state_no != -1; i++) {
       if (((fsm+i)->in == EPSILON) || ((fsm+i)->out == EPSILON))
           epsilon = 1;
       if (((fsm+i)->in == UNKNOWN) || ((fsm+i)->out == UNKNOWN))
-          unknown = 1;    
+          unknown = 1;
   }
   if (epsilon == 1) {
       if (sigma_find_number(EPSILON, net1->sigma) == -1) {
@@ -1894,8 +1894,8 @@ struct fsm *fsm_cross_product(struct fsm *net1, struct fsm *net2) {
           sigma_add_special(UNKNOWN, net1->sigma);
       }
   }
-  xxfree(point_a);
-  xxfree(point_b);
+  free(point_a);
+  free(point_b);
   fsm_destroy(net2);
   triplet_hash_free(th);
   return(fsm_coaccessible(net1));
@@ -1914,41 +1914,41 @@ struct fsm *fsm_unflatten(struct fsm *net, char *epsilon_sym, char *repeat_sym) 
     struct fsm_state *even_state, *odd_state;
     struct state_arr *point_a;
     struct triplethash *th;
-    
+
     fsm_minimize(net);
     fsm_count(net);
-    
+
     epsilon = sigma_find(epsilon_sym, net->sigma);
-    repeat = sigma_find(repeat_sym, net->sigma);  
-    
+    repeat = sigma_find(repeat_sym, net->sigma);
+
     even_state = net->states;
-    
+
     /* new state 0 = {0,0} */
-    
+
     STACK_2_PUSH(0,0);
-    
+
     th = triplet_hash_init();
     triplet_hash_insert(th, 0, 0, 0);
-    
+
     fsm_state_init(sigma_max(net->sigma));
-    
+
     point_a = init_state_pointers(even_state);
 
     while (!int_stack_isempty()) {
-	
+
 	/* Get a pair of states to examine */
-	
+
 	a = int_stack_pop();
 	a = int_stack_pop();
-	
+
 	/* printf("Treating pair: {%i,%i}\n",a,b); */
-	
+
 	current_state = triplet_hash_find(th, a, a, 0);
 	current_start = ((point_a+a)->start == 1) ? 1 : 0;
 	current_final = ((point_a+a)->final == 1) ? 1 : 0;
-	
+
 	fsm_state_set_current_state(current_state, current_final, current_start);
-	
+
 	for (even_state = (point_a+a)->transitions; even_state->state_no == a; even_state++) {
 	    if (even_state->target == -1) {
 		continue;
@@ -1982,9 +1982,9 @@ struct fsm *fsm_unflatten(struct fsm *net, char *epsilon_sym, char *repeat_sym) 
 	}
 	fsm_state_end_state();
     }
-    xxfree(net->states);
+    free(net->states);
     fsm_state_close(net);
-    xxfree(point_a);
+    free(point_a);
     triplet_hash_free(th);
     return(net);
 }
@@ -2009,7 +2009,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
 
   machine_a = net1->states;
   machine_b = net2->states;
-  
+
   /* new state 0 = {0,0} */
 
   STACK_2_PUSH(0,0);
@@ -2023,12 +2023,12 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
   point_b = init_state_pointers(machine_b);
 
   while (!int_stack_isempty()) {
- 
+
    /* Get a pair of states to examine */
- 
+
     a = int_stack_pop();
     b = int_stack_pop();
-    
+
    /* printf("Treating pair: {%i,%i}\n",a,b); */
 
     current_state = triplet_hash_find(th, a, b, 0);
@@ -2052,7 +2052,7 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
 
     /* Follow B, A stays */
       for (machine_b = (point_b+b)->transitions; machine_b->state_no == b ; machine_b++) {
-	
+
 	if (machine_b->target == -1) {
 	  continue;
 	}
@@ -2068,10 +2068,10 @@ struct fsm *fsm_shuffle(struct fsm *net1, struct fsm *net2) {
       fsm_state_end_state();
   }
 
-  xxfree(net1->states);
+  free(net1->states);
   fsm_state_close(net1);
-  xxfree(point_a);
-  xxfree(point_b);
+  free(point_a);
+  free(point_b);
   fsm_destroy(net2);
   triplet_hash_free(th);
   return(net1);
@@ -2083,33 +2083,33 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
     struct fsm_state *machine_a, *machine_b;
     struct state_arr *point_a, *point_b;
     struct triplethash *th;
-    
+
     fsm_merge_sigma(net1, net2);
-    
+
     fsm_count(net1);
     fsm_count(net2);
-    
+
     machine_a = net1->states;
     machine_b = net2->states;
-    
+
     equivalent = 0;
     /* new state 0 = {0,0} */
     STACK_2_PUSH(0,0);
-    
+
     th = triplet_hash_init();
     triplet_hash_insert(th, 0, 0, 0);
-    
+
     point_a = init_state_pointers(machine_a);
     point_b = init_state_pointers(machine_b);
-    
+
     while (!int_stack_isempty()) {
-	
+
 	/* Get a pair of states to examine */
-	
+
 	a = int_stack_pop();
 	b = int_stack_pop();
-   	
-	if ((point_a+a)->final != (point_b+b)->final) {	  
+
+	if ((point_a+a)->final != (point_b+b)->final) {
 	    goto not_equivalent;
 	}
 	/* Check that all arcs in A have matching arc in B, push new state pair on stack */
@@ -2155,8 +2155,8 @@ int fsm_equivalent(struct fsm *net1, struct fsm *net2) {
  not_equivalent:
     fsm_destroy(net1);
     fsm_destroy(net2);
-    xxfree(point_a);
-    xxfree(point_b);
+    free(point_a);
+    free(point_b);
     triplet_hash_free(th);
     return(equivalent);
 }
@@ -2171,15 +2171,15 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
 
     net1 = fsm_minimize(net1);
     net2 = fsm_minimize(net2);
-    
+
     fsm_merge_sigma(net1, net2);
-    
+
     fsm_count(net1);
     fsm_count(net2);
-    
+
     machine_a = net1->states;
     machine_b = net2->states;
-    
+
     /* new state 0 = {1,1} */
 
     int_stack_clear();
@@ -2196,24 +2196,24 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
   while (!int_stack_isempty()) {
       statecount++;
       /* Get a pair of states to examine */
- 
+
       a = int_stack_pop();
       b = int_stack_pop();
 
       current_state = triplet_hash_find(th, a, b, 0);
       a--;
       b--;
-    
+
       if (b == -1) {
-          current_start = 0; 
-          current_final = (point_a+a)->final; 
-      } else { 
+          current_start = 0;
+          current_final = (point_a+a)->final;
+      } else {
           current_start = (a == 0 && b == 0) ? 1 : 0;
-          current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 0)) ? 1 : 0; 
-      } 
-      
+          current_final = (((point_a+a)->final == 1) && ((point_b+b)->final == 0)) ? 1 : 0;
+      }
+
       fsm_state_set_current_state(current_state, current_final, current_start);
-      
+
       for (machine_a = (point_a+a)->transitions ; machine_a->state_no == a  ; machine_a++) {
           if (machine_a->target == -1) {
               break;
@@ -2252,11 +2252,11 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
       }
       fsm_state_end_state();
   }
-  
-  xxfree(net1->states);
+
+  free(net1->states);
   fsm_state_close(net1);
-  xxfree(point_a);
-  xxfree(point_b);
+  free(point_a);
+  free(point_b);
   fsm_destroy(net2);
   triplet_hash_free(th);
   return(fsm_minimize(net1));
@@ -2265,7 +2265,7 @@ struct fsm *fsm_minus(struct fsm *net1, struct fsm *net2) {
 struct fsm *fsm_contains(struct fsm *net) {
   /* [?* A ?*] */
   struct fsm *net2;
-  
+
   net2 = fsm_concat(fsm_concat(fsm_universal(),net),fsm_universal());
   return(net2);
 }
@@ -2275,7 +2275,7 @@ struct fsm *fsm_universal() {
     int s;
     net = fsm_create("");
     fsm_update_flags(net, YES, YES, YES, YES, NO, NO);
-    net->states = xxmalloc(sizeof(struct fsm_state)*2);
+    net->states = malloc(sizeof(struct fsm_state)*2);
     s = sigma_add_special(IDENTITY,net->sigma);
     add_fsm_arc(net->states, 0, 0, s, s, 0, 1, 1);
     add_fsm_arc(net->states, 1, -1, -1, -1, -1, -1, -1);
@@ -2305,7 +2305,7 @@ struct fsm *fsm_contains_opt_one(struct fsm *net) {
 
 struct fsm *fsm_simple_replace(struct fsm *net1, struct fsm *net2) {
   /* [~[?* [A-0] ?*] [A.x.B]]* ~[?* [A-0] ?*] */
-  
+
     struct fsm *UPlus, *ret;
     UPlus = fsm_minimize(fsm_kleene_plus(fsm_identity()));
     ret = fsm_concat(fsm_minimize(fsm_kleene_star(fsm_minimize(fsm_concat(fsm_complement(fsm_minimize(fsm_concat(fsm_concat(fsm_universal(),fsm_minimize(fsm_intersect(fsm_copy(net1),fsm_copy(UPlus)))),fsm_universal()))),fsm_minimize(fsm_cross_product(fsm_copy(net1),fsm_copy(net2))))))),fsm_minimize(fsm_complement(fsm_minimize(fsm_concat(fsm_concat(fsm_universal(), fsm_intersect(fsm_copy(net1),fsm_copy(UPlus))),fsm_universal())))));
@@ -2364,7 +2364,7 @@ struct fsm *fsm_quotient_left(struct fsm *net1, struct fsm *net2) {
 
 struct fsm *fsm_quotient_right(struct fsm *net1, struct fsm *net2) {
     struct fsm *Result;
-    
+
     /* A///B = [A .o. ?* B:0].l; */
     /* A///B = the set of prefixes you can add to B to get strings in A */
     Result = fsm_lower(fsm_compose(net1, fsm_concat(fsm_universal(),fsm_cross_product(net2,fsm_empty_string()))));
@@ -2405,19 +2405,19 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
   }
 
   malloc_size = lines1 + (states1 * (lines2 + net2->finalcount + 1));
-  new_fsm = xxmalloc(sizeof(struct fsm_state)*(malloc_size+1));
+  new_fsm = malloc(sizeof(struct fsm_state)*(malloc_size+1));
 
   /* Mark if a state has been handled with ignore */
-  handled_states1 = xxmalloc(sizeof(short)*states1);
-  handled_states2 = xxmalloc(sizeof(short)*states2);
+  handled_states1 = malloc(sizeof(short)*states1);
+  handled_states2 = malloc(sizeof(short)*states2);
 
   /* Mark which ignores return to which state */
-  return_state = xxmalloc(sizeof(int)*states1);
+  return_state = malloc(sizeof(int)*states1);
   splice_size = states2;
   start_splice = states1;
   for (k=0; k<states1; k++)
     *(handled_states1+k) = 0;
- 
+
   for (i=0, j=0; (fsm1+i)->state_no != -1; i++) {
     if (*(handled_states1+(fsm1+i)->state_no) == 0) {
       target =  start_splice + splices * splice_size;
@@ -2445,7 +2445,7 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
 
     for (k=0; k<states2; k++)
 	 *(handled_states2+k) = 0;
-    
+
     for (i=0; (fsm2+i)->state_no != -1; i++) {
       if ((fsm2+i)->final_state == 1 && *(handled_states2+(fsm2+i)->state_no) == 0) {
 	add_fsm_arc(new_fsm, j, (fsm2+i)->state_no + state_add_counter, EPSILON, EPSILON, *(return_state+returns), 0, 0);
@@ -2464,10 +2464,10 @@ struct fsm *fsm_ignore(struct fsm *net1, struct fsm *net2, int operation) {
   }
 
   add_fsm_arc(new_fsm, j, -1, -1, -1, -1, -1, -1);
-  xxfree(handled_states1);
-  xxfree(handled_states2);
-  xxfree(return_state);
-  xxfree(net1->states);
+  free(handled_states1);
+  free(handled_states2);
+  free(return_state);
+  free(net1->states);
   fsm_destroy(net2);
   net1->states = new_fsm;
   fsm_update_flags(net1, NO, NO, NO, NO, NO, NO);
@@ -2490,9 +2490,9 @@ void fsm_compact(struct fsm *net) {
 
     fsm = net->states;
     numsymbols = sigma_max(net->sigma);
-    
-    potential = xxmalloc(sizeof(_Bool)*(numsymbols+1));
-    checktable = xxmalloc(sizeof(struct checktable)*(numsymbols+1));
+
+    potential = malloc(sizeof(_Bool)*(numsymbols+1));
+    checktable = malloc(sizeof(struct checktable)*(numsymbols+1));
 
     for (i=0; i <= numsymbols; i++) {
         *(potential+i) =  1;
@@ -2522,7 +2522,7 @@ void fsm_compact(struct fsm *net) {
                 }
                 *(potential+j) = 0;
             }
-        }        
+        }
 
         if ((fsm+i)->state_no == -1)
             break;
@@ -2553,8 +2553,8 @@ void fsm_compact(struct fsm *net) {
 
     }
     if (removable == 0) {
-        xxfree(potential);
-        xxfree(checktable);
+        free(potential);
+        free(checktable);
         return;
     }
     i = j = 0;
@@ -2567,9 +2567,9 @@ void fsm_compact(struct fsm *net) {
             j++;
         }
         else if (*(potential+in) == 1 && in > 2) {
-            i++;    
+            i++;
         } else {
-            i++; 
+            i++;
             j++;
         }
     } while ((fsm+i)->state_no != -1);
@@ -2581,15 +2581,15 @@ void fsm_compact(struct fsm *net) {
         if ((sig->number > 2) && (*(potential+sig->number) == 1)) {
             sigprev->next = sig->next;
             sign = sig->next;
-            xxfree(sig->symbol);
-            xxfree(sig);
+            free(sig->symbol);
+            free(sig);
         } else {
             sigprev = sig;
             sign = sig->next;
         }
-    }    
-    xxfree(potential);
-    xxfree(checktable);
+    }
+    free(potential);
+    free(checktable);
     sigma_cleanup(net,0);
 }
 
@@ -2601,7 +2601,7 @@ int fsm_symbol_occurs(struct fsm *net, char *symbol, int side) {
         return 0;
     }
     for (i=0, fsm = net->states; (fsm+i)->state_no != -1; i++) {
-        if (side == M_UPPER && (fsm+i)->in == sym) 
+        if (side == M_UPPER && (fsm+i)->in == sym)
             return 1;
         if (side == M_LOWER && (fsm+i)->out == sym)
             return 1;
@@ -2617,7 +2617,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
     /* every X occurring in different substrings ... left X right ... is identical.  */
 
     /* Caveat: there is no reliable termination condition for the loop that extracts */
-    /* identities.  This means that if run on languages where there are potentially  */ 
+    /* identities.  This means that if run on languages where there are potentially  */
     /* infinite-length identical delimited substrings, it will not terminate.        */
 
     /* For example: _eq(l a* r l a* r, l , r) will not terminate.                    */
@@ -2659,7 +2659,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
 
     /* 5. Leq = Cleanup(Leq)                                                  */
     /*    Cleanup removes LB RB sequences and, at the same time filters out   */
-    /*    any strings where we find both LB RB and LB X RB where X is not 0.  */ 
+    /*    any strings where we find both LB RB and LB X RB where X is not 0.  */
     /*    since we know such sequences could not possibly be identical        */
     /*    Cleanup is implemented by composing Leq with                        */
     /*    \LB* [LB:0 RB:0 \LB*]* | ~$[LB RB]                                  */
@@ -2676,7 +2676,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
 
     /* LB = "@<eq<@" */
     /* RB = "@>eq>@" */
-    
+
     LB = fsm_symbol("@<eq<@");
     NOLB = fsm_minimize(fsm_term_negation(fsm_copy(LB)));
     RB = fsm_symbol("@>eq>@");
@@ -2693,7 +2693,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
     /* InsertBrackets = [~$[L|R] [L 0:LB|0:RB R]]* ~$[L|R];    */
 
     InsertBrackets = fsm_minimize(fsm_concat(fsm_kleene_star(fsm_concat(fsm_complement(fsm_contains(fsm_union(fsm_copy(left),fsm_copy(right)))),fsm_union(fsm_concat(fsm_copy(left),fsm_cross_product(fsm_empty_string(),fsm_copy(LB))),fsm_concat(fsm_cross_product(fsm_empty_string(),fsm_copy(RB)),fsm_copy(right))))),fsm_complement(fsm_contains(fsm_union(fsm_copy(left),fsm_copy(right))))));
-    
+
 
     /* Lbracketed = L .o. InsertBrackets                       */
 
@@ -2717,7 +2717,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
 
     /* Extract labels from lower side of L */
     /* [Leq .o. [\LB:0* LB:0 \RB* RB:0]* \LB:0*].l */
-    
+
     Labels = fsm_sigma_pairs_net(fsm_lower(fsm_compose(fsm_copy(Leq),fsm_concat(fsm_kleene_star(fsm_concat(fsm_kleene_star(fsm_cross_product(fsm_copy(NOLB),fsm_empty_string())),fsm_concat(fsm_cross_product(fsm_copy(LB),fsm_empty_string()),fsm_concat(fsm_kleene_star(fsm_copy(NORB)),fsm_cross_product(fsm_copy(RB),fsm_empty_string()))))),fsm_kleene_star(fsm_cross_product(fsm_copy(NOLB),fsm_empty_string()))))));
 
     /* Cleanup = \LB* [LB:0 RB:0 \LB*]* | ~$[LB RB] */
@@ -2725,7 +2725,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
     Cleanup = fsm_minimize(fsm_union(fsm_concat(fsm_kleene_star(fsm_copy(NOLB)),fsm_kleene_star(fsm_concat(fsm_cross_product(fsm_copy(LB),fsm_empty_string()),fsm_concat(fsm_cross_product(fsm_copy(RB),fsm_empty_string()),fsm_kleene_star(fsm_copy(NOLB)))))),fsm_complement(fsm_contains(fsm_concat(fsm_copy(LB),fsm_copy(RB))))));
 
     /* Construct the move function */
-    
+
     Move = fsm_empty_string();
 
     syms = 0;
@@ -2737,7 +2737,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
             ThisSymbol = fsm_symbol(sig->symbol);
             //ThisMove = fsm_concat(fsm_kleene_star(fsm_concat(fsm_kleene_star(fsm_copy(NOLB)),fsm_concat(fsm_cross_product(fsm_copy(LB),fsm_copy(ThisSymbol)),fsm_cross_product(fsm_copy(ThisSymbol),fsm_copy(LB))))), fsm_kleene_star(fsm_copy(NOLB)));
             ThisMove = fsm_concat(fsm_kleene_star(fsm_concat(fsm_kleene_star(fsm_copy(NOLB)),fsm_concat(fsm_cross_product(fsm_copy(LB),fsm_empty_string()), fsm_concat(fsm_copy(ThisSymbol), fsm_cross_product(fsm_empty_string(),fsm_copy(LB)))))), fsm_kleene_star(fsm_copy(NOLB)));
-            
+
             Move = fsm_union(Move, ThisMove);
             syms++;
         }
@@ -2759,7 +2759,7 @@ struct fsm *fsm_equal_substrings(struct fsm *net, struct fsm *left, struct fsm *
         //Leq = fsm_minimize(fsm_compose(Leq, fsm_copy(Move)));
         //        printf("size: %i\n",Leq->statecount);
     }
-    
+
     /* Result = L .o. [Leq | Lbypass] */
     Result = fsm_minimize(fsm_compose(net, fsm_union(fsm_lower(Leq), Lbypass)));
     sigma_remove("@<eq<@", Result->sigma);
@@ -2817,7 +2817,7 @@ struct fsm *fsm_left_rewr(struct fsm *net, struct fsm *rewr) {
     fsm_construct_copy_sigma(outh, net->sigma);
     maxsigma = sigma_max(net->sigma);
     maxsigma++;
-    sigmatable = xxmalloc(maxsigma * sizeof(int));
+    sigmatable = malloc(maxsigma * sizeof(int));
     for (i = 0; i < maxsigma; i++) {
 	*(sigmatable+i) = -1;
     }
@@ -2833,7 +2833,7 @@ struct fsm *fsm_left_rewr(struct fsm *net, struct fsm *rewr) {
 	    if (innum == relabelin) {
 		    seensource = 1;
 		    if (fsm_read_is_final(inh, currstate)) {
-			outnum = relabelout;		    
+			outnum = relabelout;
 		    }
 	    }
 	    fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), innum, outnum);
@@ -2862,7 +2862,7 @@ struct fsm *fsm_left_rewr(struct fsm *net, struct fsm *rewr) {
     fsm_construct_set_initial(outh, 0);
     fsm_read_done(inh);
     newnet = fsm_construct_done(outh);
-    xxfree(sigmatable);
+    free(sigmatable);
     fsm_destroy(net);
     fsm_destroy(rewr);
     return(newnet);
@@ -2880,7 +2880,7 @@ struct fsm *fsm_add_sink(struct fsm *net, int final) {
     fsm_construct_copy_sigma(outh, net->sigma);
     maxsigma = sigma_max(net->sigma);
     maxsigma++;
-    sigmatable = xxmalloc(maxsigma * sizeof(int));
+    sigmatable = malloc(maxsigma * sizeof(int));
     for (i = 0; i < maxsigma; i++) {
 	*(sigmatable+i) = -1;
     }
@@ -2929,7 +2929,7 @@ struct fsm *fsm_add_loop(struct fsm *net, struct fsm *marker, int finals) {
 
     outh = fsm_construct_init(net->name);
     fsm_construct_copy_sigma(outh, net->sigma);
-    
+
     while (fsm_get_next_arc(inh)) {
 	fsm_construct_add_arc_nums(outh, fsm_get_arc_source(inh), fsm_get_arc_target(inh), fsm_get_arc_num_in(inh), fsm_get_arc_num_out(inh));
     }
@@ -2978,9 +2978,9 @@ struct fsm *fsm_mark_fsm_tail(struct fsm *net, struct fsm *marker) {
     outh = fsm_construct_init(net->name);
     fsm_construct_copy_sigma(outh, net->sigma);
 
-    mappings = xxcalloc(net->statecount, sizeof(int));
+    mappings = calloc(net->statecount, sizeof(int));
     maxstate = net->statecount;
-    
+
     while (fsm_get_next_arc(inh)) {
 	target = fsm_get_arc_target(inh);
 	if (fsm_read_is_final(inh, target)) {
@@ -3009,7 +3009,7 @@ struct fsm *fsm_mark_fsm_tail(struct fsm *net, struct fsm *marker) {
     fsm_read_done(minh);
     newnet = fsm_construct_done(outh);
     fsm_destroy(net);
-    xxfree(mappings);
+    free(mappings);
     return(newnet);
 }
 
@@ -3034,7 +3034,7 @@ struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
     /* which would cause extra nondeterminism */
     sigma_add("@VARX@", X->sigma);
     sigma_sort(X);
-    
+
     /* Also, if any L or R is undeclared we add 0 */
     for (pairs = LR; pairs != NULL; pairs = pairs->next) {
         if (pairs->left == NULL) {
@@ -3054,11 +3054,11 @@ struct fsm *fsm_context_restrict(struct fsm *X, struct fsmcontexts *LR) {
     }
 
     UnionP = fsm_empty_set();
-    
+
     for (pairs = LR; pairs != NULL ; pairs = pairs->next) {
         UnionP = fsm_minimize(fsm_union(fsm_minimize(fsm_concat(fsm_copy(pairs->left),fsm_concat(fsm_copy(Var),fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var),fsm_copy(pairs->right)))))), UnionP));
     }
-    
+
     UnionL = fsm_minimize(fsm_concat(fsm_copy(Notvar),fsm_concat(fsm_copy(Var), fsm_concat(fsm_copy(X), fsm_concat(fsm_copy(Var),fsm_copy(Notvar))))));
 
     Result = fsm_intersect(UnionL, fsm_complement(fsm_concat(fsm_copy(Notvar),fsm_minimize(fsm_concat(fsm_copy(UnionP),fsm_copy(Notvar))))));
@@ -3089,7 +3089,7 @@ struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
     char *epssym, *instring, *outstring;
 
     net = fsm_minimize(net);
-    
+
     inh = fsm_read_init(net);
     eps = fsm_read_init(epsilon);
     if (fsm_get_next_arc(eps) == -1) {
@@ -3106,14 +3106,14 @@ struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
     fsm_construct_copy_sigma(outh, net->sigma);
 
     while (fsm_get_next_arc(inh)) {
-	target = fsm_get_arc_target(inh);	
+	target = fsm_get_arc_target(inh);
 	in = fsm_get_arc_num_in(inh);
 	out = fsm_get_arc_num_out(inh);
-	if (in == EPSILON || out == EPSILON)  { 
+	if (in == EPSILON || out == EPSILON)  {
 	    instring = fsm_get_arc_in(inh);
 	    outstring = fsm_get_arc_out(inh);
 	    if (in == EPSILON)  { instring = epssym; }
-	    if (out == EPSILON) { outstring = epssym; }	    
+	    if (out == EPSILON) { outstring = epssym; }
 
 	    fsm_construct_add_arc(outh, fsm_get_arc_source(inh), maxstate, instring, instring);
 	    fsm_construct_add_arc(outh, maxstate, target, outstring, outstring);
@@ -3134,7 +3134,7 @@ struct fsm *fsm_flatten(struct fsm *net, struct fsm *epsilon) {
     newnet = fsm_construct_done(outh);
     fsm_destroy(net);
     fsm_destroy(epsilon);
-    xxfree(epssym);
+    free(epssym);
     return(newnet);
 }
 

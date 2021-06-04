@@ -48,8 +48,8 @@ void declare_function_name(char *s) {
         printf("Function stack depth exceeded. Aborting.\n");
         exit(1);
     }
-    fname[frec] = xxstrdup(s);
-    xxfree(s);
+    fname[frec] = strdup(s);
+    free(s);
 }
 
 struct fsm *function_apply(struct defined_networks *defined_nets, struct defined_functions *defined_funcs) {
@@ -60,7 +60,7 @@ struct fsm *function_apply(struct defined_networks *defined_nets, struct defined
         fprintf(stderr, "***Error: function %s@%i) not defined!\n",fname[frec], fargptr[frec]);
         return NULL;
     }
-    regex = xxstrdup(regex);
+    regex = strdup(regex);
     mygsym = g_internal_sym;
     myfargptr = fargptr[frec];
     /* Create new regular expression from function def. */
@@ -81,15 +81,15 @@ struct fsm *function_apply(struct defined_networks *defined_nets, struct defined
         remove_defined(defined_nets, repstr);
         mygsym++;
     }
-    xxfree(fname[frec]);
+    free(fname[frec]);
     frec--;
-    xxfree(regex);
+    free(regex);
     return(current_parse);
 }
 
 void add_context_pair(struct fsm *L, struct fsm *R) {
     struct fsmcontexts *newcontext;
-    newcontext = xxcalloc(1,sizeof(struct fsmcontexts));
+    newcontext = calloc(1,sizeof(struct fsmcontexts));
     newcontext->left = L;
     newcontext->right = R;
     newcontext->next = contexts;
@@ -108,7 +108,7 @@ void clear_rewrite_ruleset(struct rewrite_set *rewrite_rules) {
 	    fsm_destroy(r->right2);
 	    fsm_destroy(r->cross_product);
 	    rp = r->next;
-	    xxfree(r);
+	    free(r);
 	}
 	
 	for (contexts = rule->rewrite_contexts; contexts != NULL ; contexts = contextsp) {
@@ -118,18 +118,18 @@ void clear_rewrite_ruleset(struct rewrite_set *rewrite_rules) {
 	    fsm_destroy(contexts->right);
 	    fsm_destroy(contexts->cpleft);
 	    fsm_destroy(contexts->cpright);
-	    xxfree(contexts);
+	    free(contexts);
 	}
        	rulep = rule->next;
 	//fsm_destroy(rules->cpunion);
-	xxfree(rule);
+	free(rule);
     }
 }
 
 void add_rewrite_rule() {
     struct rewrite_set *new_rewrite_rule;
     if (rules != NULL) {
-        new_rewrite_rule = xxmalloc(sizeof(struct rewrite_set));
+        new_rewrite_rule = malloc(sizeof(struct rewrite_set));
         new_rewrite_rule->rewrite_rules = rules;
         new_rewrite_rule->rewrite_contexts = contexts;
         new_rewrite_rule->next = rewrite_rules;
@@ -145,7 +145,7 @@ void add_rewrite_rule() {
 void add_eprule(struct fsm *R, struct fsm *R2, int type) {
     struct fsmrules *newrule;
     rewrite = 1;
-    newrule = xxmalloc(sizeof(struct fsmrules));
+    newrule = malloc(sizeof(struct fsmrules));
     newrule->left = fsm_empty_string();
     newrule->right = R;
     newrule->right2 = R2;
@@ -158,7 +158,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
     struct fsm *test;
     struct fsmrules *newrule;
     rewrite = 1;
-    newrule = xxmalloc(sizeof(struct fsmrules));
+    newrule = malloc(sizeof(struct fsmrules));
 
     if ((type & ARROW_DOTTED) != 0) {
         newrule->left = fsm_minus(fsm_copy(L), fsm_empty_string());
@@ -179,7 +179,7 @@ void add_rule(struct fsm *L, struct fsm *R, struct fsm *R2, int type) {
         /* Add empty [..] -> B for dotted rules (only if LHS contains the empty string) */
         test = fsm_intersect(L,fsm_empty_string());
         if (!fsm_isempty(test)) {
-            newrule = xxmalloc(sizeof(struct fsmrules));
+            newrule = malloc(sizeof(struct fsmrules));
             newrule->left = test;
             newrule->right = fsm_copy(R);
             newrule->right2 = fsm_copy(R2);
@@ -375,7 +375,7 @@ network11: NET { $$ = $1;}
 | SUCCESSOR_OF VAR COMMA VAR RPAREN {$$ = fsm_concat(fsm_universal(),fsm_concat(fsm_symbol($2),fsm_concat(fsm_universal(),fsm_concat(fsm_symbol($2),fsm_concat(union_quantifiers(),fsm_concat(fsm_symbol($4),fsm_concat(fsm_universal(),fsm_concat(fsm_symbol($4),fsm_universal())))))))); }
 | SUCCESSOR_OF VAR COMMA network RPAREN {$$ = fsm_concat(fsm_universal(),fsm_concat(fsm_symbol($2),fsm_concat(fsm_universal(),fsm_concat(fsm_symbol($2),fsm_concat(fsm_ignore($4,union_quantifiers(),OP_IGNORE_ALL),fsm_universal()))))); }
 | SUCCESSOR_OF network COMMA VAR RPAREN {$$ = fsm_concat(fsm_universal(),fsm_concat(fsm_ignore($2,union_quantifiers(),OP_IGNORE_ALL),fsm_concat(fsm_symbol($4),fsm_concat(fsm_universal(),fsm_concat(fsm_symbol($4),fsm_universal()))))); }
-| sub1 sub2 {$$ = fsm_substitute_symbol($1,subval1,subval2); substituting = 0; xxfree(subval1); xxfree(subval2); subval1 = subval2 = NULL;}
+| sub1 sub2 {$$ = fsm_substitute_symbol($1,subval1,subval2); substituting = 0; free(subval1); free(subval2); subval1 = subval2 = NULL;}
 
 sub1: SUBSTITUTE LBRACKET network COMMA { $$ = $3; substituting = 1;                      }
 sub2: SUBVAL COMMA SUBVAL RBRACKET      { subval1 = $2; subval2 = $4; }

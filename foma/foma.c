@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
             if (scriptfile != NULL) {
                 input_is_file = 1;
                 my_interfaceparse(scriptfile);
-		xxfree(scriptfile);
+		free(scriptfile);
             }
             break;
         case 'p':
@@ -223,7 +223,7 @@ char *my_generator(const char *text, int state) {
 
         if (strncmp (name, text, len) == 0) {
             nummatches++;
-            /* Can't use xxstrdup here */
+            /* Can't use strdup here */
             return(strdup(name+smatch));
         }
     }
@@ -232,7 +232,7 @@ char *my_generator(const char *text, int state) {
         while ((name = abbrvcmd[list_index2])) {
             list_index2++;
 
-            /* Can't use xxstrdup here */
+            /* Can't use strdup here */
             if (strncmp (name, text, len) == 0)
                 return(strdup(name+smatch));
         }

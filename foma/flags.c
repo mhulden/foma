@@ -51,7 +51,7 @@ struct flags {
 /* or neither.                                                                     */
 /* The languages FAIL, SUCCEED is then the union of all symbols that cause         */
 /* compatibility or incompatibility.                                               */
-/* We intersect all these filters, creating a large filter that we compose both on */ 
+/* We intersect all these filters, creating a large filter that we compose both on */
 /* the upper side of the network and the lower side:                               */
 /* RESULT = FILTER .o. ORIGINAL .o. FILTER                                         */
 /* We can't simply intersect the language with FILTER because the lower side flags */
@@ -59,7 +59,7 @@ struct flags {
 /* Finally, we replace the affected arcs with EPSILON arcs, and call               */
 /* sigma_cleanup() to purge the symbols not occurring on arcs.                     */
 
-/// 
+///
 ///Eliminate a flag from a network. If called with name = NULL, eliminate all flags.
 ///
 
@@ -82,7 +82,7 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
 
     flags = flag_extract(net);
     /* Check that flag actually exists in net */
-    if (name != NULL) { 
+    if (name != NULL) {
         for (found = 0, f = flags; f != NULL; f = f->next) {
             if (strcmp(name,f->name) == 0)
                 found = 1;
@@ -103,11 +103,11 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
 
         if ((name == NULL || strcmp(f->name,name) == 0) &&
             (f->type | FLAG_UNIFY | FLAG_REQUIRE | FLAG_DISALLOW | FLAG_EQUAL)) {
-            
+
             succeed_flags = fsm_empty_set();
             fail_flags = fsm_empty_set();
             self = flag_create_symbol(f->type, f->name, f->value);
-            
+
             for (ff = flags, flag = 0; ff != NULL; ff = ff->next) {
                 fstatus = flag_build(f->type, f->name, f->value, ff->type, ff->name, ff->value);
                 if (fstatus == FAIL) {
@@ -124,7 +124,7 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
         if (flag) {
             if (f->type == FLAG_REQUIRE) {
                 newfilter = fsm_complement(fsm_concat(fsm_optionality(fsm_concat(fsm_universal(), fail_flags)), fsm_concat(fsm_complement(fsm_contains(succeed_flags)), fsm_concat(self, fsm_universal()))));
-                
+
             } else {
                 newfilter = fsm_complement(fsm_contains(fsm_concat(fail_flags,fsm_concat(fsm_complement(fsm_contains(succeed_flags)),self))));
             }
@@ -147,7 +147,7 @@ struct fsm *flag_eliminate(struct fsm *net, char *name) {
     newnet = fsm_minimize(newnet);
     sigma_cleanup(newnet,0);
     sigma_sort(newnet);
-    xxfree(flags);
+    free(flags);
     return(fsm_topsort(newnet));
 }
 
@@ -156,14 +156,14 @@ struct fsm *flag_create_symbol(int type, char *name, char *value) {
     if (value == NULL)
         value = "";
 
-    string = xxmalloc(sizeof(char)*strlen(name)+strlen(value)+6);
+    string = malloc(sizeof(char)*strlen(name)+strlen(value)+6);
     *string = '\0';
     strcat(string, "@");
     strcat(string, flag_type_to_char(type));
     strcat(string, ".");
     strcat(string, name);
     if (strcmp(value,"") != 0) {
-        strcat(string, ".");    
+        strcat(string, ".");
         strcat(string, value);
     }
     strcat(string, "@");
@@ -198,12 +198,12 @@ int flag_build(int ftype, char *fname, char *fvalue, int fftype, char *ffname, c
     selfnull = 0; /* If current flag has no value, e.g. @R.A@ */
     if (strcmp(fname,ffname) != 0)
         return NONE;
-    
+
     if (fvalue == NULL) {
         fvalue = "";
         selfnull = 1;
     }
-    
+
     if (ffvalue == NULL)
         ffvalue = "";
 
@@ -280,13 +280,13 @@ void flag_purge (struct fsm *net, char *name) {
     int i, *ftable, sigmasize;
     char *csym;
     sigmasize = sigma_max(net->sigma)+1;
-    ftable = xxmalloc(sizeof(int) * sigmasize);
+    ftable = malloc(sizeof(int) * sigmasize);
     fsm = net->states;
     for (i=0; i<sigmasize; i++)
         *(ftable+i)=0;
-    
+
     for (sigma = net->sigma; sigma != NULL && sigma->number != -1; sigma = sigma->next) {
-        
+
         if (flag_check(sigma->symbol)) {
             if (name == NULL) {
                 *(ftable+(sigma->number)) = 1;
@@ -313,7 +313,7 @@ void flag_purge (struct fsm *net, char *name) {
         }
     }
 
-    xxfree(ftable);
+    free(ftable);
     net->is_deterministic = net->is_minimized = net->is_epsilon_free = NO;
     return;
 }
@@ -327,31 +327,31 @@ struct flags *flag_extract (struct fsm *net) {
     flags = NULL;
     for (sigma = net->sigma ; sigma != NULL; sigma = sigma->next) {
         if (flag_check(sigma->symbol)) {
-            flagst = xxmalloc(sizeof(struct flags));
+            flagst = malloc(sizeof(struct flags));
             flagst->next = flags;
             flags = flagst;
-            
+
             flags->type  = flag_get_type(sigma->symbol);
             flags->name  = flag_get_name(sigma->symbol);
             flags->value = flag_get_value(sigma->symbol);
-        }        
-    }    
+        }
+    }
     return(flags);
 }
 
 int flag_check(char *s) {
-    
+
     /* We simply simulate this regex (where ND is not dot) */
     /* "@" [U|P|N|R|E|D] "." ND+ "." ND+ "@" | "@" [D|R|C] "." ND+ "@" */
     /* and return 1 if it matches */
 
     int i;
     i = 0;
-    
+
     if (*(s+i) == '@') { i++; goto s1; } return 0;
  s1:
     if (*(s+i) == 'C') { i++; goto s4; }
-    if (*(s+i) == 'N' || *(s+i) == 'E' || *(s+i) == 'U' || *(s+i) == 'P') { i++; goto s2; } 
+    if (*(s+i) == 'N' || *(s+i) == 'E' || *(s+i) == 'U' || *(s+i) == 'P') { i++; goto s2; }
     if (*(s+i) == 'R' || *(s+i) == 'D') { i++; goto s3; } return 0;
  s2:
     if (*(s+i) == '.') { i++; goto s5; } return 0;
@@ -360,21 +360,21 @@ int flag_check(char *s) {
  s4:
     if (*(s+i) == '.') { i++; goto s7; } return 0;
  s5:
-    if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s8; } return 0;   
+    if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s8; } return 0;
  s6:
-    if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s9; } return 0;   
+    if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s9; } return 0;
  s7:
     if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s10; } return 0;
  s8:
-   if (*(s+i) == '.') { i++; goto s7; } 
-   if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s8; } return 0; 
+   if (*(s+i) == '.') { i++; goto s7; }
+   if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s8; } return 0;
  s9:
     if (*(s+i) == '@') { i++; goto s11; }
     if (*(s+i) == '.') { i++; goto s7; }
     if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s9; } return 0;
 
  s10:
-    if (*(s+i) == '@') {i++; goto s11;} 
+    if (*(s+i) == '@') {i++; goto s11;}
     if (*(s+i) != '.' && *(s+i) != '\0') { i++; goto s10; } return 0;
  s11:
     if (*(s+i) == '\0') {return 1;} return 0;
@@ -383,25 +383,25 @@ int flag_check(char *s) {
 int flag_get_type(char *string) {
     if (strncmp(string+1,"U.",2) == 0) {
 	return FLAG_UNIFY;
-    }    
+    }
     if (strncmp(string+1,"C.",2) == 0) {
 	return FLAG_CLEAR;
-    }    
+    }
     if (strncmp(string+1,"D.",2) == 0) {
 	return FLAG_DISALLOW;
-    }    
+    }
     if (strncmp(string+1,"N.",2) == 0) {
 	return FLAG_NEGATIVE;
-    }    
+    }
     if (strncmp(string+1,"P.",2) == 0) {
 	return FLAG_POSITIVE;
-    }    
+    }
     if (strncmp(string+1,"R.",2) == 0) {
 	return FLAG_REQUIRE;
-    }    
+    }
     if (strncmp(string+1,"E.",2) == 0) {
 	return FLAG_EQUAL;
-    }    
+    }
     return 0;
 }
 
@@ -455,12 +455,12 @@ struct fsm *flag_twosided(struct fsm *net) {
   struct fsm_state *fsm;
   struct sigma *sigma;
   int i, j, tail, *isflag, maxsigma, maxstate, newarcs, change;
- 
+
   /* Enforces twosided flag diacritics */
-  
+
   /* Mark flag symbols */
   maxsigma = sigma_max(net->sigma);
-  isflag = xxcalloc(maxsigma+1, sizeof(int));
+  isflag = calloc(maxsigma+1, sizeof(int));
   fsm = net->states;
   for (sigma = net->sigma ; sigma != NULL; sigma = sigma->next) {
     if (flag_check(sigma->symbol)) {
@@ -497,13 +497,13 @@ struct fsm *flag_twosided(struct fsm *net) {
     }
     return net;
   }
-  net->states = xxrealloc(net->states, sizeof(struct fsm)*(i+newarcs));
+  net->states = realloc(net->states, sizeof(struct fsm)*(i+newarcs));
   fsm = net->states;
   tail = j = i;
   maxstate++;
   for (i = 0; i < tail; i++) {
 
-    if ((fsm+i)->target == -1) 
+    if ((fsm+i)->target == -1)
       continue;
     if ((*(isflag+(fsm+i)->in) || *(isflag+(fsm+i)->out)) && (fsm+i)->in != (fsm+i)->out) {
       if (*(isflag+(fsm+i)->in) && !*(isflag+(fsm+i)->out)) {

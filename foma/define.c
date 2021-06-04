@@ -45,7 +45,7 @@ int remove_defined(struct defined_networks *def, char *string) {
 	    if (d->net != NULL)
 	        fsm_destroy(d->net);
 	    if (d->name != NULL)
-	        xxfree(d->name);
+	        free(d->name);
 	}
 	return 0;
     }
@@ -62,24 +62,24 @@ int remove_defined(struct defined_networks *def, char *string) {
     if (d == def) {
 	if (d->next != NULL) {
 	    fsm_destroy(d->net);
-	    xxfree(d->name);
+	    free(d->name);
 	    d->name = d->next->name;
 	    d->net = d->next->net;
 	    d_next = d->next->next;
-	    xxfree(d->next);
+	    free(d->next);
 	    d->next = d_next;
 	} else {
 	    fsm_destroy(d->net);
-	    xxfree(d->name);
+	    free(d->name);
 	    d->next = NULL;
 	    d->name = NULL;
 	    d->net = NULL;
 	}
     } else {
 	fsm_destroy(d->net);
-	xxfree(d->name);
+	free(d->name);
 	d_prev->next = d->next;
-	xxfree(d);
+	free(d);
     }
     return 0;
 }
@@ -101,8 +101,8 @@ int add_defined_function(struct defined_functions *deff, char *name, char *regex
     struct defined_functions *d;
     for (d = deff; d != NULL; d = d->next) {
 	if (d->name != NULL && strcmp(d->name, name) == 0 && d->numargs == numargs) {
-	    xxfree(d->regex);
-	    d->regex = xxstrdup(regex);
+	    free(d->regex);
+	    d->regex = strdup(regex);
             if (g_verbose)
             {
                 fprintf(stderr,"redefined %s@%i)\n", name, numargs);
@@ -114,12 +114,12 @@ int add_defined_function(struct defined_functions *deff, char *name, char *regex
     if (deff->name == NULL) {
 	d = deff;
     } else {
-	d = xxmalloc(sizeof(struct defined_functions));
+	d = malloc(sizeof(struct defined_functions));
 	d->next = deff->next;
 	deff->next = d;
     }
-    d->name = xxstrdup(name);
-    d->regex = xxstrdup(regex);
+    d->name = strdup(name);
+    d->regex = strdup(regex);
     d->numargs = numargs;
     return 0;
 }
@@ -140,20 +140,20 @@ int add_defined(struct defined_networks *def, struct fsm *net, char *string) {
     for (d = def; d != NULL; d = d->next) {
 	if (d->name != NULL && strcmp(d->name, string) == 0) {
 	    fsm_destroy(d->net);
-	    xxfree(d->name);
+	    free(d->name);
 	    d->net = net;
-	    d->name = xxstrdup(string);
+	    d->name = strdup(string);
 	    return 1;
 	}
     }
     if (def->name == NULL) {
 	d = def;
     } else {
-	d = xxmalloc(sizeof(struct defined_networks));
+	d = malloc(sizeof(struct defined_networks));
 	d->next = def->next;
 	def->next = d;
     }
-    d->name = xxstrdup(string);
+    d->name = strdup(string);
     d->net = net;
     return 0;
 }

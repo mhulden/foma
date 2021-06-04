@@ -108,7 +108,7 @@ struct fsm *fsm_determinize(struct fsm *net) {
 static struct fsm *fsm_subset(struct fsm *net, int operation) {
 
     int T, U;
-    
+
     if (net->is_deterministic == YES && operation != SUBSET_TEST_STAR_FREE) {
         return(net);
     }
@@ -119,39 +119,39 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
     deterministic = 1;
     init(net);
     nhash_init((num_states < 12) ? 6 : num_states/2);
-    
+
     T = initial_e_closure(net);
 
     int_stack_clear();
-    
+
     if (deterministic == 1 && epsilon_symbol == -1 && num_start_states == 1 && numss == 0) {
         net->is_deterministic = YES;
         net->is_epsilon_free = YES;
         nhash_free(table, nhash_tablesize);
-        xxfree(T_ptr);
-        xxfree(e_table);
-        xxfree(trans_list_determinize);
-        xxfree(trans_array_determinize);
-        xxfree(double_sigma_array);
-        xxfree(single_sigma_array);
-        xxfree(finals);
-        xxfree(temp_move);
-        xxfree(set_table);
+        free(T_ptr);
+        free(e_table);
+        free(trans_list_determinize);
+        free(trans_array_determinize);
+        free(double_sigma_array);
+        free(single_sigma_array);
+        free(finals);
+        free(temp_move);
+        free(set_table);
         return(net);
     }
 
     if (operation == SUBSET_EPSILON_REMOVE && epsilon_symbol == -1) {
         net->is_epsilon_free = YES;
         nhash_free(table, nhash_tablesize);
-        xxfree(T_ptr);
-        xxfree(e_table);
-        xxfree(trans_list_determinize);
-        xxfree(trans_array_determinize);
-        xxfree(double_sigma_array);
-        xxfree(single_sigma_array);
-        xxfree(finals);
-        xxfree(temp_move);
-        xxfree(set_table);
+        free(T_ptr);
+        free(e_table);
+        free(trans_list_determinize);
+        free(trans_array_determinize);
+        free(double_sigma_array);
+        free(single_sigma_array);
+        free(finals);
+        free(temp_move);
+        free(set_table);
         return(net);
     }
 
@@ -160,7 +160,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
         star_free_mark = 0;
     } else {
         fsm_state_init(sigma_max(net->sigma));
-        xxfree(net->states);
+        free(net->states);
     }
 
     /* init */
@@ -171,7 +171,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
         struct trans_array *tptr;
 
         fsm_state_set_current_state(T, (T_ptr+T)->finalstart, T == 0 ? 1 : 0);
-        
+
         /* Prepare set */
         setsize = (T_ptr+T)->size;
         theset = set_table+(T_ptr+T)->set_offset;
@@ -193,26 +193,26 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
             fsm_state_end_state();
             continue;
         }
-        
+
         /* While set not empty */
 
         for (next_minsym = INT_MAX; minsym != INT_MAX ; minsym = next_minsym, next_minsym = INT_MAX) {
             theset = set_table+(T_ptr+T)->set_offset;
-            
+
             for (i = 0, j = 0 ; i < setsize; i++) {
-                
+
                 stateno = *(theset+i);
                 tptr = trans_array_determinize+stateno;
                 tail = tptr->tail;
                 transitions = (tptr->transitions)+tail;
-                
+
                 while (tail < tptr->size &&  transitions->inout == minsym) {
                     trgt = transitions->target;
                     if (*(e_table+(trgt)) != mainloop) {
                         *(e_table+(trgt)) = mainloop;
                         *(temp_move+j) = trgt;
                         j++;
-                        
+
                         if (operation == SUBSET_EPSILON_REMOVE) {
                             mainloop++;
                             if ((U = e_closure(j)) != -1) {
@@ -225,9 +225,9 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
                     tail++;
                     transitions++;
                 }
-                
+
                 tptr->tail = tail;
-                
+
                 if (tail == tptr->size)
                     continue;
                 /* Check next minsym */
@@ -245,7 +245,7 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
             if (operation == SUBSET_TEST_STAR_FREE) {
                 mainloop++;
                 if ((U = e_closure(j)) != -1) {
-                    single_symbol_to_symbol_pair(minsym, &symbol_in, &symbol_out);                   
+                    single_symbol_to_symbol_pair(minsym, &symbol_in, &symbol_out);
                     fsm_state_add_arc(T, symbol_in, symbol_out, U, (T_ptr+T)->finalstart, T == 0 ? 1 : 0);
                     if (star_free_mark == 1) {
                         //fsm_state_add_arc(T, maxsigma, maxsigma, U, (T_ptr+T)->finalstart, T == 0 ? 1 : 0);
@@ -257,21 +257,21 @@ static struct fsm *fsm_subset(struct fsm *net, int operation) {
         /* end state */
         fsm_state_end_state();
     } while ((T = next_unmarked()) != -1);
-    
+
     /* wrapup() */
     nhash_free(table, nhash_tablesize);
-    xxfree(set_table);
-    xxfree(T_ptr);
-    xxfree(temp_move);
-    xxfree(e_table);
-    xxfree(trans_list_determinize);
-    xxfree(trans_array_determinize);
-    
+    free(set_table);
+    free(T_ptr);
+    free(temp_move);
+    free(e_table);
+    free(trans_list_determinize);
+    free(trans_array_determinize);
+
     if (epsilon_symbol != -1)
         e_closure_free();
-    xxfree(double_sigma_array);
-    xxfree(single_sigma_array);
-    xxfree(finals);
+    free(double_sigma_array);
+    free(single_sigma_array);
+    free(finals);
     fsm_state_close(net);
     return(net);
 }
@@ -280,7 +280,7 @@ static void init(struct fsm *net) {
     /* A temporary table for handling epsilon closure */
     /* to avoid doubles */
 
-    e_table = xxcalloc(net->statecount,sizeof(int));
+    e_table = calloc(net->statecount,sizeof(int));
 
     /* Counter for our access tables */
 
@@ -288,10 +288,10 @@ static void init(struct fsm *net) {
 
     /* Temporary table for storing sets and */
     /* passing to hash function */
-    
+
     /* Table for listing current results of move & e-closure */
-    temp_move = xxmalloc((net->statecount + 1) *sizeof(int));
-    
+    temp_move = malloc((net->statecount + 1) *sizeof(int));
+
     /* We malloc this much memory to begin with for the new fsm */
     /* Then grow it by the double as needed */
 
@@ -304,18 +304,18 @@ static void init(struct fsm *net) {
     /* To handle fast lookup in array */
     /* Optimistically, we choose the initial size to be the number of */
     /* states in the non-deterministic fsm */
-    
+
     T_last_unmarked = 0;
     T_limit = next_power_of_two(num_states);
 
-    T_ptr = xxcalloc(T_limit,sizeof(struct T_memo));
+    T_ptr = calloc(T_limit,sizeof(struct T_memo));
 
     /* Stores all sets consecutively in one table */
     /* T_ptr->set_offset and size                 */
     /* are used to retrieve the set               */
 
     set_table_size = next_power_of_two(num_states);
-    set_table = xxmalloc(set_table_size*sizeof(int));
+    set_table = malloc(set_table_size*sizeof(int));
     set_table_offset = 0;
 
     init_trans_array(net);
@@ -330,9 +330,9 @@ static void init_trans_array(struct fsm *net) {
     struct fsm_state *fsm;
     int i, j, laststate, lastsym, inout, size, state;
 
-    arrptr = trans_list_determinize = xxmalloc(net->linecount * sizeof(struct trans_list));
-    trans_array_determinize = xxcalloc(net->statecount, sizeof(struct trans_array));
-    
+    arrptr = trans_list_determinize = malloc(net->linecount * sizeof(struct trans_list));
+    trans_array_determinize = calloc(net->statecount, sizeof(struct trans_array));
+
     laststate = -1;
     fsm = net->states;
 
@@ -352,7 +352,7 @@ static void init_trans_array(struct fsm *net) {
         inout = symbol_pair_to_single_symbol((fsm+i)->in, (fsm+i)->out);
         if (inout == epsilon_symbol)
             continue;
-        
+
         arrptr->inout = inout;
         arrptr->target = (fsm+i)->target;
         arrptr++;
@@ -394,7 +394,7 @@ INLINE static int e_closure(int states) {
         return -1;
 
     mainloop--;
-    
+
     set_size = states;
 
     for (i = 0; i < states; i++) {
@@ -410,7 +410,7 @@ INLINE static int e_closure(int states) {
             /* Don't follow if already seen */
             if (*(marktable+ptr->state) == mainloop)
                 continue;
-            
+
             ptr->mark = mainloop;
             *(marktable+ptr->state) = mainloop;
             /* Add to tail of list */
@@ -419,7 +419,7 @@ INLINE static int e_closure(int states) {
                 *(e_table+(ptr->state)) = mainloop;
                 set_size++;
             }
-            
+
             if (ptr->target == NULL)
                 continue;
             /* Traverse chain */
@@ -442,9 +442,9 @@ INLINE static int set_lookup (int *lookup_table, int size) {
 
   /* Look up a set and its corresponding state number */
   /* if it doesn't exist from before, assign a state number */
-  
+
     return(nhash_find_insert(lookup_table, size));
-  
+
 }
 
 void add_T_ptr(int setnum, int setsize, unsigned int theset, int fs) {
@@ -452,12 +452,12 @@ void add_T_ptr(int setnum, int setsize, unsigned int theset, int fs) {
   int i;
   if (setnum >= T_limit) {
     T_limit *= 2;
-    T_ptr = xxrealloc(T_ptr, sizeof(struct T_memo)*T_limit);
+    T_ptr = realloc(T_ptr, sizeof(struct T_memo)*T_limit);
     for (i=setnum; i < T_limit; i++) {
         (T_ptr+i)->size = 0;
     }
   }
-  
+
   (T_ptr + setnum)->size = setsize;
   (T_ptr + setnum)->set_offset = theset;
   (T_ptr + setnum)->finalstart = fs;
@@ -470,11 +470,11 @@ static int initial_e_closure(struct fsm *net) {
     struct fsm_state *fsm;
     int i,j;
 
-    finals = xxcalloc(num_states, sizeof(_Bool));
+    finals = calloc(num_states, sizeof(_Bool));
 
     num_start_states = 0;
     fsm = net->states;
-    
+
     /* Create lookups for each state */
     for (i=0,j=0; (fsm+i)->state_no != -1; i++) {
         if ((fsm+i)->final_state) {
@@ -498,16 +498,16 @@ static int initial_e_closure(struct fsm *net) {
     }
     return(e_closure(j));
 }
- 
+
 static void memoize_e_closure(struct fsm_state *fsm) {
-    
+
     int i, state, laststate, *redcheck;
     struct e_closure_memo *ptr;
-    
-    e_closure_memo = xxcalloc(num_states,sizeof(struct e_closure_memo));
-    marktable = xxcalloc(num_states,sizeof(int));
+
+    e_closure_memo = calloc(num_states,sizeof(struct e_closure_memo));
+    marktable = calloc(num_states,sizeof(int));
     /* Table for avoiding redundant epsilon arcs in closure */
-    redcheck = xxmalloc(num_states*sizeof(int));
+    redcheck = malloc(num_states*sizeof(int));
 
     for (i=0; i < num_states; i++) {
         ptr = e_closure_memo+i;
@@ -519,16 +519,16 @@ static void memoize_e_closure(struct fsm_state *fsm) {
     laststate = -1;
 
     for (i=0; ;i++) {
-        
+
         state = (fsm+i)->state_no;
-        
+
         if (state != laststate) {
-            if (!int_stack_isempty()) {                
+            if (!int_stack_isempty()) {
                 deterministic = 0;
                 ptr = e_closure_memo+laststate;
                 ptr->target = e_closure_memo+int_stack_pop();
                 while (!int_stack_isempty()) {
-                    ptr->next = xxmalloc(sizeof(struct e_closure_memo));
+                    ptr->next = malloc(sizeof(struct e_closure_memo));
                     ptr->next->state = laststate;
                     ptr->next->target = e_closure_memo+int_stack_pop();
                     ptr->next->next = NULL;
@@ -553,9 +553,9 @@ static void memoize_e_closure(struct fsm_state *fsm) {
             laststate = state;
         }
     }
-    xxfree(redcheck);
+    free(redcheck);
 }
- 
+
 static int next_unmarked(void) {
     if ((int_stack_isempty()))
         return -1;
@@ -573,7 +573,7 @@ static void single_symbol_to_symbol_pair(int symbol, int *symbol_in, int *symbol
 
   *symbol_in = *(single_sigma_array+(symbol*2));
   *symbol_out = *(single_sigma_array+(symbol*2+1));
-  
+
 }
 
 static int symbol_pair_to_single_symbol(int in, int out) {
@@ -581,25 +581,25 @@ static int symbol_pair_to_single_symbol(int in, int out) {
 }
 
 static void sigma_to_pairs(struct fsm *net) {
-  
+
   int i, j, x, y, z, next_x = 0;
   struct fsm_state *fsm;
 
   fsm = net->states;
 
-  epsilon_symbol = -1; 
+  epsilon_symbol = -1;
   maxsigma = sigma_max(net->sigma);
   maxsigma++;
 
-  single_sigma_array = xxmalloc(2*maxsigma*maxsigma*sizeof(int));
-  double_sigma_array = xxmalloc(maxsigma*maxsigma*sizeof(int));
-  
+  single_sigma_array = malloc(2*maxsigma*maxsigma*sizeof(int));
+  double_sigma_array = malloc(maxsigma*maxsigma*sizeof(int));
+
   for (i=0; i < maxsigma; i++) {
     for (j=0; j< maxsigma; j++) {
       *(double_sigma_array+maxsigma*i+j) = -1;
     }
   }
-  
+
   /* f(x) -> y,z sigma pair */
   /* f(y,z) -> x simple entry */
   /* if exists f(n) <-> EPSILON, EPSILON, save n */
@@ -647,7 +647,7 @@ static int nhash_find_insert(int *set, int setsize) {
     int j, found, *currlist;
     struct nhash_list *tableptr;
     unsigned int hashval;
-    
+
     hashval = hashf(set, setsize);
     if ((table+hashval)->size == 0) {
         return(nhash_insert(hashval, set, setsize));
@@ -678,7 +678,7 @@ static int nhash_find_insert(int *set, int setsize) {
                 }
             }
         }
-        
+
         if (nhash_load / NHASH_LOAD_LIMIT > nhash_tablesize) {
             nhash_rebuild_table();
             hashval = hashf(set, setsize);
@@ -692,7 +692,7 @@ INLINE static int hashf(int *set, int setsize) {
   unsigned int hashval, sum = 0;
   hashval = 6703271;
   for (i = 0; i < setsize; i++) {
-      hashval = (unsigned int) (*(set+i) + 1103 * setsize) * hashval; 
+      hashval = (unsigned int) (*(set+i) + 1103 * setsize) * hashval;
       sum += *(set+i) + i;
   }
   hashval = hashval + sum * 31;
@@ -706,7 +706,7 @@ static unsigned int move_set(int *set, int setsize) {
         while (set_table_offset + setsize >= set_table_size) {
             set_table_size *= 2;
         }
-        set_table = xxrealloc(set_table, set_table_size * sizeof(int));
+        set_table = realloc(set_table, set_table_size * sizeof(int));
     }
     memcpy(set_table+set_table_offset, set, setsize * sizeof(int));
     old_offset = set_table_offset;
@@ -714,8 +714,8 @@ static unsigned int move_set(int *set, int setsize) {
     return(old_offset);
 }
 
-static int nhash_insert(int hashval, int *set, int setsize) { 
-  struct nhash_list *tableptr;  
+static int nhash_insert(int hashval, int *set, int setsize) {
+  struct nhash_list *tableptr;
   int i, fs = 0;
 
   current_setnum++;
@@ -727,22 +727,22 @@ static int nhash_insert(int hashval, int *set, int setsize) {
           fs = 1;
   }
   if (tableptr->size == 0) {
-    
+
       tableptr->set_offset = move_set(set, setsize);
       tableptr->size = setsize;
       tableptr->setnum = current_setnum;
-      
+
       add_T_ptr(current_setnum, setsize, tableptr->set_offset, fs);
       return(current_setnum);
   }
-  
-  tableptr = xxmalloc(sizeof(struct nhash_list));
+
+  tableptr = malloc(sizeof(struct nhash_list));
   tableptr->next = (table+hashval)->next;
   (table+hashval)->next = tableptr;
   tableptr->setnum = current_setnum;
   tableptr->size = setsize;
   tableptr->set_offset = move_set(set, setsize);
-  
+
   add_T_ptr(current_setnum, setsize, tableptr->set_offset, fs);
   return(current_setnum);
 }
@@ -751,15 +751,15 @@ static void nhash_rebuild_table () {
     int i, oldsize;
     struct nhash_list *oldtable, *tableptr, *ntableptr, *newptr;
     unsigned int hashval;
-    
+
     oldtable = table;
     oldsize = nhash_tablesize;
 
     nhash_load = 0;
     for (i=0; primes[i] < nhash_tablesize; i++) { }
     nhash_tablesize = primes[(i+1)];
-    
-    table = xxcalloc(nhash_tablesize,sizeof(struct nhash_list));
+
+    table = calloc(nhash_tablesize,sizeof(struct nhash_list));
     for (i=0; i < oldsize;i++) {
         if ((oldtable+i)->size == 0) {
             continue;
@@ -776,7 +776,7 @@ static void nhash_rebuild_table () {
                 ntableptr->setnum = tableptr->setnum;
                 ntableptr->next = NULL;
             } else {
-                newptr = xxmalloc(sizeof(struct nhash_list));
+                newptr = malloc(sizeof(struct nhash_list));
                 newptr->next = ntableptr->next;
                 ntableptr->next = newptr;
                 newptr->setnum = tableptr->setnum;
@@ -795,23 +795,23 @@ static void nhash_init (int initial_size) {
   for (i=0; primes[i] < initial_size; i++) { }
   nhash_load = 0;
   nhash_tablesize = primes[i];
-  table = xxcalloc(nhash_tablesize , sizeof(struct nhash_list));
+  table = calloc(nhash_tablesize , sizeof(struct nhash_list));
   current_setnum = -1;
 }
 static void e_closure_free() {
     int i;
     struct e_closure_memo *eptr, *eprev;
-    xxfree(marktable);
+    free(marktable);
     for (i=0;i < num_states; i++) {
         eptr = (e_closure_memo+i)->next;
         for (eprev = NULL; eptr != NULL; ) {
             eprev = eptr;
             eptr = eptr->next;
-            xxfree(eprev);
+            free(eprev);
         }
-        
+
     }
-    xxfree(e_closure_memo);
+    free(e_closure_memo);
 }
 
 static void nhash_free(struct nhash_list *nptr, int size) {
@@ -820,8 +820,8 @@ static void nhash_free(struct nhash_list *nptr, int size) {
     for (i=0; i < size; i++) {
         for (nptr2 = (nptr+i)->next; nptr2 != NULL; nptr2 = nnext) {
             nnext = nptr2->next;
-            xxfree(nptr2);
+            free(nptr2);
         }
     }
-    xxfree(nptr);
+    free(nptr);
 }

@@ -29,7 +29,7 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
 
     struct invtable *inverses, *temp_i, *temp_i_prev, *current_ptr;
   int i, j, s, t, *coacc, current_state, markcount, *mapping, terminate, new_linecount, new_arccount, *added, old_statecount;
-  
+
 
   struct fsm_state *fsm;
 
@@ -37,10 +37,10 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
   new_arccount = 0;
   /* printf("statecount %i\n",net->statecount); */
   old_statecount = net->statecount;
-  inverses = xxcalloc(net->statecount, sizeof(struct invtable));
-  coacc = xxmalloc(sizeof(int)*(net->statecount));
-  mapping = xxmalloc(sizeof(int)*(net->statecount));
-  added = xxmalloc(sizeof(int)*(net->statecount));
+  inverses = calloc(net->statecount, sizeof(struct invtable));
+  coacc = malloc(sizeof(int)*(net->statecount));
+  mapping = malloc(sizeof(int)*(net->statecount));
+  added = malloc(sizeof(int)*(net->statecount));
 
   for (i=0; i < (net->statecount); i++) {
     (inverses+i)->state = -1;
@@ -52,11 +52,11 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
     s = (fsm+i)->state_no;
     t = (fsm+i)->target;
     if (t != -1 && s != t) {
-      
+
       if (((inverses+t)->state) == -1) {
 	(inverses+t)->state = s;
       } else {
-        temp_i = xxmalloc(sizeof(struct invtable));
+        temp_i = malloc(sizeof(struct invtable));
 	temp_i->next = (inverses+t)->next;
 	(inverses+t)->next = temp_i;
 	temp_i->state = s;
@@ -105,7 +105,7 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
 	*(mapping+i) = j;
       }
     }
-    
+
     for (i=0,j=0; (fsm+i)->state_no != -1; i++) {
       if (i > 0 && (fsm+i)->state_no != (fsm+i-1)->state_no && (fsm+i-1)->final_state && !*(added+((fsm+i-1)->state_no))) {
 	add_fsm_arc(fsm, j++, *(mapping+((fsm+i-1)->state_no)), -1, -1, -1, 1, (fsm+i-1)->start_state);
@@ -129,7 +129,7 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
 	*(added+(fsm+i)->state_no) = 1;
 	if ((fsm+i)->target != -1) {
 	  new_arccount++;
-	}	
+	}
       }
     }
 
@@ -142,11 +142,11 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
     if (new_linecount == 0) {
       add_fsm_arc(fsm, j++, 0, -1, -1, -1, -1, -1);
     }
-  
+
     add_fsm_arc(fsm, j, -1, -1, -1, -1, -1, -1);
     if (markcount == 0) {
       /* We're dealing with the empty language */
-      xxfree(fsm);
+      free(fsm);
       net->states = fsm_empty();
       fsm_sigma_destroy(net->sigma);
       net->sigma = sigma_create();
@@ -157,20 +157,20 @@ struct fsm *fsm_coaccessible(struct fsm *net) {
   }
 
   /* printf("Markccount %i \n",markcount); */
-  
+
   for (i = 0; i < old_statecount ; i++) {
       for (temp_i = inverses+i; temp_i != NULL ; ) {
           temp_i_prev = temp_i;
           temp_i = temp_i->next;
           if (temp_i_prev != inverses+i)
-              xxfree(temp_i_prev);
+              free(temp_i_prev);
       }
   }
-  xxfree(inverses);
+  free(inverses);
 
-  xxfree(coacc);
-  xxfree(added);
-  xxfree(mapping);
+  free(coacc);
+  free(added);
+  free(mapping);
   net->is_pruned = YES;
   return(net);
 }
