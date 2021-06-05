@@ -26,27 +26,27 @@
 
 /** Runtime options */
 struct _fsm_options {
-	_Bool skip_word_boundary_marker;
+    _Bool skip_word_boundary_marker;
 };
 extern struct _fsm_options fsm_options;
 
-extern struct defined_networks   *g_defines;
-extern struct defined_functions  *g_defines_f;
+extern struct defined_networks *g_defines;
+extern struct defined_functions *g_defines_f;
 
 /** User stack */
 struct stack_entry {
-  int number;
-  struct apply_handle *ah;
-  struct apply_med_handle *amedh;
-  struct fsm *fsm;
-  struct stack_entry *next;
-  struct stack_entry *previous;
+    int number;
+    struct apply_handle *ah;
+    struct apply_med_handle *amedh;
+    struct fsm *fsm;
+    struct stack_entry *next;
+    struct stack_entry *previous;
 };
 
 /* Quantifier & Logic-related */
 char *find_quantifier(char *string);
-void add_quantifier (char *string);
-void purge_quantifier (char *string);
+void add_quantifier(char *string);
+void purge_quantifier(char *string);
 struct fsm *union_quantifiers();
 int count_quantifiers();
 void clear_quantifiers();
@@ -84,7 +84,7 @@ void iface_crossproduct(void);
 void iface_determinize(void);
 void iface_eliminate_flags(void);
 void iface_eliminate_flag(char *name);
-int  iface_extract_number(char *s);
+int iface_extract_number(char *s);
 void iface_extract_ambiguous(void);
 void iface_extract_unambiguous(void);
 void iface_factorize(void);
@@ -126,13 +126,13 @@ void iface_shuffle(void);
 void iface_sort(void);
 void iface_sort_input(void);
 void iface_sort_output(void);
-int  iface_stack_check(int size);
+int iface_stack_check(int size);
 void iface_upper_words(int limit);
 void iface_prune(void);
-int  iface_read_att(char *filename);
-int  iface_read_prolog(char *filename);
-int  iface_read_spaced_text(char *filename);
-int  iface_read_text(char *filename);
+int iface_read_att(char *filename);
+int iface_read_prolog(char *filename);
+int iface_read_spaced_text(char *filename);
+int iface_read_text(char *filename);
 void iface_reverse(void);
 void iface_rotate(void);
 void iface_save_defined(char *filename);
@@ -142,8 +142,8 @@ void iface_set_variable(char *name, char *value);
 void iface_show_variables(void);
 void iface_show_variable(char *name);
 void iface_sigma_net();
-void iface_substitute_defined (char *original, char *substitute);
-void iface_substitute_symbol (char *original, char *substitute);
+void iface_substitute_defined(char *original, char *substitute);
+void iface_substitute_symbol(char *original, char *substitute);
 void iface_test_equivalent(void);
 void iface_test_functional(void);
 void iface_test_identity(void);
@@ -164,4 +164,4 @@ void iface_words_file(char *filename, int type);
 int iface_write_att(char *filename);
 void iface_write_prolog(char *filename);
 void iface_zero_plus(void);
-int  print_stats(struct fsm *net);
+int print_stats(struct fsm *net);

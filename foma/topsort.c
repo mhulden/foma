@@ -15,12 +15,12 @@
 /*   See the License for the specific language governing permissions and       */
 /*   limitations under the License.                                            */
 
+#include "foma.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include "foma.h"
 
-struct fsm *fsm_topsort (struct fsm *net) {
+struct fsm *fsm_topsort(struct fsm *net) {
 
     /* We topologically sort the network by looking for a state          */
     /* with inverse count 0. We then examine all the arcs from that      */
@@ -41,41 +41,43 @@ struct fsm *fsm_topsort (struct fsm *net) {
     long long grand_pathcount, *pathcount;
     struct fsm_state *fsm, *curr_fsm, *new_fsm;
 
-    if (net == NULL) { return NULL; }
+    if (net == NULL) {
+        return NULL;
+    }
 
     fsm_count(net);
 
     fsm = net->states;
 
-    statemap = malloc(sizeof(int)*net->statecount);
-    order = malloc(sizeof(int)*net->statecount);
-    pathcount = malloc(sizeof(long long)*net->statecount);
-    newnum = malloc(sizeof(int)*net->statecount);
-    invcount = malloc(sizeof(unsigned short int)*net->statecount);
-    treated =  malloc(sizeof(unsigned char)*net->statecount);
+    statemap = malloc(sizeof(int) * net->statecount);
+    order = malloc(sizeof(int) * net->statecount);
+    pathcount = malloc(sizeof(long long) * net->statecount);
+    newnum = malloc(sizeof(int) * net->statecount);
+    invcount = malloc(sizeof(unsigned short int) * net->statecount);
+    treated = malloc(sizeof(unsigned char) * net->statecount);
 
-    for (i=0; i < net->statecount; i++) {
-	*(statemap+i) = -1;
-	*(invcount+i) = 0;
-	*(treated+i) = 0;
-	*(order+i) = 0;
-	*(pathcount+i) = 0;
+    for (i = 0; i < net->statecount; i++) {
+        *(statemap + i) = -1;
+        *(invcount + i) = 0;
+        *(treated + i) = 0;
+        *(order + i) = 0;
+        *(pathcount + i) = 0;
     }
 
-    for (i=0, lc=0; (fsm+i)->state_no != -1; i++) {
+    for (i = 0, lc = 0; (fsm + i)->state_no != -1; i++) {
         lc++;
-        if ((fsm+i)->target != -1) {
-            (*(invcount+(fsm+i)->target))++;
+        if ((fsm + i)->target != -1) {
+            (*(invcount + (fsm + i)->target))++;
             /* Do a fast check here to see if we have a selfloop */
-            if ((fsm+i)->state_no == (fsm+i)->target) {
+            if ((fsm + i)->state_no == (fsm + i)->target) {
                 net->pathcount = PATHCOUNT_CYCLIC;
                 net->is_loop_free = 0;
                 goto cyclic;
             }
         }
-	if (*(statemap+(fsm+i)->state_no) == -1) {
-	    *(statemap+(fsm+i)->state_no) = i;
-	}
+        if (*(statemap + (fsm + i)->state_no) == -1) {
+            *(statemap + (fsm + i)->state_no) = i;
+        }
     }
 
     treatcount = net->statecount;
@@ -83,38 +85,38 @@ struct fsm *fsm_topsort (struct fsm *net) {
     int_stack_push(0);
     grand_pathcount = 0;
 
-    *(pathcount+0) = 1;
+    *(pathcount + 0) = 1;
 
     overflow = 0;
-    for (i=0 ; !int_stack_isempty(); i++) {
+    for (i = 0; !int_stack_isempty(); i++) {
         /* Treat a state */
         curr_state = int_stack_pop();
-        *(treated+curr_state) = 1;
-        *(order+i) = curr_state;
-        *(newnum+curr_state) = i;
+        *(treated + curr_state) = 1;
+        *(order + i) = curr_state;
+        *(newnum + curr_state) = i;
 
         treatcount--;
-        curr_fsm = fsm+*(statemap+curr_state);
+        curr_fsm = fsm + *(statemap + curr_state);
         while (curr_fsm->state_no == curr_state) {
-            if (curr_fsm->target != -1 ) {
-                (*(invcount+(curr_fsm->target)))--;
+            if (curr_fsm->target != -1) {
+                (*(invcount + (curr_fsm->target)))--;
 
                 /* Check if we overflow the path counter */
 
                 if (!overflow) {
-                    *(pathcount+(curr_fsm->target)) += *(pathcount+curr_state);
-                    if ((*(pathcount+(curr_fsm->target)) < 0)) {
+                    *(pathcount + (curr_fsm->target)) += *(pathcount + curr_state);
+                    if ((*(pathcount + (curr_fsm->target)) < 0)) {
                         overflow = 1;
                     }
                 }
 
                 /* Case (1) for cyclic */
-                if (*(treated+(curr_fsm)->target) == 1) {
+                if (*(treated + (curr_fsm)->target) == 1) {
                     net->pathcount = PATHCOUNT_CYCLIC;
                     net->is_loop_free = 0;
                     goto cyclic;
                 }
-                if ( *(invcount+(curr_fsm->target)) == 0) {
+                if (*(invcount + (curr_fsm->target)) == 0) {
                     int_stack_push(curr_fsm->target);
                 }
             }
@@ -129,11 +131,11 @@ struct fsm *fsm_topsort (struct fsm *net) {
         goto cyclic;
     }
 
-    new_fsm = malloc(sizeof(struct fsm_state) * (lc+1));
-    for (i=0, j=0 ; i < net->statecount; i++) {
+    new_fsm = malloc(sizeof(struct fsm_state) * (lc + 1));
+    for (i = 0, j = 0; i < net->statecount; i++) {
 
-        curr_state = *(order+i);
-        curr_fsm = fsm+*(statemap+curr_state);
+        curr_state = *(order + i);
+        curr_fsm = fsm + *(statemap + curr_state);
 
         if (curr_fsm->final_state == 1 && !overflow) {
             grand_pathcount += *(pathcount + curr_state);
@@ -143,9 +145,10 @@ struct fsm *fsm_topsort (struct fsm *net) {
 
         for (; curr_fsm->state_no == curr_state; curr_fsm++) {
 
-            newstate = curr_fsm->state_no  == -1 ? -1 : *(newnum+(curr_fsm->state_no));
-            newtarget = curr_fsm->target == -1 ? -1 : *(newnum+(curr_fsm->target));
-            add_fsm_arc(new_fsm, j, newstate, curr_fsm->in, curr_fsm->out, newtarget, curr_fsm->final_state, curr_fsm->start_state);
+            newstate = curr_fsm->state_no == -1 ? -1 : *(newnum + (curr_fsm->state_no));
+            newtarget = curr_fsm->target == -1 ? -1 : *(newnum + (curr_fsm->target));
+            add_fsm_arc(new_fsm, j, newstate, curr_fsm->in, curr_fsm->out, newtarget,
+                        curr_fsm->final_state, curr_fsm->start_state);
             j++;
         }
     }
@@ -159,7 +162,7 @@ struct fsm *fsm_topsort (struct fsm *net) {
     }
     free(fsm);
 
- cyclic:
+cyclic:
 
     free(statemap);
     free(order);
@@ -168,5 +171,5 @@ struct fsm *fsm_topsort (struct fsm *net) {
     free(invcount);
     free(treated);
     int_stack_clear();
-    return(net);
+    return (net);
 }

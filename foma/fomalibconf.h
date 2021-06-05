@@ -63,15 +63,15 @@ struct fsm_construct_handle {
 
 struct apply_med_handle {
     struct astarnode {
-	short int wordpos;
-	int fsmstate;
-	short int f;
-	short int g;
-	short int h;
-	int in;
-	int out;
-	int parent;
-    } *agenda;
+        short int wordpos;
+        int fsmstate;
+        short int f;
+        short int g;
+        short int h;
+        int in;
+        int out;
+        int parent;
+    } * agenda;
     int bytes_per_letter_array;
     uint8_t *letterbits;
     uint8_t *nletterbits;
@@ -124,19 +124,19 @@ struct apply_handle {
     int *marks;
 
     struct sigma_trie {
-	int signum;
-	struct sigma_trie *next;
-    } *sigma_trie;
+        int signum;
+        struct sigma_trie *next;
+    } * sigma_trie;
 
     struct sigmatch_array {
-	int signumber ;
-	int consumes ;
-    } *sigmatch_array;
+        int signumber;
+        int consumes;
+    } * sigmatch_array;
 
     struct sigma_trie_arrays {
-	struct sigma_trie *arr;
-	struct sigma_trie_arrays *next;
-    } *sigma_trie_arrays;
+        struct sigma_trie *arr;
+        struct sigma_trie_arrays *next;
+    } * sigma_trie_arrays;
 
     int binsearch;
     int indexed;
@@ -162,48 +162,48 @@ struct apply_handle {
     char *outstring;
     char *instring;
     struct sigs {
-	char *symbol;
-	int length;
-    } *sigs;
+        char *symbol;
+        int length;
+    } * sigs;
     char *oldflagvalue;
 
     struct fsm *last_net;
     struct fsm_state *gstates;
     struct sigma *gsigma;
     struct apply_state_index {
-	int fsmptr;
-	struct apply_state_index *next;
-    } **index_in, **index_out, *iptr;
+        int fsmptr;
+        struct apply_state_index *next;
+    } * *index_in, **index_out, *iptr;
 
     struct flag_list {
-	char *name;
-	char *value;
-	short neg;
-	struct flag_list *next;
-    } *flag_list;
+        char *name;
+        char *value;
+        short neg;
+        struct flag_list *next;
+    } * flag_list;
 
     struct flag_lookup {
-	int type;
-	char *name;
-	char *value;
-    } *flag_lookup ;
+        int type;
+        char *name;
+        char *value;
+    } * flag_lookup;
 
     struct searchstack {
-	int offset;
-	struct apply_state_index *iptr;
-	int state_has_index;
-	int opos;
-	int ipos;
-	int visitmark;
-	char *flagname;
-	char *flagvalue;
-	int flagneg;
-    } *searchstack ;
+        int offset;
+        struct apply_state_index *iptr;
+        int state_has_index;
+        int opos;
+        int ipos;
+        int visitmark;
+        char *flagname;
+        char *flagvalue;
+        int flagneg;
+    } * searchstack;
 };
 
-
 /* Automaton functions operating on fsm_state */
-int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out, int target, int final_state, int start_state);
+int add_fsm_arc(struct fsm_state *fsm, int offset, int state_no, int in, int out, int target,
+                int final_state, int start_state);
 struct fsm_state *fsm_state_copy(struct fsm_state *fsm_state, int linecount);
 
 /* Functions for constructing a FSM arc-by-arc */
@@ -239,7 +239,7 @@ int find_arccount(struct fsm_state *fsm);
 int int_stack_isempty();
 int int_stack_isfull();
 void int_stack_clear();
-int int_stack_find (int entry);
+int int_stack_find(int entry);
 void int_stack_push(int c);
 int int_stack_pop();
 int int_stack_status();
@@ -253,19 +253,19 @@ int ptr_stack_isfull();
 void ptr_stack_push(void *ptr);
 
 /* Sigma functions */
-FEXPORT int sigma_add (char *symbol, struct sigma *sigma);
+FEXPORT int sigma_add(char *symbol, struct sigma *sigma);
 FEXPORT int sigma_add_number(struct sigma *sigma, char *symbol, int number);
-FEXPORT int sigma_add_special (int symbol, struct sigma *sigma);
+FEXPORT int sigma_add_special(int symbol, struct sigma *sigma);
 FEXPORT struct sigma *sigma_remove(char *symbol, struct sigma *sigma);
 FEXPORT struct sigma *sigma_remove_num(int num, struct sigma *sigma);
 
-int sigma_find (char *symbol, struct sigma *sigma);
-int sigma_find_number (int number, struct sigma *sigma);
+int sigma_find(char *symbol, struct sigma *sigma);
+int sigma_find_number(int number, struct sigma *sigma);
 int sigma_substitute(char *orig, char *sub, struct sigma *sigma);
 FEXPORT char *sigma_string(int number, struct sigma *sigma);
-int sigma_sort (struct fsm *net);
-void sigma_cleanup (struct fsm *net, int force);
-FEXPORT struct sigma *sigma_create ();
+int sigma_sort(struct fsm *net);
+void sigma_cleanup(struct fsm *net, int force);
+FEXPORT struct sigma *sigma_create();
 int sigma_size(struct sigma *sigma);
 FEXPORT int sigma_max(struct sigma *sigma);
 struct fsm_sigma_list *sigma_to_list(struct sigma *sigma);

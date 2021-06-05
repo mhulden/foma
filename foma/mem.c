@@ -37,7 +37,7 @@ int g_minimize_hopcroft = 1;
 int g_compose_tristate = 0;
 int g_list_limit = 100;
 int g_list_random_limit = 15;
-int g_med_limit  = 3;
+int g_med_limit = 3;
 int g_med_cutoff = 15;
 int g_lexc_align = 0;
 char *g_att_epsilon = "@0@";
@@ -45,10 +45,11 @@ char *g_att_epsilon = "@0@";
 char *xxstrndup(const char *s, size_t n) {
     char *r = NULL;
     const char *p = s;
-    while(*p++ && n--);
+    while (*p++ && n--)
+        ;
     n = p - s - 1;
-    r = (char *) malloc(n + 1);
-    if(r != NULL) {
+    r = (char *)malloc(n + 1);
+    if (r != NULL) {
         memcpy(r, s, n);
         r[n] = 0;
     }
@@ -57,7 +58,7 @@ char *xxstrndup(const char *s, size_t n) {
 
 int next_power_of_two(int v) {
     int i;
-    for (i=0; v > 0; i++)
+    for (i = 0; v > 0; i++)
         v = v >> 1;
     return (1 << i);
 }
@@ -70,5 +71,5 @@ unsigned int round_up_to_power_of_two(unsigned int v) {
     v |= v >> 8;
     v |= v >> 16;
     v++;
-    return(v);
+    return (v);
 }
