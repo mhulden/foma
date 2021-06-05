@@ -1,27 +1,28 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "foma.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern int g_verbose;
-struct defined_networks   *g_defines;
-struct defined_functions  *g_defines_f;
+struct defined_networks *g_defines;
+struct defined_functions *g_defines_f;
 
 /* Find a defined symbol from the symbol table */
 /* Return the corresponding FSM                */
 struct fsm *find_defined(struct defined_networks *def, char *string) {
     struct defined_networks *d;
     for (d = def; d != NULL; d = d->next) {
-	if (d->name != NULL && strcmp(string, d->name) == 0) {
-	    return(d->net);
-	}
+        if (d->name != NULL && strcmp(string, d->name) == 0) {
+            return (d->net);
+        }
     }
     return NULL;
 }
 
 struct defined_networks *defined_networks_init(void) {
     struct defined_networks *def;
-    def = calloc(1, sizeof(struct defined_networks)); /* Dummy first entry, so we can maintain the ptr */
+    def = calloc(
+        1, sizeof(struct defined_networks)); /* Dummy first entry, so we can maintain the ptr */
     return def;
 }
 
@@ -40,46 +41,46 @@ int remove_defined(struct defined_networks *def, char *string) {
     int exists = 0;
     /* Undefine all */
     if (string == NULL) {
-	for (d = def; d != NULL; d = d_next) {
-	    d_next = d->next;
-	    if (d->net != NULL)
-	        fsm_destroy(d->net);
-	    if (d->name != NULL)
-	        free(d->name);
-	}
-	return 0;
+        for (d = def; d != NULL; d = d_next) {
+            d_next = d->next;
+            if (d->net != NULL)
+                fsm_destroy(d->net);
+            if (d->name != NULL)
+                free(d->name);
+        }
+        return 0;
     }
     d_prev = NULL;
     for (d = def; d != NULL; d_prev = d, d = d->next) {
-	if (d->name != NULL && strcmp(d->name, string) == 0) {
-	    exists = 1;
-	    break;
-	}
+        if (d->name != NULL && strcmp(d->name, string) == 0) {
+            exists = 1;
+            break;
+        }
     }
     if (exists == 0) {
-	return 1;
+        return 1;
     }
     if (d == def) {
-	if (d->next != NULL) {
-	    fsm_destroy(d->net);
-	    free(d->name);
-	    d->name = d->next->name;
-	    d->net = d->next->net;
-	    d_next = d->next->next;
-	    free(d->next);
-	    d->next = d_next;
-	} else {
-	    fsm_destroy(d->net);
-	    free(d->name);
-	    d->next = NULL;
-	    d->name = NULL;
-	    d->net = NULL;
-	}
+        if (d->next != NULL) {
+            fsm_destroy(d->net);
+            free(d->name);
+            d->name = d->next->name;
+            d->net = d->next->net;
+            d_next = d->next->next;
+            free(d->next);
+            d->next = d_next;
+        } else {
+            fsm_destroy(d->net);
+            free(d->name);
+            d->next = NULL;
+            d->name = NULL;
+            d->net = NULL;
+        }
     } else {
-	fsm_destroy(d->net);
-	free(d->name);
-	d_prev->next = d->next;
-	free(d);
+        fsm_destroy(d->net);
+        free(d->name);
+        d_prev->next = d->next;
+        free(d);
     }
     return 0;
 }
@@ -88,9 +89,9 @@ int remove_defined(struct defined_networks *def, char *string) {
 /* Returns the corresponding regex                       */
 char *find_defined_function(struct defined_functions *deff, char *name, int numargs) {
     struct defined_functions *d;
-    for (d = deff ; d != NULL; d = d->next) {
+    for (d = deff; d != NULL; d = d->next) {
         if (d->name != NULL && strcmp(d->name, name) == 0 && d->numargs == numargs) {
-            return(d->regex);
+            return (d->regex);
         }
     }
     return NULL;
@@ -100,23 +101,22 @@ char *find_defined_function(struct defined_functions *deff, char *name, int numa
 int add_defined_function(struct defined_functions *deff, char *name, char *regex, int numargs) {
     struct defined_functions *d;
     for (d = deff; d != NULL; d = d->next) {
-	if (d->name != NULL && strcmp(d->name, name) == 0 && d->numargs == numargs) {
-	    free(d->regex);
-	    d->regex = strdup(regex);
-            if (g_verbose)
-            {
-                fprintf(stderr,"redefined %s@%i)\n", name, numargs);
+        if (d->name != NULL && strcmp(d->name, name) == 0 && d->numargs == numargs) {
+            free(d->regex);
+            d->regex = strdup(regex);
+            if (g_verbose) {
+                fprintf(stderr, "redefined %s@%i)\n", name, numargs);
                 fflush(stderr);
             }
-	    return 1;
-	}
+            return 1;
+        }
     }
     if (deff->name == NULL) {
-	d = deff;
+        d = deff;
     } else {
-	d = malloc(sizeof(struct defined_functions));
-	d->next = deff->next;
-	deff->next = d;
+        d = malloc(sizeof(struct defined_functions));
+        d->next = deff->next;
+        deff->next = d;
     }
     d->name = strdup(name);
     d->regex = strdup(regex);
@@ -131,27 +131,27 @@ int add_defined_function(struct defined_functions *deff, char *name, char *regex
 int add_defined(struct defined_networks *def, struct fsm *net, char *string) {
     struct defined_networks *d;
     if (net == NULL)
-	return 0;
+        return 0;
     if (strlen(string) > FSM_NAME_LEN) {
-      return(-1);
+        return (-1);
     }
 
     fsm_count(net);
     for (d = def; d != NULL; d = d->next) {
-	if (d->name != NULL && strcmp(d->name, string) == 0) {
-	    fsm_destroy(d->net);
-	    free(d->name);
-	    d->net = net;
-	    d->name = strdup(string);
-	    return 1;
-	}
+        if (d->name != NULL && strcmp(d->name, string) == 0) {
+            fsm_destroy(d->net);
+            free(d->name);
+            d->net = net;
+            d->name = strdup(string);
+            return 1;
+        }
     }
     if (def->name == NULL) {
-	d = def;
+        d = def;
     } else {
-	d = malloc(sizeof(struct defined_networks));
-	d->next = def->next;
-	def->next = d;
+        d = malloc(sizeof(struct defined_networks));
+        d->next = def->next;
+        def->next = d;
     }
     d->name = strdup(string);
     d->net = net;

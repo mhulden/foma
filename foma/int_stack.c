@@ -15,9 +15,9 @@
 /*   See the License for the specific language governing permissions and       */
 /*   limitations under the License.                                            */
 
+#include "foma.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include "foma.h"
 
 #define MAX_STACK 2097152
 #define MAX_PTR_STACK 2097152
@@ -52,45 +52,43 @@ void ptr_stack_push(void *ptr) {
     ptr_stack[++ptr_stack_top] = ptr;
 }
 
-
 int int_stack_isempty() {
-  return top == -1;
+    return top == -1;
 }
 
 void int_stack_clear() {
-  top = -1;
+    top = -1;
 }
 
-int int_stack_find (int entry) {
-  int i;
-  if (int_stack_isempty()) {
-    return 0;
-  }
-  for(i = 0; i <= top ; i++) {
-    if (entry == a[i]) {
-      return 1;
+int int_stack_find(int entry) {
+    int i;
+    if (int_stack_isempty()) {
+        return 0;
     }
-  }
-  return 0;
+    for (i = 0; i <= top; i++) {
+        if (entry == a[i]) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
-int int_stack_size () {
-  return (top + 1);
+int int_stack_size() {
+    return (top + 1);
 }
 
 void int_stack_push(int c) {
-  if (int_stack_isfull()) {
-    fprintf(stderr, "Stack full!\n");
-    exit(1);
-  }
-  a[++top] = c;
+    if (int_stack_isfull()) {
+        fprintf(stderr, "Stack full!\n");
+        exit(1);
+    }
+    a[++top] = c;
 }
 
-
 int int_stack_pop() {
-  return a[top--];
+    return a[top--];
 }
 
 int int_stack_isfull() {
-  return (top == (MAX_STACK - 1));
+    return (top == (MAX_STACK - 1));
 }

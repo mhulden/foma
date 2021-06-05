@@ -15,14 +15,14 @@
 /*   See the License for the specific language governing permissions and       */
 /*   limitations under the License.                                            */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <getopt.h>
-#include <time.h>
-#include <readline/readline.h>
 #include "foma.h"
+#include <ctype.h>
+#include <getopt.h>
+#include <readline/readline.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 /* Front-end behavior variables */
 int pipe_mode = 0;
@@ -35,24 +35,139 @@ int apply_direction;
 /* Variable to pass the position of rl completion to our completer */
 static int smatch;
 
-char *usagestring = "Usage: foma [-e \"command\"] [-f run-once-script] [-l startupscript] [-p] [-q] [-s] [-v]\n";
+char *usagestring =
+    "Usage: foma [-e \"command\"] [-f run-once-script] [-l startupscript] [-p] [-q] [-s] [-v]\n";
 
-static char** my_completion(const char*, int ,int);
-char *my_generator(const char* , int);
-char *cmd [] = {"ambiguous upper","apply down","apply med","apply up","apropos","assert-stack","clear stack","close sigma","compact sigma","complete net","compose net","concatenate net","crossproduct net","define","determinize net","echo","eliminate flags","eliminate flag","export cmatrix","extract ambiguous","extract unambiguous","factorize","help license","help warranty","ignore net","intersect net","invert net","label net","letter machine","load defined","lower-side net","minimize net","name net","negate net","one-plus net","pop stack","print defined","print dot","print lower-words","print cmatrix","print name","print net","print random-lower","print random-upper","print random-words","print sigma","print size","print shortest-string","print shortest-string-length","print words","print pairs","print random-pairs","print upper-words","prune net","push defined","quit","read att","read cmatrix","read prolog","read lexc","read regex","read spaced-text","read text","reverse net","rotate stack","save defined","save stack","sequentialize","set","show variables","show variable","shuffle net","sigma","sigma net","source","sort in","sort net","sort out","substitute defined","substitute symbol","system","test unambiguous","test equivalent","test functional","test identity","test lower-universal","test upper-universal","test non-null","test null","test sequential","turn stack","twosided flag-diacritics","undefine","union net","upper-side net","view net","write att","write prolog","zero-plus net",NULL};
+static char **my_completion(const char *, int, int);
+char *my_generator(const char *, int);
+char *cmd[] = {"ambiguous upper",
+               "apply down",
+               "apply med",
+               "apply up",
+               "apropos",
+               "assert-stack",
+               "clear stack",
+               "close sigma",
+               "compact sigma",
+               "complete net",
+               "compose net",
+               "concatenate net",
+               "crossproduct net",
+               "define",
+               "determinize net",
+               "echo",
+               "eliminate flags",
+               "eliminate flag",
+               "export cmatrix",
+               "extract ambiguous",
+               "extract unambiguous",
+               "factorize",
+               "help license",
+               "help warranty",
+               "ignore net",
+               "intersect net",
+               "invert net",
+               "label net",
+               "letter machine",
+               "load defined",
+               "lower-side net",
+               "minimize net",
+               "name net",
+               "negate net",
+               "one-plus net",
+               "pop stack",
+               "print defined",
+               "print dot",
+               "print lower-words",
+               "print cmatrix",
+               "print name",
+               "print net",
+               "print random-lower",
+               "print random-upper",
+               "print random-words",
+               "print sigma",
+               "print size",
+               "print shortest-string",
+               "print shortest-string-length",
+               "print words",
+               "print pairs",
+               "print random-pairs",
+               "print upper-words",
+               "prune net",
+               "push defined",
+               "quit",
+               "read att",
+               "read cmatrix",
+               "read prolog",
+               "read lexc",
+               "read regex",
+               "read spaced-text",
+               "read text",
+               "reverse net",
+               "rotate stack",
+               "save defined",
+               "save stack",
+               "sequentialize",
+               "set",
+               "show variables",
+               "show variable",
+               "shuffle net",
+               "sigma",
+               "sigma net",
+               "source",
+               "sort in",
+               "sort net",
+               "sort out",
+               "substitute defined",
+               "substitute symbol",
+               "system",
+               "test unambiguous",
+               "test equivalent",
+               "test functional",
+               "test identity",
+               "test lower-universal",
+               "test upper-universal",
+               "test non-null",
+               "test null",
+               "test sequential",
+               "turn stack",
+               "twosided flag-diacritics",
+               "undefine",
+               "union net",
+               "upper-side net",
+               "view net",
+               "write att",
+               "write prolog",
+               "zero-plus net",
+               NULL};
 
-char *abbrvcmd [] = {"ambiguous","close","down","up","med","size","loadd","lower-words","upper-words","net","random-lower","random-upper","words","random-words","regex","rpl","au revoir","bye","exit","saved","seq","ss","stack","tunam","tid","tfu","tlu","tuu","tnu","tnn","tseq","tsf","equ","pss","psz","ratt","tfd","hyvästi","watt","wpl","examb","exunamb","pairs","random-pairs",NULL};
+char *abbrvcmd[] = {"ambiguous",    "close",        "down",        "up",           "med",
+                    "size",         "loadd",        "lower-words", "upper-words",  "net",
+                    "random-lower", "random-upper", "words",       "random-words", "regex",
+                    "rpl",          "au revoir",    "bye",         "exit",         "saved",
+                    "seq",          "ss",           "stack",       "tunam",        "tid",
+                    "tfu",          "tlu",          "tuu",         "tnu",          "tnn",
+                    "tseq",         "tsf",          "equ",         "pss",          "psz",
+                    "ratt",         "tfd",          "hyvästi",     "watt",         "wpl",
+                    "examb",        "exunamb",      "pairs",       "random-pairs", NULL};
 
 /* #include "yy.tab.h" */
 
 int view_net(struct fsm *net);
 
 extern int input_is_file;
-extern int add_history (const char *);
+extern int add_history(const char *);
 extern int my_yyparse(char *my_string);
 void print_help();
-void xprintf(char *string) { return ; printf("%s",string); }
-char disclaimer[] = "Foma, version 0.10.0\nCopyright © 2008-2021 Mans Hulden\nThis is free software; see the source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type \"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or help \"<operator>\" for further help.\n\n";
+void xprintf(char *string) {
+    return;
+    printf("%s", string);
+}
+char disclaimer[] =
+    "Foma, version 0.10.0\nCopyright © 2008-2021 Mans Hulden\nThis is free software; see the "
+    "source code for copying conditions.\nThere is ABSOLUTELY NO WARRANTY; for details, type "
+    "\"help license\"\n\nType \"help\" to list all commands available.\nType \"help <topic>\" or "
+    "help \"<operator>\" for further help.\n\n";
 
 /* A static variable for holding the line. */
 
@@ -75,7 +190,7 @@ char *rl_gets(char *prompt) {
         }
     }
     if (use_readline == 0) {
-        printf("%s",prompt);
+        printf("%s", prompt);
         line_read = fgets(no_readline_line, 511, stdin);
         if (line_read != NULL) {
             strip_newline(line_read);
@@ -100,13 +215,13 @@ int main(int argc, char *argv[]) {
     extern void my_interfaceparse(char *my_string);
     /*  YY_BUFFER_STATE flex_command; */
     stack_init();
-    srand ((unsigned int)time(NULL));
+    srand((unsigned int)time(NULL));
     /* Init defined_networks structures */
     g_defines = defined_networks_init();
     g_defines_f = defined_functions_init();
 
     while ((opt = getopt(argc, argv, "e:f:hl:pqrsv")) != -1) {
-        switch(opt) {
+        switch (opt) {
         case 'e':
             my_interfaceparse(optarg);
             break;
@@ -125,7 +240,7 @@ int main(int argc, char *argv[]) {
             if (scriptfile != NULL) {
                 input_is_file = 1;
                 my_interfaceparse(scriptfile);
-		free(scriptfile);
+                free(scriptfile);
             }
             break;
         case 'p':
@@ -138,9 +253,10 @@ int main(int argc, char *argv[]) {
             use_readline = 0;
             break;
         case 's':
-	  exit(0);
+            exit(0);
         case 'v':
-            printf("%s %i.%i.%i%s\n",argv[0],MAJOR_VERSION,MINOR_VERSION,BUILD_VERSION,STATUS_VERSION);
+            printf("%s %i.%i.%i%s\n", argv[0], MAJOR_VERSION, MINOR_VERSION, BUILD_VERSION,
+                   STATUS_VERSION);
             exit(0);
         default:
             fprintf(stderr, "%s", usagestring);
@@ -149,13 +265,13 @@ int main(int argc, char *argv[]) {
     }
 
     if (!pipe_mode && g_verbose)
-        printf("%s",disclaimer);
+        printf("%s", disclaimer);
     rl_basic_word_break_characters = " >";
 
     rl_attempted_completion_function = my_completion;
-    for(;;) {
+    for (;;) {
         if (promptmode == PROMPT_MAIN)
-            sprintf(prompt, "foma[%i]: ",stack_size());
+            sprintf(prompt, "foma[%i]: ", stack_size());
         if (promptmode == PROMPT_A && apply_direction == AP_D)
             sprintf(prompt, "apply down> ");
         if (promptmode == PROMPT_A && apply_direction == AP_U)
@@ -163,9 +279,9 @@ int main(int argc, char *argv[]) {
         if (promptmode == PROMPT_A && apply_direction == AP_M)
             sprintf(prompt, "apply med> ");
         if (pipe_mode || !g_verbose)
-	    prompt[0] = '\0';
+            prompt[0] = '\0';
 
-	fflush(stdout);
+        fflush(stdout);
 
         command = rl_gets(prompt);
 
@@ -185,7 +301,7 @@ int main(int argc, char *argv[]) {
 }
 
 void print_help() {
-    printf("%s",usagestring);
+    printf("%s", usagestring);
     printf("Options:\n");
     printf("-e \"command\"\texecute a command on startup (-e can be invoked several times)\n");
     printf("-f scriptfile\tread commands from scriptfile on startup, and quit\n");
@@ -202,7 +318,7 @@ static char **my_completion(const char *text, int start, int end) {
 
     matches = (char **)NULL;
     smatch = start;
-    matches = rl_completion_matches ((char*)text, &my_generator);
+    matches = rl_completion_matches((char *)text, &my_generator);
 
     return (matches);
 }
@@ -221,10 +337,10 @@ char *my_generator(const char *text, int state) {
     while ((name = cmd[list_index])) {
         list_index++;
 
-        if (strncmp (name, text, len) == 0) {
+        if (strncmp(name, text, len) == 0) {
             nummatches++;
             /* Can't use strdup here */
-            return(strdup(name+smatch));
+            return (strdup(name + smatch));
         }
     }
 
@@ -233,8 +349,8 @@ char *my_generator(const char *text, int state) {
             list_index2++;
 
             /* Can't use strdup here */
-            if (strncmp (name, text, len) == 0)
-                return(strdup(name+smatch));
+            if (strncmp(name, text, len) == 0)
+                return (strdup(name + smatch));
         }
     }
 
