@@ -589,8 +589,7 @@ NOSPEQ     [\001-\177]{-}[\040\041\043\075]|[\300-\337].|[\340-\357]..|[\360-\36
 }
 
 <SYSTEM>{NONL}+ {
-  int ret;
-  ret = system(interfacetext);
+  (void)system(interfacetext);
   BEGIN(INITIAL);
 }
 
