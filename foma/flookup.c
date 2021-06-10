@@ -355,6 +355,8 @@ void handle_line(char *s) {
 
 void server_init(void) {
     unsigned int rcvsize = 262144;
+    int retval;
+    char server_address_string[INET_ADDRSTRLEN];
 
     if ((listen_sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 	perror("socket() failed");
@@ -373,7 +375,15 @@ void server_init(void) {
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_port = htons(port_number);
     if (server_address != NULL) {
-	serveraddr.sin_addr.s_addr = inet_addr(server_address);
+	retval = inet_pton(AF_INET, server_address, &serveraddr.sin_addr.s_addr);
+        if (retval != 1) {
+            if (retval == 0) {
+                printf("inet_pton() failed: string is not a valid address.\n");
+                exit(1);
+            }
+            perror("inet_pton() failed");
+            exit(1);
+        }
     } else {
 	serveraddr.sin_addr.s_addr = INADDR_ANY;
     }
@@ -381,5 +391,9 @@ void server_init(void) {
 	perror("bind() failed");
 	exit(1);
     }
-    printf("Started flookup server on %s port %i\n", inet_ntoa(serveraddr.sin_addr), port_number); fflush(stdout);
+    if (inet_ntop(AF_INET, &serveraddr.sin_addr, server_address_string, INET_ADDRSTRLEN) == NULL) {
+        perror("inet_ntop() failed");
+        exit(1);
+    }
+    printf("Started flookup server on %s port %i\n", server_address_string, port_number); fflush(stdout);
 }
