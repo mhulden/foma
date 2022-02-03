@@ -8,12 +8,21 @@ set(CPACK_PACKAGE_VERSION_PATCH 0)
 
 find_package(FLEX)
 find_package(BISON)
+find_package(ZLIB REQUIRED)
 
 set(CMAKE_C_STANDARD 99)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: Debug Release MinSizeRel RelWithDebInfo" FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif ()
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
+    set(LDFLAGS ZLIB::ZLIB -lreadline -ltermcap)
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
+    set(LDFLAGS ZLIB::ZLIB -lreadline -lncurses)
+else ()  # if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    set(LDFLAGS ZLIB::ZLIB -lreadline)
 endif ()
 
 # bison and flex
@@ -61,7 +70,7 @@ add_library(foma OBJECT
             )
 target_compile_options(foma PRIVATE -O3 -Wall -D_GNU_SOURCE -fvisibility=hidden -fPIC)
 target_include_directories(foma PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/foma)
-target_link_libraries(foma PUBLIC -lreadline -lz -ltermcap)
+target_link_libraries(foma PUBLIC ${LDFLAGS})
 
 include(CPack)
 
@@ -74,7 +83,7 @@ set_target_properties(foma_static PROPERTIES
 
 add_library(foma_shared SHARED $<TARGET_OBJECTS:foma>)
 target_link_libraries(foma_shared
-                      PUBLIC -lreadline -lz -ltermcap
+                      PUBLIC ${LDFLAGS}
                       PRIVATE foma)
 set_target_properties(foma_shared PROPERTIES
                       OUTPUT_NAME foma
@@ -90,16 +99,16 @@ add_executable(foma_exec
                )
 target_include_directories(foma_exec PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/foma)
 target_compile_options(foma_exec PUBLIC -O3 -Wall -D_GNU_SOURCE -fvisibility=hidden)
-target_link_libraries(foma_exec PUBLIC foma -lreadline -lz -ltermcap)
+target_link_libraries(foma_exec PUBLIC foma ${LDFLAGS})
 set_target_properties(foma_exec PROPERTIES OUTPUT_NAME foma)
 
 add_executable(flookup "${CMAKE_CURRENT_SOURCE_DIR}/foma/flookup.c")
 target_compile_options(flookup PUBLIC -O3 -Wall -D_GNU_SOURCE -fvisibility=hidden)
-target_link_libraries(flookup PUBLIC foma -lreadline -lz -ltermcap)
+target_link_libraries(flookup PUBLIC foma ${LDFLAGS})
 
 add_executable(cgflookup "${CMAKE_CURRENT_SOURCE_DIR}/foma/cgflookup.c")
 target_compile_options(cgflookup PUBLIC -O3 -Wall -D_GNU_SOURCE -fvisibility=hidden)
-target_link_libraries(cgflookup PUBLIC foma -lreadline -lz -ltermcap)
+target_link_libraries(cgflookup PUBLIC foma ${LDFLAGS})
 
 # install
 install(TARGETS foma_shared foma_static

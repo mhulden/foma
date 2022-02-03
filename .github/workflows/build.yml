@@ -15,6 +15,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: build with cmake
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make
+
     - name: build
       run: cd foma && make
 
@@ -46,7 +53,14 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: gcc bison flex make zlib-devel libreadline-devel ncurses-devel
+        install: gcc bison flex make cmake zlib-devel libreadline-devel ncurses-devel
+
+    - name: build with cmake
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make
 
     - name: Compile Foma
       run: cd foma && make
@@ -66,7 +80,7 @@ jobs:
           foma/README*
           foma/CHANGELOG
           foma/COPYING
-          
+
   build-macos:
 
     runs-on: macos-latest
@@ -74,8 +88,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install bison
+      run: brew install bison
+
+    - name: build with cmake
+      run: |
+        export PATH="$(brew --prefix bison)/bin:$PATH"
+        mkdir build
+        cd build
+        cmake ..
+        make
+
     - name: Compile Foma
-      run: brew install bison && export PATH="$(brew --prefix bison)/bin:$PATH" && cd foma && make
+      run: export PATH="$(brew --prefix bison)/bin:$PATH" && cd foma && make
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
