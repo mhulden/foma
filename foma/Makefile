@@ -95,7 +95,7 @@ install: foma libfoma libfoma.pc
 $(OBJS): foma.h
 
 libfoma.pc:
-	echo "prefix=${prefix}" > $@
+	echo "prefix=$${prefix}" > $@
 	echo 'exec_prefix=$${prefix}' >> $@
 	echo 'includedir=$${prefix}/include' >> $@
 	echo 'libdir=$${exec_prefix}/lib' >> $@
