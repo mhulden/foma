@@ -13,10 +13,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+
+    - name: dependencies
+      run: |
+           sudo apt-get -qy update
+           sudo apt-get -qfy install --no-install-recommends cmake
 
     - name: build
-      run: cd foma && make
+      run: cd foma && cmake . && make -j
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2
@@ -40,16 +45,16 @@ jobs:
         shell: msys2 {0}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
         update: true
-        install: gcc bison flex make zlib-devel libreadline-devel ncurses-devel
+        install: cmake gcc bison flex make zlib-devel libreadline-devel ncurses-devel
 
     - name: Compile Foma
-      run: cd foma && make
+      run: cd foma && cmake . && make -j
 
     - name: Copy MINGW64 DLLs to build directory
       run: cp /usr/bin/{msys-2.0.dll,msys-ncursesw6.dll,msys-readline8.dll,msys-z.dll} foma
@@ -66,16 +71,16 @@ jobs:
           foma/README*
           foma/CHANGELOG
           foma/COPYING
-          
+
   build-macos:
 
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Compile Foma
-      run: brew install bison && export PATH="$(brew --prefix bison)/bin:$PATH" && cd foma && make
+      run: brew install bison cmake && export PATH="$(brew --prefix bison)/bin:$PATH" && cd foma && cmake . && make -j
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v2

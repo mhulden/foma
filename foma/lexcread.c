@@ -506,8 +506,12 @@ void lexc_medpad() {
     for (i = 0; cwordout[i] != -1; i++) { }
     s2len = i;
     
-    int matrix[s1len+2][s2len+2];
-    int dirmatrix[s1len+2][s2len+2];
+    int **matrix = calloc(s1len + 2, sizeof(int*));
+    int** dirmatrix = calloc(s1len + 2, sizeof(int*));
+    for (size_t i = 0; i < s1len + 2; ++i) {
+        matrix[i] = calloc(s2len + 2, sizeof(int));
+        dirmatrix[i] = calloc(s2len + 2, sizeof(int));
+    }
 
     matrix[0][0] = 0;
     dirmatrix[0][0] = 0;
@@ -562,6 +566,13 @@ void lexc_medpad() {
     }
     cwordin[j] = -1;
     cwordout[j] = -1;
+
+    for (size_t i = 0; i < s1len + 2; ++i) {
+        free(matrix[i]);
+        free(dirmatrix[i]);
+    }
+    free(matrix);
+    free(dirmatrix);
 }
 
 void lexc_pad() {

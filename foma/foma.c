@@ -18,7 +18,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include <getopt.h>
 #include <time.h>
 #include <readline/readline.h>

@@ -33,7 +33,11 @@ extern "C" {
 
 #define INLINE inline
 
+#ifdef _MSC_VER
+#define FEXPORT __declspec(dllexport)
+#else
 #define FEXPORT __attribute__((visibility("default")))
+#endif
 
 /* Library version */
 #define MAJOR_VERSION 0

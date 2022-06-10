@@ -20,7 +20,9 @@
 #include <stdio.h>
 #include <limits.h>
 #include <getopt.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 #include <wctype.h>
 #include <locale.h>
 #include "fomalib.h"
