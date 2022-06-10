@@ -81,11 +81,11 @@ include_directories(${ZLIB_INCLUDE})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-BISON_TARGET(Bregex regex.y regex.c COMPILE_FLAGS "-v")
-FLEX_TARGET(Fregex regex.l lex.yy.c COMPILE_FLAGS "-8")
-FLEX_TARGET(Flexc lexc.l lex.lexc.c COMPILE_FLAGS "-8 --prefix=lexc")
-FLEX_TARGET(Finterface interface.l lex.interface.c COMPILE_FLAGS "-8 --prefix=interface")
-FLEX_TARGET(Fcmatrix cmatrix.l lex.cmatrix.c COMPILE_FLAGS "-8 --prefix=cmatrix")
+BISON_TARGET(Bregex regex.y "${CMAKE_CURRENT_BINARY_DIR}/regex.c" COMPILE_FLAGS "-v")
+FLEX_TARGET(Fregex regex.l "${CMAKE_CURRENT_BINARY_DIR}/lex.yy.c" COMPILE_FLAGS "-8")
+FLEX_TARGET(Flexc lexc.l "${CMAKE_CURRENT_BINARY_DIR}/lex.lexc.c" COMPILE_FLAGS "-8 --prefix=lexc")
+FLEX_TARGET(Finterface interface.l "${CMAKE_CURRENT_BINARY_DIR}/lex.interface.c" COMPILE_FLAGS "-8 --prefix=interface")
+FLEX_TARGET(Fcmatrix cmatrix.l "${CMAKE_CURRENT_BINARY_DIR}/lex.cmatrix.c" COMPILE_FLAGS "-8 --prefix=cmatrix")
 
 set(SOURCES
 	foma.h
@@ -127,8 +127,11 @@ set_target_properties(foma-static PROPERTIES ARCHIVE_OUTPUT_NAME foma)
 add_library(foma-shared SHARED ${SOURCES})
 target_link_libraries(foma-shared PRIVATE ${ZLIB_LIBS})
 set_target_properties(foma-shared PROPERTIES
-	LIBRARY_OUTPUT_NAME foma RUNTIME_OUTPUT_NAME foma ARCHIVE_OUTPUT_NAME foma
+	LIBRARY_OUTPUT_NAME foma RUNTIME_OUTPUT_NAME foma
 	VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+if(NOT MSVC)
+	set_target_properties(foma-shared PROPERTIES ARCHIVE_OUTPUT_NAME foma)
+endif()
 
 add_executable(foma-bin foma.c stack.c iface.c ${FLEX_Finterface_OUTPUTS})
 target_link_libraries(foma-bin PRIVATE foma-static ${READLINE_LIBRARIES} ${GETOPT_LIB})
