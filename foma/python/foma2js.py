@@ -120,7 +120,7 @@ def main():
     print()
 
     for key in trans:
-        state, inp = key.split('|')
+        state, inp = key.split('|', maxsplit=1)
         if inp == '@UN@':
             inp = '@ID@'
         print('{}.t[{} + \'|\' + \'{}\'] = [{}];'.format(args.name, state, inp, ','.join(trans[key])))
