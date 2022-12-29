@@ -6,7 +6,6 @@ foma_apply_down() in foma_apply_down.js for stand-alone
 transducer application."""
 
 import sys
-import os
 import re
 import argparse
 import gzip
