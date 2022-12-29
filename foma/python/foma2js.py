@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Converts foma file to js array for use with Javascript runtime
 Outputs a js array of all the transitions, indexed in the
 input direction. This array can be passed to the js function
