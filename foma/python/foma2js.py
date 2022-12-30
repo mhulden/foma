@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Converts foma file to js array for use with Javascript runtime
 Outputs a js array of all the transitions, indexed in the
 input direction. This array can be passed to the js function
@@ -6,7 +6,6 @@ foma_apply_down() in foma_apply_down.js for stand-alone
 transducer application."""
 
 import sys
-import os
 import re
 import argparse
 import gzip
