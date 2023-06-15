@@ -49,7 +49,7 @@ struct parser_vars {
 struct parser_vars parservarstack[MAX_PARSE_DEPTH];
 int g_parse_depth = 0;
 
-extern int yyparse();
+extern int yyparse(void *scanner, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 extern int get_iface_lineno(void);
 extern int rewrite, rule_direction, substituting;
 extern struct fsmcontexts *contexts;

@@ -71,7 +71,7 @@ static FILE *INFILE;
 static struct lookup_chain *chain_head, *chain_tail, *chain_new, *chain_pos;
 static fsm_read_binary_handle fsrh;
 
-static char *(*applyer)() = &apply_up;  /* Default apply direction = up */
+static char *(*applyer)(struct apply_handle *h, char *word) = &apply_up;  /* Default apply direction = up */
 static void handle_line(char *s);
 static void app_print(char *result);
 static char *get_next_line();
