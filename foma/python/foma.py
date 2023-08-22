@@ -323,7 +323,7 @@ class FST(object):
             raise ValueError('FST not defined')
         applyerhandle = foma_apply_init(self.fsthandle)
         if tokenize:
-            toksym = '\x07'
+            toksym = self.encode('\x07')
             foma_apply_set_space_symbol(c_void_p(applyerhandle), c_char_p(toksym))
         if word:
             output = applyf(c_void_p(applyerhandle), c_char_p(self.encode(word)))
@@ -335,7 +335,7 @@ class FST(object):
                 return
             else:
                 if tokenize:
-                    yield output[:-1].split('\x07')
+                    yield self.decode(output[:-1]).split(self.decode(toksym))
                 else:
                     yield self.decode(output)
             if word:
