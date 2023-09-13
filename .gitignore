@@ -9,3 +9,9 @@ cgflookup
 regex.*
 !regex.l
 *.dylib
+**/CMakeFiles/
+Makefile
+*.so
+*.pc
+*.cmake
+CMake*
