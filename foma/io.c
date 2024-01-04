@@ -999,7 +999,7 @@ static BOM BOM_codes[] = {
     { { 0x00, 0x00, 0xFE, 0xFF }, 4, "UTF-32BE" },
     { { 0xFF, 0xFE }, 2, "UTF16-LE" },
     { { 0xFE, 0xFF }, 2, "UTF16-BE" },
-    { NULL, 0, NULL },
+    { { 0, } , 0, NULL },
 };
 
 BOM *check_BOM(char *buffer) {
