@@ -148,9 +148,9 @@ foreach (@lines) {
 }
 
 print "var $jsnetname = new Object;\n";
-print "$jsnetname.t = Array;\n";
-print "$jsnetname.f = Array;\n";
-print "$jsnetname.s = Array;\n\n";
+print "$jsnetname.t = new Object;\n";
+print "$jsnetname.f = new Object;\n";
+print "$jsnetname.s = new Object;\n\n";
 
 foreach $k (keys %trans) {
     ($state, $in) = split /\|/, $k;
