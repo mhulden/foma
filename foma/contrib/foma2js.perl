@@ -12,7 +12,7 @@
 ###################################################################
 
 use Switch;
-use utf8;
+use Encode qw(encode decode);
 use Compress::Zlib;
 
 my $buffer ; my $filein ; my $file; my $jsnetname = 'myNet';
@@ -133,9 +133,10 @@ foreach (@lines) {
 	    $symbol =~ s/'/\\'/g;
 	    $sigma[$number] = $symbol;
 	    if ($number > 2) {
-		utf8::decode($symbol);	  
-		if (length($symbol) > $longestsymbollength) {
-		    $longestsymbollength = length($symbol);
+                my $jsym = encode("UTF-16LE", decode("UTF-8", $symbol));
+                my $jsymlen = int(length($jsym) / 2);
+		if ($jsymlen > $longestsymbollength) {
+		    $longestsymbollength = $jsymlen;
 		}
 		
 	    }
@@ -147,9 +148,9 @@ foreach (@lines) {
 }
 
 print "var $jsnetname = new Object;\n";
-print "$jsnetname.t = Array;\n";
-print "$jsnetname.f = Array;\n";
-print "$jsnetname.s = Array;\n\n";
+print "$jsnetname.t = new Object;\n";
+print "$jsnetname.f = new Object;\n";
+print "$jsnetname.s = new Object;\n\n";
 
 foreach $k (keys %trans) {
     ($state, $in) = split /\|/, $k;
