@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <div>
+        <label>Regex: <input id="regex" value="a -> b"></label><br>
+        <label>Input: <input id="input" value="aaa"></label><br>
+        <button onclick="apply('up')">Up</button>
+        <button onclick="apply('down')">Down</button>
+        <br>
+        <label>Result: <pre id="output"></pre></label>
+    </div>
+
+    <script>
+        var Module = {  // Emscripten looks for global object named 'Module'
+            onRuntimeInitialized: function() {  // When webassembly is loaded
+                window.foma = {
+                    parseRegex: Module.cwrap('fsm_parse_regex', 'number', ['string', 'number', 'number']),
+                    applyInit: Module.cwrap('apply_init', 'number', ['number']),
+                    applyUp: Module.cwrap('apply_up', 'string', ['number', 'string']),
+                    applyDown: Module.cwrap('apply_down', 'string', ['number', 'string']),
+                    destroy: Module.cwrap('fsm_destroy', null, ['number']),
+                    applyClear: Module.cwrap('apply_clear', null, ['number'])
+                };
+            }
+        };
+
+        function apply(dir) {
+            let result;
+            if (window.fsm) {
+                foma.applyClear(window.handle);
+                foma.destroy(window.fsm);
+            }
+
+            window.fsm = foma.parseRegex(document.getElementById('regex').value, 0, 0);
+            window.handle = foma.applyInit(window.fsm);
+            if (dir === `up`) {
+                result = foma.applyUp(window.handle, document.getElementById('input').value);
+
+            } else {
+                result = foma.applyDown(window.handle, document.getElementById('input').value);
+            }
+
+            document.getElementById('output').textContent = result || '(no output)';
+        }
+    </script>
+    <script src="libfoma.js"></script>
+</body>
+</html>

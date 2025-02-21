@@ -6,6 +6,8 @@ lex.*.[co]
 foma/foma
 flookup
 cgflookup
+libfoma.js
+libfoma.wasm
 regex.*
 !regex.l
 *.dylib
