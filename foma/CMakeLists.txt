@@ -61,23 +61,33 @@ else()
 	find_package(PkgConfig REQUIRED)
 	pkg_search_module(READLINE readline)
 endif()
-if(NOT READLINE_INCLUDE_DIRS)
-	find_path(READLINE_INCLUDE_DIRS readline.h PATH_SUFFIXES readline REQUIRED)
-	find_library(READLINE_LIBRARIES readline REQUIRED)
-endif()
-include_directories(${READLINE_INCLUDE_DIRS})
 
-# zlib
-find_path(ZLIB_INCLUDE zlib.h REQUIRED)
-if(VCPKG_TOOLCHAIN)
-	find_package(ZLIB REQUIRED)
-	find_library(ZLIB_LIBRARIES z REQUIRED)
-	set(ZLIB_LIBS ZLIB::ZLIB)
-else()
-	find_library(ZLIB_LIBRARIES z REQUIRED)
-	set(ZLIB_LIBS ${ZLIB_LIBRARIES})
+# Only look for readline if not building for WASM
+if(NOT EMSCRIPTEN)
+    if(NOT READLINE_INCLUDE_DIRS)
+        find_path(READLINE_INCLUDE_DIRS readline.h PATH_SUFFIXES readline REQUIRED)
+        find_library(READLINE_LIBRARIES readline REQUIRED)
+    endif()
+    include_directories(${READLINE_INCLUDE_DIRS})
 endif()
-include_directories(${ZLIB_INCLUDE})
+
+# zlib handling
+if(EMSCRIPTEN)
+    # Emscripten-specific zlib handling
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --use-port=zlib")
+    set(ZLIB_LIBS "")
+else()
+    find_path(ZLIB_INCLUDE zlib.h REQUIRED)
+    if(VCPKG_TOOLCHAIN)
+        find_package(ZLIB REQUIRED)
+        find_library(ZLIB_LIBRARIES z REQUIRED)
+        set(ZLIB_LIBS ZLIB::ZLIB)
+    else()
+        find_library(ZLIB_LIBRARIES z REQUIRED)
+        set(ZLIB_LIBS ${ZLIB_LIBRARIES})
+    endif()
+    include_directories(${ZLIB_INCLUDE})
+endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -133,23 +143,56 @@ if(NOT MSVC)
 	set_target_properties(foma-shared PROPERTIES ARCHIVE_OUTPUT_NAME foma)
 endif()
 
-add_executable(foma-bin foma.c stack.c iface.c ${FLEX_Finterface_OUTPUTS})
-target_link_libraries(foma-bin PRIVATE foma-static ${READLINE_LIBRARIES} ${GETOPT_LIB})
-set_target_properties(foma-bin PROPERTIES RUNTIME_OUTPUT_NAME foma)
+# WASM-specific target
+if(EMSCRIPTEN)
+    # Create WASM library target
+    add_executable(libfoma ${SOURCES})
+    target_link_libraries(libfoma PRIVATE ${ZLIB_LIBS})
 
-if(MSYS OR NOT WIN32)
-	add_executable(flookup flookup.c)
-	target_link_libraries(flookup PRIVATE foma-static ${GETOPT_LIB})
-	install(TARGETS flookup RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    # Emscripten-specific link flags - export all fomalib functions
+    set(EXPORTED_FUNCTIONS
+        "[\'_malloc\',\'_free\',\'_defined_networks_init\',\'_defined_functions_init\',\'_add_defined\',\'_add_defined_function\',\'_fsm_construct_init\',\'_fsm_construct_set_final\',\'_fsm_construct_set_initial\',\'_fsm_construct_add_arc\',\'_fsm_construct_add_arc_nums\',\'_fsm_construct_add_symbol\',\'_fsm_construct_check_symbol\',\'_fsm_construct_copy_sigma\',\'_fsm_construct_done\',\'_fsm_parse_regex\',\'_fsm_create\',\'_fsm_empty\',\'_fsm_empty_set\',\'_fsm_universal\',\'_fsm_identity\',\'_fsm_contains\',\'_fsm_contains_one\',\'_fsm_contains_opt_one\',\'_fsm_minimize\',\'_fsm_determinize\',\'_fsm_epsilon_remove\',\'_fsm_reverse\',\'_fsm_invert\',\'_fsm_lower\',\'_fsm_upper\',\'_fsm_kleene_star\',\'_fsm_kleene_plus\',\'_fsm_optionality\',\'_fsm_concat\',\'_fsm_union\',\'_fsm_intersect\',\'_fsm_compose\',\'_fsm_complement\',\'_fsm_minus\',\'_fsm_simple_replace\',\'_fsm_context_restrict\',\'_fsm_isempty\',\'_fsm_isfunctional\',\'_fsm_isidentity\',\'_fsm_destroy\',\'_fsm_copy\',\'_fsm_complete\',\'_apply_init\',\'_apply_clear\',\'_apply_up\',\'_apply_down\',\'_apply_words\',\'_apply_upper_words\',\'_apply_lower_words\',\'_apply_random_words\',\'_apply_random_upper\',\'_apply_random_lower\',\'_fsm_get_library_version_string\',\'_fsm_set_option\',\'_fsm_get_option\',\'_fsm_read_binary_file\',\'_fsm_write_binary_file\',\'_fsm_trie_init\',\'_fsm_trie_done\',\'_fsm_trie_add_word\',\'_fsm_trie_end_word\',\'_sigma_copy\',\'_fsm_sigma_destroy\',\'_fsm_merge_sigma\']")
+
+    set_target_properties(libfoma PROPERTIES
+        SUFFIX ".js"
+        LINK_FLAGS "-s WASM=1 \
+                   -s EXPORTED_RUNTIME_METHODS=[\'ccall\',\'cwrap\',\'stringToUTF8\',\'UTF8ToString\'] \
+                   -s EXPORTED_FUNCTIONS=${EXPORTED_FUNCTIONS} \
+                   -s ENVIRONMENT=web"
+    )
+
+    # Add custom target to clean WASM-generated files
+    set(WASM_GENERATED_FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/libfoma.js
+        ${CMAKE_CURRENT_BINARY_DIR}/libfoma.wasm
+    )
+
+    set_directory_properties(PROPERTIES
+        ADDITIONAL_CLEAN_FILES "${WASM_GENERATED_FILES}"
+    )
+
+    install(TARGETS libfoma RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+else()
+    # Regular foma-bin target
+    add_executable(foma-bin foma.c stack.c iface.c ${FLEX_Finterface_OUTPUTS})
+    target_link_libraries(foma-bin PRIVATE foma-static ${READLINE_LIBRARIES} ${GETOPT_LIB})
+    set_target_properties(foma-bin PROPERTIES RUNTIME_OUTPUT_NAME foma)
+
+	if(MSYS OR NOT WIN32)
+		add_executable(flookup flookup.c)
+		target_link_libraries(flookup PRIVATE foma-static ${GETOPT_LIB})
+		install(TARGETS flookup RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+	endif()
+
+	add_executable(cgflookup cgflookup.c)
+	target_link_libraries(cgflookup PRIVATE foma-static ${GETOPT_LIB})
+
+	configure_file(libfoma.pc.in libfoma.pc @ONLY)
+
+	# Install
+	install(TARGETS foma-static foma-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+	install(FILES fomalib.h fomalibconf.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+	install(TARGETS foma-bin cgflookup RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libfoma.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig/")
+
 endif()
-
-add_executable(cgflookup cgflookup.c)
-target_link_libraries(cgflookup PRIVATE foma-static ${GETOPT_LIB})
-
-configure_file(libfoma.pc.in libfoma.pc @ONLY)
-
-# Install
-install(TARGETS foma-static foma-shared ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES fomalib.h fomalibconf.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(TARGETS foma-bin cgflookup RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libfoma.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig/")
