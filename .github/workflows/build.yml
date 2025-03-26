@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: dependencies
       run: |
@@ -24,7 +24,7 @@ jobs:
       run: cd foma && cmake . && make -j
 
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: dist-linux
         path: |
@@ -45,7 +45,7 @@ jobs:
         shell: msys2 {0}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - uses: msys2/setup-msys2@v2
       with:
@@ -60,7 +60,7 @@ jobs:
       run: cp /usr/bin/{msys-2.0.dll,msys-ncursesw6.dll,msys-readline8.dll,msys-z.dll} foma
 
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: dist-windows
         path: |
@@ -77,13 +77,13 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Compile Foma
       run: brew install bison cmake && export PATH="$(brew --prefix bison)/bin:$PATH" && cd foma && cmake . && make -j
 
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: dist-macos
         path: |
