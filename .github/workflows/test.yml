@@ -11,7 +11,7 @@ jobs:
     - name: dependencies
       run: |
            sudo apt-get -qy update
-           sudo apt-get -qfy install --no-install-recommends cmake
+           sudo apt-get -qfy install --no-install-recommends cmake libreadline-dev
 
     - name: build with sanitizer
       run: cd foma && export CFLAGS="-g3 -Wall -fsanitize=address" && cmake . && make -j
