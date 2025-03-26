@@ -95,3 +95,28 @@ jobs:
           foma/README*
           foma/CHANGELOG
           foma/COPYING
+
+  build-wasm:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: mymindstorm/setup-emsdk@v14
+
+    - name: dependencies
+      run: |
+           sudo apt-get -qy update
+           sudo apt-get -qfy install --no-install-recommends cmake libreadline-dev
+
+    - name: build
+      run: cd foma && emcmake cmake && emmake make
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-wasm
+        path: |
+          foma/libfoma.js
+          foma/libfoma.wasm
