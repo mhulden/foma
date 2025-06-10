@@ -176,6 +176,7 @@ else()
     # Regular foma-bin target
     add_executable(foma-bin foma.c stack.c iface.c ${FLEX_Finterface_OUTPUTS})
     target_link_libraries(foma-bin PRIVATE foma-static ${READLINE_LIBRARIES} ${GETOPT_LIB})
+    target_link_directories(foma-bin PRIVATE ${READLINE_LIBRARY_DIRS})
     set_target_properties(foma-bin PROPERTIES RUNTIME_OUTPUT_NAME foma)
 
 	if(MSYS OR NOT WIN32)
