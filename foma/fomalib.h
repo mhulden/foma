@@ -307,7 +307,7 @@ FEXPORT struct fsm *flag_eliminate(struct fsm *net, char *name);
 FEXPORT struct fsm *flag_twosided(struct fsm *net);
 
 /* Compile a rewrite rule */
-FEXPORT struct fsm *fsm_rewrite();
+FEXPORT struct fsm *fsm_rewrite(struct rewrite_set *all_rules);
 
 /* Boolean tests */
 FEXPORT int fsm_isempty(struct fsm *net);

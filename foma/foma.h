@@ -113,7 +113,7 @@ void iface_print_shortest_string();
 void iface_print_shortest_string_size();
 void iface_print_name(void);
 void iface_quit(void);
-void iface_apply_random(char *(*applyer)(), int limit);
+void iface_apply_random(char *(*applyer)(struct apply_handle *h), int limit);
 void iface_random_lower(int limit);
 void iface_random_upper(int limit);
 void iface_random_words(int limit);
