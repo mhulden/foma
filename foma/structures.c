@@ -46,11 +46,15 @@ void *fsm_get_option(unsigned long long option) {
 	return NULL;
 }
 
-int linesortcompin(struct fsm_state *a, struct fsm_state *b) {
+int linesortcompin(const void *_a, const void *_b) {
+    const struct fsm_state *a = _a;
+    const struct fsm_state *b = _b;
     return (a->in - b->in);
 }
 
-int linesortcompout(struct fsm_state *a, struct fsm_state *b) {
+int linesortcompout(const void *_a, const void *_b) {
+    const struct fsm_state *a = _a;
+    const struct fsm_state *b = _b;
     return (a->out - b->out);
 }
 
@@ -58,8 +62,8 @@ void fsm_sort_arcs(struct fsm *net, int direction) {
     /* direction 1 = in, direction = 2, out */
     struct fsm_state *fsm;
     int i, lasthead, numlines;
-    int(*scin)() = linesortcompin;
-    int(*scout)() = linesortcompout;
+    int(*scin)(const void*,const void*) = linesortcompin;
+    int(*scout)(const void*, const void*) = linesortcompout;
     fsm = net->states;
     for (i=0, numlines = 0, lasthead = 0 ; (fsm+i)->state_no != -1; i++) {
 	if ((fsm+i)->state_no != (fsm+i+1)->state_no || (fsm+i)->target == -1) {
