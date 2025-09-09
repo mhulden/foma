@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 
 file(READ fomalib.h _VERSION_FILE)
@@ -26,7 +26,7 @@ else()
 
 	# Require latest possible C standard
 	include(CheckCCompilerFlag)
-	foreach(flag "-std=c18" "-std=c17" "-std=c11" "-std=c1x" "-std=c99")
+	foreach(flag "-std=c2y" "-std=c23" "-std=c2x" "-std=c18" "-std=c17" "-std=c11" "-std=c1x" "-std=c99")
 		string(REGEX REPLACE "[^a-z0-9]" "" _flag ${flag})
 		CHECK_C_COMPILER_FLAG(${flag} COMPILER_SUPPORTS_${_flag})
 		if(COMPILER_SUPPORTS_${_flag})

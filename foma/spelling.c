@@ -37,7 +37,7 @@
 #define min_(X, Y)  ((X) < (Y) ? (X) : (Y))
 
 static int calculate_h(struct apply_med_handle *medh, int *intword, int currpos, int state);
-static struct astarnode *node_delete_min();
+static struct astarnode *node_delete_min(struct apply_med_handle *medh);
 int node_insert(struct apply_med_handle *medh, int wordpos, int fsmstate, int g, int h, int in, int out, int parent);
 
 char *print_sym(int sym, struct sigma *sigma) {

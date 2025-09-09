@@ -790,7 +790,7 @@ void iface_random_words(int limit) {
     iface_apply_random(&apply_random_words, limit);
 }
 
-void iface_apply_random(char *(*applyer)(), int limit) {
+void iface_apply_random(char *(*applyer)(struct apply_handle *h), int limit) {
     char *result;
     struct apply_handle *ah;
     int i;
@@ -1230,7 +1230,7 @@ void iface_words_file(char *filename, int type) {
     /* type 0 (words), 1 (upper-words), 2 (lower-words) */
     FILE *outfile;
     char *result;
-    static char *(*applyer)() = &apply_words;
+    static char *(*applyer)(struct apply_handle *h) = &apply_words;
     struct apply_handle *ah;
 
     if (type == 1) {

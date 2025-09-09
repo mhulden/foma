@@ -21,8 +21,11 @@
 #include <string.h>
 #include "foma.h"
 #define MAX_F_RECURSION 100
-extern int yyerror();
-extern int yylex();
+typedef void* yyscan_t;
+typedef struct YYLTYPE YYLTYPE;
+typedef union YYSTYPE YYSTYPE;
+extern int yyerror(YYLTYPE* yylloc, yyscan_t scanner, struct defined_networks *defined_nets, struct defined_functions *defined_funcs, char *msg);
+extern int yylex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param , yyscan_t yyscanner);
 extern int my_yyparse(char *my_string, int lineno, struct defined_networks *defined_nets, struct defined_functions *defined_funcs);
 struct fsm *current_parse;
 int rewrite, rule_direction;
