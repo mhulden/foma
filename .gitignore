@@ -17,3 +17,4 @@ Makefile
 *.pc
 *.cmake
 CMake*
+__pycache__/

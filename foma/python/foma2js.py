@@ -107,15 +107,16 @@ def main():
             if '\'' in symbol:
                 symbol = symbol.replace('\'', '\\\'')
             sigma[number] = symbol
-            if number > 2 and len(symbol) > longest_symbol_length:
-                longest_symbol_length = len(symbol)
+            if number > 2:
+                longest_symbol_length = max(longest_symbol_length,
+                                            len(symbol.encode("UTF-16LE")) // 2)
         elif mode is Mode.NONE:
             raise ValueError('Format error')
         
     print('var {} = new Object;'.format(args.name))
-    print('{}.t = Array;'.format(args.name))
-    print('{}.f = Array;'.format(args.name))
-    print('{}.s = Array;'.format(args.name))
+    print('{}.t = new Object;'.format(args.name))
+    print('{}.f = new Object;'.format(args.name))
+    print('{}.s = new Object;'.format(args.name))
     print()
 
     for key in trans:
@@ -128,9 +129,8 @@ def main():
         if i in finals:
             print('{}.f[{}] = 1;'.format(args.name, i))
 
-    for i in range(3, len(sigma)):
-        if i in sigma:
-            print('{}.s[\'{}\'] = {};'.format(args.name, sigma[i], i))
+    for i in range(3, max(sigma.keys()) + 1):
+        print('{}.s[\'{}\'] = {};'.format(args.name, sigma[i], i))
 
     print('{}.maxlen = {} ;'.format(args.name, longest_symbol_length))
 
