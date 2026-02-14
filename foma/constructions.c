@@ -712,7 +712,7 @@ struct fsm *fsm_compose(struct fsm *net1, struct fsm *net2) {
                 }
 
                 if (!g_compose_tristate) {
-                    if (bin == aout && bin != -1 && bin != EPSILON) {
+                    if (bin == aout && bin != -1 && (bin != EPSILON || mode == 0)) {
                         /* mode -> 0 */
                         if ((target_number = triplet_hash_find(th, machine_a->target, iptr->target, 0)) == -1) {
                             STACK_3_PUSH(0, iptr->target, machine_a->target);
