@@ -1,0 +1,119 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'          # Triggers on tags like v1.0, v0.5.2, etc.
+
+permissions:
+  contents: write   # Required to create releases & upload assets
+
+jobs:
+  build-and-release:
+    name: Build & Release for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: dist-linux
+            files: |
+              foma/foma
+              foma/flookup
+              foma/cgflookup
+              foma/libfoma.so.*
+              foma/README*
+              foma/CHANGELOG
+              foma/COPYING
+          - os: windows-latest
+            artifact_name: dist-windows
+            files: |
+              foma/foma.exe
+              foma/flookup.exe
+              foma/cgflookup.exe
+              foma/*.dll
+              foma/README*
+              foma/CHANGELOG
+              foma/COPYING
+          - os: macos-latest
+            artifact_name: dist-macos
+            files: |
+              foma/foma
+              foma/cgflookup
+              foma/flookup
+              foma/libfoma.a
+              foma/libfoma.*.dylib
+              foma/README*
+              foma/CHANGELOG
+              foma/COPYING
+
+    steps:
+    - uses: actions/checkout@v4   # Bump to v4 if not already
+
+    # ── Linux dependencies & build ───────────────────────────────────────
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get -qy update
+        sudo apt-get -qfy install --no-install-recommends \
+          cmake libreadline-dev build-essential zlib1g-dev
+
+    - name: Build (Linux)
+      if: runner.os == 'Linux'
+      run: cd foma && cmake . && make -j
+
+    # ── Windows (your existing MSYS2 setup) ──────────────────────────────
+    - uses: msys2/setup-msys2@v2
+      if: runner.os == 'Windows'
+      with:
+        msystem: MINGW64
+        update: true
+        install: cmake gcc bison flex make zlib-devel libreadline-devel ncurses-devel
+
+    - name: Compile Foma (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      run: cd foma && cmake . && make -j
+
+    - name: Copy required DLLs (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      run: cp /usr/bin/{msys-2.0.dll,msys-ncursesw6.dll,msys-readline8.dll,msys-z.dll} foma
+
+    # ── macOS ────────────────────────────────────────────────────────────
+    - name: Install dependencies & Build (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install bison cmake
+        export PATH="$(brew --prefix bison)/bin:$PATH"
+        cd foma && cmake . && make -j
+
+    # ── Archive the built files as artifacts (per platform) ──────────────
+    - name: Archive binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.files }}
+
+    # ── Only on the LAST job (combine all & release) ─────────────────────
+    - name: Download all platform artifacts
+      if: matrix.os == 'ubuntu-latest'   # Run only once, e.g. on Linux job
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+        pattern: dist-*
+        merge-multiple: true
+
+    - name: Create Release & Upload Assets
+      if: matrix.os == 'ubuntu-latest'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/dist-linux/*
+          dist/dist-windows/*
+          dist/dist-macos/*
+        generate_release_notes: true   # Auto-generates from commits (optional)
+        # body_path: RELEASE_NOTES.md  # Or provide your own changelog
+        # draft: true                  # Start as draft if you want to review first
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
