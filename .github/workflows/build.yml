@@ -18,7 +18,7 @@ jobs:
     - name: dependencies
       run: |
            sudo apt-get -qy update
-           sudo apt-get -qfy install --no-install-recommends cmake
+           sudo apt-get -qfy install --no-install-recommends cmake libreadline-dev
 
     - name: build
       run: cd foma && cmake . && make -j
