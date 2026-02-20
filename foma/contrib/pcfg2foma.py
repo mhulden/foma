@@ -13,6 +13,9 @@ foma’s `Parse()` function:
 
 which produces an automaton containing all valid parses.
 
+You can also just do the composition yieldinv .o. Gr to create a transducer
+that parses input string into trees.
+
 Grammar format
 --------------
 One rule per line:
@@ -229,25 +232,25 @@ def _build_foma_script(
     Center = " |\n".join(crules_parts)
 
     out: List[str] = []
-    out.append(f"define NT {NT} ;\n")
-    out.append(f"define T {T} ;\n")
-    out.append("define RHS \"->\" [NT|T]+;\n")
+    out.append(f"define Nonterminal {NT} ;\n")
+    out.append(f"define Terminal {T} ;\n")
+    out.append("define RHS \"->\" [Nonterminal|Terminal]+;\n")
     out.append("define PB [%^|\"(\"|\")\"];\n")
     out.append(f"define LRules {LRules} ;\n")
     out.append(f"define RRules {RRules} ;\n")
     out.append(f"define Center {Center} ;\n")
     out.append("define Center [Center .o. [NOTPB:[[\\PB-NOTPB]*]|\\NOTPB]*].l;\n")
-    out.append("define Mid [ %[ [NT RHS | T]  %] | %{ [NT RHS | T] %} ]*;\n")
-    out.append("define Filter [ %[ T %] Mid* \"(\" NT RHS \")\" [Mid* %[ T %] %^]* (Mid* %[ T %]) ];\n")
+    out.append("define Mid [ %[ [Nonterminal RHS | Terminal]  %] | %{ [Nonterminal RHS | Terminal] %} ]*;\n")
+    out.append("define Filter [ %[ Terminal %] Mid* \"(\" Nonterminal RHS \")\" [Mid* %[ Terminal %] %^]* (Mid* %[ Terminal %]) ];\n")
     out.append("define LR0 Filter <> %| %|;\n")
     out.append(
         "define LR [[ \\%|* %| %[ \\[%||%]]* %] [%{ \\[%||%}]* %}]* %[ \\[%||%]]* %] %| \\%|* ] & LR0] - \n"
         "[ [ \\%|* %| LRules %| \\%|* \"(\" \\%|* ] | [ \\%|* \")\" \\%|* %| RRules %| \\%|* ] ];\n"
     )
     out.append("define LR2 ~`[LR,%|,0] & Filter & Center;\n")
-    out.append("define Alphabet NT | T | %{ | %} | %[ | %] | %^ | \"->\" ;\n")
+    out.append("define Alphabet Nonterminal | Terminal | %{ | %} | %[ | %] | %^ | \"->\" ;\n")
     out.append(
-        "define IT [\\%{ | %{ %< | %{ 0:[\"<#\" Alphabet*] 0:%( NT RHS 0:%) 0:[Alphabet* \">#\"] %} | %{ T %} ]* "
+        "define IT [\\%{ | %{ %< | %{ 0:[\"<#\" Alphabet*] 0:%( Nonterminal RHS 0:%) 0:[Alphabet* \">#\"] %} | %{ Terminal %} ]* "
         ".o. ~[?* \"<#\" [ [?-\"<#\"-\">#\"]* & ~LR2 ] \">#\" ?*] .o. \"<#\" -> %< , \">#\" -> %>;\n"
     )
 
@@ -255,10 +258,12 @@ def _build_foma_script(
     out.append(f"define Gr [[LR2 & $[\"(\" {startsymbol}]] ")
     for _ in range(int(embeddings)):
         out.append(".o. IT ")
-    out.append(".o. ~$[%{ NT]].l;\n")
+    out.append(".o. ~$[%{ Nonterminal]].l;\n")
 
-    out.append("define Parse(X) [X .o. [? 0:T]*].l/\\T & Gr;\n")
-    out.append("clear\n")
+    out.append('define yieldinv [["{" "<" | ">" "}"] -> 0 .o. [[ "[":0 [Terminal|EPSILON:0] "]":0 | "{":0 [Terminal|EPSILON:0] "}":0 | "[":0 [Nonterminal:0]+ "->":0 [[Nonterminal|Terminal]:0]+ "]":0 | "(":0 [Nonterminal:0]+ "->":0 [[Nonterminal|Terminal]:0]+ ")":0 | "^":0 ]*]].i;\n')
+    out.append('define yield yieldinv.i;\n')
+    out.append("define Strings [Gr .o. yield .o. EPSILON -> 0].l;\n")
+    out.append("define Parse(String) [String .o. yieldinv].l & Gr;\n")
     out.append("regex Gr;\n")
 
     return "".join(out)
