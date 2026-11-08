@@ -255,7 +255,7 @@ class FST(object):
             if output == None:
                 return result
             else:
-                result.append(output)
+                result.append(self.decode(output))
                 output = foma_apply_down(c_void_p(self.getitemapplyer), None)
             
     def __del__(self):
