@@ -26,6 +26,18 @@ def test_apply_down(eat_fst):
     assert result == 'eats'
 
 
+def test_apply_med_returns_cost():
+    fst = FST('{cat}')
+
+    assert list(fst.apply_med('cut', med_limit=1)) == [('cat', 1)]
+
+
+def test_apply_med_can_return_alignment():
+    fst = FST('{cat}')
+
+    assert list(fst.apply_med(
+        'ct', include_alignment=True, med_limit=1)) == [('cat', 1, 'c-t')]
+
 @pytest.fixture
 def eat_fst():
     return FST.load('ate.fsm')
