@@ -64,6 +64,30 @@ foma_apply_down.restype = c_char_p
 foma_apply_up = foma.apply_up
 foma_apply_up.restype = c_char_p
 foma_apply_set_space_symbol = foma.apply_set_space_symbol
+foma_apply_med_init = foma.apply_med_init
+foma_apply_med_init.argtypes = [POINTER(FSTstruct)]
+foma_apply_med_init.restype = c_void_p
+foma_apply_med_clear = foma.apply_med_clear
+foma_apply_med_clear.argtypes = [c_void_p]
+foma_apply_med_clear.restype = None
+foma_apply_med = foma.apply_med
+foma_apply_med.argtypes = [c_void_p, c_char_p]
+foma_apply_med.restype = c_char_p
+foma_apply_med_get_cost = foma.apply_med_get_cost
+foma_apply_med_get_cost.argtypes = [c_void_p]
+foma_apply_med_get_cost.restype = c_int
+foma_apply_med_get_instring = foma.apply_med_get_instring
+foma_apply_med_get_instring.argtypes = [c_void_p]
+foma_apply_med_get_instring.restype = c_char_p
+foma_apply_med_set_align_symbol = foma.apply_med_set_align_symbol
+foma_apply_med_set_align_symbol.argtypes = [c_void_p, c_char_p]
+foma_apply_med_set_align_symbol.restype = None
+foma_apply_med_set_med_limit = foma.apply_med_set_med_limit
+foma_apply_med_set_med_limit.argtypes = [c_void_p, c_int]
+foma_apply_med_set_med_limit.restype = None
+foma_apply_med_set_med_cutoff = foma.apply_med_set_med_cutoff
+foma_apply_med_set_med_cutoff.argtypes = [c_void_p, c_int]
+foma_apply_med_set_med_cutoff.restype = None
 foma_fsm_count = foma.fsm_count
 foma_fsm_topsort = foma.fsm_topsort
 foma_fsm_topsort.restype = POINTER(FSTstruct)
@@ -360,6 +384,44 @@ class FST(object):
             return self._apply(foma_apply_up, word = word, tokenize = tokenize)
         else:
             raise ValueError('Undefined FST')
+
+    def apply_med(self, word, include_alignment = False, align_symbol = '-',
+                  med_limit = 3, med_cutoff = 3):
+        """Yield approximate matches and their minimum-edit costs.
+
+        Results are ``(output, cost)`` tuples. If ``include_alignment`` is
+        true, results are ``(aligned_output, cost, aligned_input)`` tuples;
+        insertions and deletions are shown using ``align_symbol``.
+        """
+        if not self.fsthandle:
+            raise ValueError('FST not defined')
+
+        applyerhandle = foma_apply_med_init(self.fsthandle)
+        if not applyerhandle:
+            raise MemoryError('Could not initialize minimum-edit lookup')
+
+        foma_apply_med_set_med_limit(applyerhandle, c_int(med_limit))
+        foma_apply_med_set_med_cutoff(applyerhandle, c_int(med_cutoff))
+        if include_alignment:
+            foma_apply_med_set_align_symbol(
+                applyerhandle, c_char_p(self.encode(align_symbol)))
+
+        encoded_word = self.encode(word)
+        try:
+            output = foma_apply_med(
+                applyerhandle, c_char_p(encoded_word))
+            while output is not None:
+                result = self.decode(output)
+                cost = foma_apply_med_get_cost(applyerhandle)
+                if include_alignment:
+                    alignment = self.decode(
+                        foma_apply_med_get_instring(applyerhandle))
+                    yield result, cost, alignment
+                else:
+                    yield result, cost
+                output = foma_apply_med(applyerhandle, None)
+        finally:
+            foma_apply_med_clear(applyerhandle)
 
     def _fomacallunary(self, func, minimize = True):
         if self.fsthandle:
