@@ -17,16 +17,41 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "foma.h"
 
-#define MAX_STACK 2097152
-#define MAX_PTR_STACK 2097152
+/* Both stacks start small and double in size when full, */
+/* so their size is limited only by available memory.    */
+#define INITIAL_STACK_SIZE 1024
 
-static int a[MAX_STACK];
+static int *a = NULL;
+static int a_size = 0;
 static int top = -1;
 
-static void *ptr_stack[MAX_PTR_STACK];
+static void **ptr_stack = NULL;
+static int ptr_stack_size = 0;
 static int ptr_stack_top = -1;
+
+/* Grows *buf to hold at least needed elements of elem_size bytes. */
+static void stack_grow(void **buf, int *size, size_t elem_size, int needed, const char *name) {
+    int newsize;
+    void *newbuf;
+    newsize = *size == 0 ? INITIAL_STACK_SIZE : *size;
+    while (newsize < needed) {
+        if (newsize > INT_MAX / 2) {
+            fprintf(stderr, "%s full!\n", name);
+            exit(1);
+        }
+        newsize *= 2;
+    }
+    newbuf = realloc(*buf, (size_t) newsize * elem_size);
+    if (newbuf == NULL) {
+        fprintf(stderr, "%s full!\n", name);
+        exit(1);
+    }
+    *buf = newbuf;
+    *size = newsize;
+}
 
 int ptr_stack_isempty() {
     return ptr_stack_top == -1;
@@ -41,14 +66,12 @@ void *ptr_stack_pop() {
 }
 
 int ptr_stack_isfull() {
-    return (ptr_stack_top == (MAX_PTR_STACK - 1));
+    return 0;
 }
 
 void ptr_stack_push(void *ptr) {
-    if (ptr_stack_isfull()) {
-        fprintf(stderr, "Pointer stack full!\n");
-        exit(1);
-    }
+    if (ptr_stack_top + 1 >= ptr_stack_size)
+        stack_grow((void **) &ptr_stack, &ptr_stack_size, sizeof(void *), ptr_stack_top + 2, "Pointer stack");
     ptr_stack[++ptr_stack_top] = ptr;
 }
 
@@ -79,10 +102,8 @@ int int_stack_size () {
 }
 
 void int_stack_push(int c) {
-  if (int_stack_isfull()) {
-    fprintf(stderr, "Stack full!\n");
-    exit(1);
-  }
+  if (top + 1 >= a_size)
+    stack_grow((void **) &a, &a_size, sizeof(int), top + 2, "Stack");
   a[++top] = c;
 }
 
@@ -92,5 +113,5 @@ int int_stack_pop() {
 }
 
 int int_stack_isfull() {
-  return (top == (MAX_STACK - 1));
+  return 0;
 }
